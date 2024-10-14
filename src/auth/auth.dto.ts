@@ -22,9 +22,3 @@ export class ResetPasswordDto {
     @MinLength(8, { message: "La contraseña debe tener al menos 8 caracteres "})
     new_password: string
 }
-
-export class FilterPasswordDto {
-    @IsString()
-    @MinLength(8, { message: "La contraseña debe tener al menos 8 caracteres"})
-    password: string;
-}

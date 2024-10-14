@@ -13,7 +13,7 @@ export class User {
 
   @Prop({ required: true })
   @IsNotEmpty({ message: "Por favor, ingrese su contraseña"})
-  @MinLength(8  , { message: "La contraseña debe tener al menos 6 caracteres"})
+  @MinLength(8, { message: "La contraseña debe tener al menos 6 caracteres"})
   password: string;
 
   @Prop({ required: true})

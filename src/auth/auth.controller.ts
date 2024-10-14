@@ -27,8 +27,4 @@ export class AuthController {
     return await this.authService.reset_password(resetPasswordDto);
   }
 
-  @Post('filter_password')
-  async filter_password(@Body() filterPasswordDto: FilterPasswordDto) {
-    
-  }
 }

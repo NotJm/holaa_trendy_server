@@ -29,7 +29,7 @@ export class IncidentService {
             incident.failedAttempts += 1;
             incident.lastAttempt = now;
 
-            if (incident.failedAttempts > 3) {
+            if (incident.failedAttempts > 5) {
                 incident.isBlocked = true;
                 incident.blockExpiresAt = new Date(now.getTime() + 20 * 60 * 1000);
             }
