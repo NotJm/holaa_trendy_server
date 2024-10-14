@@ -45,19 +45,33 @@ export class AuthService {
   // TODO: Login de usuario
   async login(loginDto: LoginDto): Promise<any> {
     const { username, password } = loginDto;
-
+  
     const user = await this.userModel.findOne({ username });
+
+    if (!user) {
+      return { message: `El usuario ${username} no esta registrado, Por favor registrese`}
+    }
+
+    const userIncident = await this.incidentService.usernameIsBlocked({ username });
+    
+    if (userIncident.isBlocked) {
+      return { 
+        message: `Su cuenta ha sido bloqueada temporalmente. Podrá acceder nuevamente a las ${new Date(userIncident.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.` 
+      }
+      
+    }
 
     const isPasswordMatching = await bcrypt.compare(password, user.password);
 
-    if (user && isPasswordMatching) {
+    if (isPasswordMatching) {
       const payload = { username: user.username, sub: user.id };
 
       const token = this.jwtService.sign(payload);
 
       return { message: 'Sesion Iniciada Exitosamente', access_token: token };
     } else {
-      await this.incidentService.registerFailedAttempt(username);
+      // TODO: Modulo de Incidencias mas 5 intentos bloquear cuenta
+      await this.incidentService.loginFailedAttempt(username);
       return { message: 'Credenciales Incorrectas' };
     }
   }

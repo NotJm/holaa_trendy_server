@@ -2,13 +2,14 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Incident, IncidentDocument } from 'src/schemas/incident.schema';
+import { CloseIncidentDto, UsernameIsBlockedDto } from './incident.dto';
 
 @Injectable()
 export class IncidentService {
     constructor(@InjectModel(Incident.name) private incidentModel: Model<IncidentDocument>) {}
 
     // TODO: Registrar una nueva incidencia
-    async registerFailedAttempt(username: string): Promise<Incident> {
+    async loginFailedAttempt(username: string): Promise<Incident> {
         const incident = await this.incidentModel.findOne({ username });
 
         if (incident) {
@@ -16,7 +17,7 @@ export class IncidentService {
 
             if (incident.isBlocked && now < incident.blockExpiresAt) {
                 throw new ForbiddenException(
-                    `La cuenta esta bloqueada. Intentalo nuevamente despues de ${incident.blockExpiresAt}`
+                    `La cuenta esta bloqueada. Intentalo nuevamente despues de ${new Date(incident.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
                 )
             }
 
@@ -51,11 +52,19 @@ export class IncidentService {
     }
 
     //TODO: Cerrar una incidencia
-    async closeIncident(username: string): Promise<Incident> {
+    async closeIncident(closeIncidentDto: CloseIncidentDto): Promise<Incident> {
+        const { username } = closeIncidentDto;
         return this.incidentModel.findOneAndUpdate(
             { username },
             { status: 'close', failedAttempts: 0, isBlocked: false, blockExpiresAt: null },
             { new: true},
         ).exec();
+    }
+
+    //TODO: Buscar si el usuario tiene bloqueada la cuenta
+    async usernameIsBlocked(usernameIsBlockedDto: UsernameIsBlockedDto): Promise<Incident> {
+        const { username } = usernameIsBlockedDto;
+        const incident = await this.incidentModel.findOne({ username });
+        return incident;
     }
 }

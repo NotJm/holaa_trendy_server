@@ -8,7 +8,7 @@ export class IncidentController {
 
     @Post('incident')
     async registerFailedAttempt(@Body() registerIncidentDto: RegisterIncidentDto) {
-        return this.incidentService.registerFailedAttempt(registerIncidentDto.username);
+        return this.incidentService.loginFailedAttempt(registerIncidentDto.username);
     }
 
     @Get('open')
@@ -18,6 +18,6 @@ export class IncidentController {
 
     @Post('close')
     async closeOpenIncident(@Body() closeIncidentDto: CloseIncidentDto) {
-        return this.incidentService.closeIncident(closeIncidentDto.username);
+        return this.incidentService.closeIncident(closeIncidentDto);
     }
 }

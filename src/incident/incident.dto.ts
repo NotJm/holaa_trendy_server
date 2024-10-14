@@ -11,3 +11,9 @@ export class CloseIncidentDto {
   @IsNotEmpty()
   username: string;
 }
+
+export class UsernameIsBlockedDto {
+  @IsString()
+  @IsNotEmpty()
+  username: string;
+}
