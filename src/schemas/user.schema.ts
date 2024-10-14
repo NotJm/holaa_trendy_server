@@ -1,11 +1,24 @@
-import mongoose, { Document } from "mongoose";
-import { IUser } from "src/interface/user.interface";
-const { Schema, model } = mongoose;
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import { Document } from 'mongoose';
 
-export const UserSchema = new Schema<IUser>({
-    username: {type: String, required: true},
-    password: {type: String, required: true},
-    email: {type: String, required: true},
-});
+export type UserDocument = User & Document;
 
-export const User = model<IUser>('User', UserSchema);
+@Schema()
+export class User {
+  @Prop({ required: true })
+  @IsNotEmpty({ message: "Por favor, ingrese su nombre de usuario"})
+  @MinLength(6, { message: "El nombre de usuario debe tener al menos 6 caracteres"})
+  username: string;
+
+  @Prop({ required: true })
+  @IsNotEmpty({ message: "Por favor, ingrese su contraseña"})
+  @MinLength(8  , { message: "La contraseña debe tener al menos 6 caracteres"})
+  password: string;
+
+  @Prop({ required: true})
+  @IsEmail({}, { message: "Por favor, ingrese un correo valido" })  
+  email: string;
+}
+
+export const UserSchema = SchemaFactory.createForClass(User).set('versionKey', false);
