@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ResetPasswordDto = exports.ForgotPasswordDto = exports.LoginDto = void 0;
+exports.SendEmailVerificationDto = exports.VerifyEmailDto = exports.ResetPasswordDto = exports.ForgotPasswordDto = exports.LoginDto = void 0;
 const class_validator_1 = require("class-validator");
 class LoginDto {
 }
@@ -42,4 +42,18 @@ __decorate([
     (0, class_validator_1.MinLength)(8, { message: "La contraseña debe tener al menos 8 caracteres " }),
     __metadata("design:type", String)
 ], ResetPasswordDto.prototype, "new_password", void 0);
+class VerifyEmailDto {
+}
+exports.VerifyEmailDto = VerifyEmailDto;
+__decorate([
+    (0, class_validator_1.IsEmail)({}, { message: "Por favor, proporciona un correo valido" }),
+    __metadata("design:type", String)
+], VerifyEmailDto.prototype, "email", void 0);
+class SendEmailVerificationDto {
+}
+exports.SendEmailVerificationDto = SendEmailVerificationDto;
+__decorate([
+    (0, class_validator_1.IsEmail)({}, { message: "Por favor, proporciona un correo valido" }),
+    __metadata("design:type", String)
+], SendEmailVerificationDto.prototype, "email", void 0);
 //# sourceMappingURL=auth.dto.js.map

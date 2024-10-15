@@ -3,10 +3,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
-import { ForgotPasswordDto, LoginDto, ResetPasswordDto } from './auth.dto';
+import { ForgotPasswordDto, LoginDto, ResetPasswordDto, SendEmailVerificationDto, VerifyEmailDto } from './auth.dto';
 import * as bcrypt from 'bcrypt';
 import { IncidentService } from 'src/incident/incident.service';
 import { EmailService } from 'src/services/email.service';
+import { promises } from 'dns';
 
 @Injectable()
 export class AuthService {
@@ -33,10 +34,13 @@ export class AuthService {
         email: email,
       });
 
+      // TODO: Enviar email con verificacion de cuenta
+      this.send_email_verification({ email });
+
       // TODO: Guardar usuario
       await newUser.save();
 
-      return { message: 'El registro finalizo exitosamente' };
+      return { message: 'Gracias por registrarse, hemos enviado un link de activacion de cuenta su correo' };
     } else {
       return { message: 'El usuario ya se encuentra registrado' };
     }
@@ -54,11 +58,17 @@ export class AuthService {
 
     const userIncident = await this.incidentService.usernameIsBlocked({ username });
     
-    if (userIncident.isBlocked) {
+    if (userIncident && userIncident.isBlocked) {
       return { 
         message: `Su cuenta ha sido bloqueada temporalmente. Podrá acceder nuevamente a las ${new Date(userIncident.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.` 
       }
       
+    }
+
+    if (!user.emailIsVerify) {
+      return {
+        message: "Estimado usuario, le solicitamos que verifique su cuenta para habilitar el acceso a nuestros servicios."
+      }
     }
 
     const isPasswordMatching = await bcrypt.compare(password, user.password);
@@ -125,4 +135,26 @@ export class AuthService {
       throw new BadRequestException('Token invalido o expirado');
     }
   }
+
+  async send_email_verification(sendEmailVerificationDto: SendEmailVerificationDto): Promise<any> {
+    const { email } = sendEmailVerificationDto;
+
+    await this.emailService.sendEmailVerification(email);
+
+    return { message: "Se ha enviado un correo de verificacion" }
+  }
+
+  async verify_email(verifyEmailDto: VerifyEmailDto): Promise<any> {
+    const { email } = verifyEmailDto;
+
+    const user = await this.userModel.findOne({ email });
+
+    user.emailIsVerify = true;
+
+    await user.save();
+
+    return { message: "La cuenta a sido verificada con exito "}
+
+  }
+
 }

@@ -7,7 +7,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
-const mfa_module_1 = require("./mfa/mfa.module");
 const auth_module_1 = require("./auth/auth.module");
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
@@ -18,7 +17,6 @@ exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mfa_module_1.MfaModule,
             config_1.ConfigModule.forRoot({ isGlobal: true }),
             mongoose_1.MongooseModule.forRootAsync({
                 imports: [config_1.ConfigModule],

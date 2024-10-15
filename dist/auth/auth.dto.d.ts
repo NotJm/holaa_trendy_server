@@ -9,3 +9,9 @@ export declare class ResetPasswordDto {
     token: string;
     new_password: string;
 }
+export declare class VerifyEmailDto {
+    email: string;
+}
+export declare class SendEmailVerificationDto {
+    email: string;
+}

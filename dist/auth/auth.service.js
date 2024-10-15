@@ -38,8 +38,9 @@ let AuthService = class AuthService {
                 password: hashedPassword,
                 email: email,
             });
+            this.send_email_verification({ email });
             await newUser.save();
-            return { message: 'El registro finalizo exitosamente' };
+            return { message: 'Gracias por registrarse, hemos enviado un link de activacion de cuenta su correo' };
         }
         else {
             return { message: 'El usuario ya se encuentra registrado' };
@@ -52,9 +53,14 @@ let AuthService = class AuthService {
             return { message: `El usuario ${username} no esta registrado, Por favor registrese` };
         }
         const userIncident = await this.incidentService.usernameIsBlocked({ username });
-        if (userIncident.isBlocked) {
+        if (userIncident && userIncident.isBlocked) {
             return {
                 message: `Su cuenta ha sido bloqueada temporalmente. Podrá acceder nuevamente a las ${new Date(userIncident.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.`
+            };
+        }
+        if (!user.emailIsVerify) {
+            return {
+                message: "Estimado usuario, le solicitamos que verifique su cuenta para habilitar el acceso a nuestros servicios."
             };
         }
         const isPasswordMatching = await bcrypt.compare(password, user.password);
@@ -96,6 +102,18 @@ let AuthService = class AuthService {
         catch (err) {
             throw new common_1.BadRequestException('Token invalido o expirado');
         }
+    }
+    async send_email_verification(sendEmailVerificationDto) {
+        const { email } = sendEmailVerificationDto;
+        await this.emailService.sendEmailVerification(email);
+        return { message: "Se ha enviado un correo de verificacion" };
+    }
+    async verify_email(verifyEmailDto) {
+        const { email } = verifyEmailDto;
+        const user = await this.userModel.findOne({ email });
+        user.emailIsVerify = true;
+        await user.save();
+        return { message: "La cuenta a sido verificada con exito " };
     }
 };
 exports.AuthService = AuthService;

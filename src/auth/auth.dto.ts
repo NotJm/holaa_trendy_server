@@ -22,3 +22,13 @@ export class ResetPasswordDto {
     @MinLength(8, { message: "La contraseña debe tener al menos 8 caracteres "})
     new_password: string
 }
+
+export class VerifyEmailDto {
+    @IsEmail({}, { message: "Por favor, proporciona un correo valido" })
+    email: string;
+}
+
+export class SendEmailVerificationDto {
+    @IsEmail({}, { message: "Por favor, proporciona un correo valido" })
+    email: string;
+}

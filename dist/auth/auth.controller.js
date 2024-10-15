@@ -33,6 +33,9 @@ let AuthController = class AuthController {
     async reset_password(resetPasswordDto) {
         return await this.authService.reset_password(resetPasswordDto);
     }
+    async verify_email(verifyEmailDto) {
+        return await this.authService.verify_email(verifyEmailDto);
+    }
 };
 exports.AuthController = AuthController;
 __decorate([
@@ -63,6 +66,13 @@ __decorate([
     __metadata("design:paramtypes", [auth_dto_1.ResetPasswordDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "reset_password", null);
+__decorate([
+    (0, common_1.Post)('verify_email'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_1.VerifyEmailDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "verify_email", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

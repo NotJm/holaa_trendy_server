@@ -1,7 +1,7 @@
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
-import { ForgotPasswordDto, LoginDto, ResetPasswordDto } from './auth.dto';
+import { ForgotPasswordDto, LoginDto, ResetPasswordDto, SendEmailVerificationDto, VerifyEmailDto } from './auth.dto';
 import { IncidentService } from 'src/incident/incident.service';
 import { EmailService } from 'src/services/email.service';
 export declare class AuthService {
@@ -14,4 +14,6 @@ export declare class AuthService {
     login(loginDto: LoginDto): Promise<any>;
     forgot_password(forgotPasswordDto: ForgotPasswordDto): Promise<any>;
     reset_password(resetPasswordDto: ResetPasswordDto): Promise<any>;
+    send_email_verification(sendEmailVerificationDto: SendEmailVerificationDto): Promise<any>;
+    verify_email(verifyEmailDto: VerifyEmailDto): Promise<any>;
 }

@@ -4,6 +4,7 @@ export declare class User {
     username: string;
     password: string;
     email: string;
+    emailIsVerify: boolean;
 }
 export declare const UserSchema: import("mongoose").Schema<User, import("mongoose").Model<User, any, any, any, Document<unknown, any, User> & User & {
     _id: import("mongoose").Types.ObjectId;

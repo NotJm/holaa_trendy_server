@@ -32,6 +32,10 @@ __decorate([
     (0, class_validator_1.IsEmail)({}, { message: "Por favor, ingrese un correo valido" }),
     __metadata("design:type", String)
 ], User.prototype, "email", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: false }),
+    __metadata("design:type", Boolean)
+], User.prototype, "emailIsVerify", void 0);
 exports.User = User = __decorate([
     (0, mongoose_1.Schema)()
 ], User);

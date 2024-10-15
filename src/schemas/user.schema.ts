@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
@@ -19,6 +19,9 @@ export class User {
   @Prop({ required: true})
   @IsEmail({}, { message: "Por favor, ingrese un correo valido" })  
   email: string;
+
+  @Prop({ default: false })
+  emailIsVerify: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User).set('versionKey', false);
