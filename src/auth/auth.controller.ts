@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { User } from 'src/schemas/user.schema';
+import { User } from '../schemas/user.schema';
 import { AuthService } from './auth.service';
 import { ForgotPasswordDto, LoginDto, ResetPasswordDto, SendEmailVerificationDto, VerifyEmailDto } from './auth.dto';
 

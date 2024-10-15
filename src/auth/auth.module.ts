@@ -1,12 +1,12 @@
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthService } from './auth.service';
 import { Module } from '@nestjs/common';
-import { User, UserSchema } from 'src/schemas/user.schema';
+import { User, UserSchema } from '../schemas/user.schema';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
-import { IncidentModule } from 'src/incident/incident.module';
+import { IncidentModule } from '../incident/incident.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EmailService } from 'src/services/email.service';
+import { EmailService } from '../services/email.service';
 // TODO: PENE
 @Module({
   imports: [

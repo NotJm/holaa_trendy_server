@@ -1,5 +1,4 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { isDate, IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { Document } from 'mongoose';
 
 export type IncidentDocument = Incident & Document;
