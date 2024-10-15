@@ -13,5 +13,5 @@ async function bootstrap() {
 
   
 }
-// export default bootstrap;
+export default bootstrap;
 bootstrap();
