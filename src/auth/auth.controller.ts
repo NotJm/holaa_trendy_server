@@ -1,7 +1,6 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { User } from '../schemas/user.schema';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ForgotPasswordDto, LoginDto, ResetPasswordDto, SendEmailVerificationDto, VerifyEmailDto } from './auth.dto';
+import { ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './auth.dto';
 
 @Controller()
 export class AuthController {
@@ -13,8 +12,8 @@ export class AuthController {
   }
 
   @Post('register')
-  async register(@Body() userData: User) {
-    return await this.authService.register(userData);
+  async register(@Body() registerDto: RegisterDto) {
+    return await this.authService.register(registerDto);
   }
 
   @Post('forgot_password')
@@ -27,9 +26,11 @@ export class AuthController {
     return await this.authService.reset_password(resetPasswordDto);
   }
 
-  @Post('verify_email')
-  async verify_email(@Body() verifyEmailDto: VerifyEmailDto) {
-    return await this.authService.verify_email(verifyEmailDto);
+  @Get('verify_email')
+  async verify_email(@Query('token') token: string) {
+    console.log('si llegue');
+    return await this.authService.verify_email(token);
   }
+  
 
 }

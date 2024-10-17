@@ -1,87 +1,154 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, HttpStatus, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
-import { ForgotPasswordDto, LoginDto, ResetPasswordDto, SendEmailVerificationDto, VerifyEmailDto } from './auth.dto';
-import * as bcrypt from 'bcrypt';
+import { ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto, SendEmailVerificationDto } from './auth.dto';
 import { IncidentService } from '../incident/incident.service';
 import { EmailService } from '../services/email.service';
+import { PwnedService } from '../services/pwned.service';
+import { ZxcvbnService } from '../services/zxcvbn.service';
+import { randomBytes } from 'crypto';
+import { AuthGateway } from './auth.gateway';
 
 @Injectable()
 export class AuthService {
+
+  private generateSessionID(): string {
+    return randomBytes(32).toString('hex');
+  }
+
+  private generateOTPCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
     private incidentService: IncidentService,
-    private emailService: EmailService
+    private emailService: EmailService,
+    private pwnedservice: PwnedService,
+    private zxcvbnService: ZxcvbnService,
+    private authGateWay: AuthGateway
   ) {}
 
   // TODO: Registro de usuario, hasheo de contraseña
-  async register(userData: User): Promise<any> {
-    const { username, password, email } = userData;
+  async register(registerDto: RegisterDto): Promise<any> {
+    const { sessionId, username, password, email } = registerDto;
 
-    const user = await this.userModel.findOne({ username });
+    const user = await this.userModel.findOne({ email, username });
 
-    if (!user) {
-      // TODO: Hasheando contraseña
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
-      const newUser = new this.userModel({
-        username: username,
-        password: hashedPassword,
-        email: email,
-      });
-
-      // TODO: Enviar email con verificacion de cuenta
-      this.send_email_verification({ email });
-
-      // TODO: Guardar usuario
-      await newUser.save();
-
-      return { message: 'Gracias por registrarse, hemos enviado un link de activacion de cuenta su correo' };
-    } else {
-      return { message: 'El usuario ya se encuentra registrado' };
+    // En caso de que el usuario exista se manda una excepcion de conflicto
+    if (user) {
+      throw new ConflictException({
+        message: `El usuario ${user.username} ya se encuentra registrado`,
+        error: 'Conflict'
+      }); 
     }
+
+    // Verificar si la contraseña es debil
+    const zxcvbn = this.zxcvbnService.validatePassword(password);
+
+    if(zxcvbn) {
+      throw new BadRequestException('Contraseña debil');
+    }
+
+    // Verificar si la contraseña comprometida
+    const timesCommitted = await this.pwnedservice.verificationPassword(password);
+
+    if(timesCommitted > 0) {
+      throw new BadRequestException(`La contraseña ya fue comprometida ${timesCommitted}`);
+    }
+
+    // Hashear contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Crear esquema para la base de datos
+    const newUser = new this.userModel({
+      sessionID: sessionId,
+      username: username,
+      password: hashedPassword,
+      email: email,
+    });
+
+    // Enviar email de verificacion
+    await this.send_email_verification({ email });
+
+    // Guardar usuario
+    await newUser.save();
+
+    return { 
+      status: HttpStatus.OK,
+      message: 'Gracias por registrarse, hemos enviado un link de activacion de cuenta su correo'
+    };
   }
 
   // TODO: Login de usuario
   async login(loginDto: LoginDto): Promise<any> {
     const { username, password } = loginDto;
-  
+
+    // Generar una sessionID
+    const sessionId = this.generateSessionID();
+    
+    // Primero nos aseguramos que si existe la el usuario
     const user = await this.userModel.findOne({ username });
 
+    // Si el usuario no se encuentra registrado
     if (!user) {
-      return { message: `El usuario ${username} no esta registrado, Por favor registrese`}
+      throw new ConflictException(
+        `El usuario ${username} no esta registrado, Por favor registrese`
+      );
     }
 
+     // Si el usuario no ha verificado su cuenta
+     if (!user.emailIsVerify) {
+      throw new ForbiddenException(
+        "Estimado usuario, le solicitamos que verifique su cuenta para habilitar el acceso a nuestros servicios."
+      )
+    }
+
+    // Verificar si el usuario tiene un incidente
     const userIncident = await this.incidentService.usernameIsBlocked({ username });
     
+    // Si el usuario tiene su cuenta bloqueada
     if (userIncident && userIncident.isBlocked) {
-      return { 
-        message: `Su cuenta ha sido bloqueada temporalmente. Podrá acceder nuevamente a las ${new Date(userIncident.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.` 
-      }
-      
-    }
-
-    if (!user.emailIsVerify) {
-      return {
-        message: "Estimado usuario, le solicitamos que verifique su cuenta para habilitar el acceso a nuestros servicios."
-      }
+      throw new ForbiddenException(
+        `Su cuenta ha sido bloqueada temporalmente. Podrá acceder nuevamente a las ${new Date(userIncident.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.`
+      );      
     }
 
     const isPasswordMatching = await bcrypt.compare(password, user.password);
 
-    if (isPasswordMatching) {
-      const payload = { username: user.username, sub: user.id };
-
-      const token = this.jwtService.sign(payload);
-
-      return { message: 'Sesion Iniciada Exitosamente', access_token: token };
-    } else {
-      // TODO: Modulo de Incidencias mas 5 intentos bloquear cuenta
+    if (!isPasswordMatching) {
+      // Añadir una incidencia mas por si se intenga loguear mal
       await this.incidentService.loginFailedAttempt(username);
-      return { message: 'Credenciales Incorrectas' };
+
+      throw new ConflictException('Credenciales Incorrectas');
+    }
+
+    user.sessionId = sessionId;
+
+    await user.save();
+
+    const payload = { username: user.username, sub: user.id };
+
+    const token = this.jwtService.sign(payload);
+
+    return { 
+      status: HttpStatus.OK,
+      message: 'Sesion Iniciada Exitosamente',
+      token: token
+    };
+  }
+
+  // TODO: Cerrar Sesion
+  async logout(userId: string): Promise<any> {
+    await this.revokeSessions(userId);
+    
+    return {
+      status: HttpStatus.OK,
+      message: "Sesion Cerrada Exitosamente"
     }
   }
 
@@ -92,7 +159,7 @@ export class AuthService {
     const user = await this.userModel.findOne({ email });
 
     if (!user) {
-      return { messsage: "El correo no estra registrado" };
+      throw new BadRequestException("El correo no estra registrado");
     }
 
     const restToken = this.jwtService.sign(
@@ -112,15 +179,13 @@ export class AuthService {
     try {
       const decoded = this.jwtService.verify(token);
 
-      console.log(decoded);
 
       // TODO: Buscar el usuario en base al token decodificado
       const user = await this.userModel.findById(decoded.id);
 
-      console.log(user);
 
       if (!user) {
-        return { message: 'Token invalido o expirado' };
+        throw new BadRequestException('Token invalido o expirado');
       }
 
       const hashedPassword = await bcrypt.hash(new_password, 10);
@@ -129,31 +194,67 @@ export class AuthService {
 
       await user.save();
 
+      await this.revokeSessions(user.id);
+
       return { message: 'Contraseña actualiza exitosamente' };
     } catch (err) {
       throw new BadRequestException('Token invalido o expirado');
     }
   }
 
+  // TODO: Enviar correo de verificacion
   async send_email_verification(sendEmailVerificationDto: SendEmailVerificationDto): Promise<any> {
     const { email } = sendEmailVerificationDto;
 
-    await this.emailService.sendEmailVerification(email);
+    const token = this.jwtService.sign(
+      { email }, 
+      { expiresIn: '1h'}
+    )
 
-    return { message: "Se ha enviado un correo de verificacion" }
+    await this.emailService.sendEmailVerification(token, email);
+
+    return { 
+      status: HttpStatus.OK,
+      message: "Se ha enviado a su correo un link de activacion" 
+    };
   }
 
-  async verify_email(verifyEmailDto: VerifyEmailDto): Promise<any> {
-    const { email } = verifyEmailDto;
+  // TODO: Verificacion de Email
+  async verify_email(token: string): Promise<any> {
+    try {
+      const decoded = this.jwtService.verify(token);
+      
+      const user = await this.userModel.findOne({ email: decoded.email  });
 
-    const user = await this.userModel.findOne({ email });
+      if (!user) throw new NotFoundException('Usuario no encontrado');
 
-    user.emailIsVerify = true;
+      user.emailIsVerify = true;
 
-    await user.save();
+      this.authGateWay.send_verify_emai_successfully(user.email);
 
-    return { message: "La cuenta a sido verificada con exito "}
+      await user.save();
+
+      return {
+        status: HttpStatus.OK,
+        message: "Correo verificado exitosamente"
+      }
+    } catch (err) {
+      throw new ForbiddenException('Token invalido o expirado');
+    }
 
   }
+
+  // TODO: Revocacion de cookies (session)
+  private async revokeSessions(userId: string): Promise<any> {
+    await this.userModel.updateOne(
+      { _id: userId },
+      { $unset: { sessionId: "" } }
+    )
+    return { message: 'Todas las sesiones han sido revocadas.' };
+  }
+
+
+
+
 
 }

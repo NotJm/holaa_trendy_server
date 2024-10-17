@@ -17,7 +17,7 @@ export class EmailService {
   }
 
   async sendPasswordResetEmail(to: string, resetToken: string) {
-    const url = `http://localhost:3000reset_password?token=${resetToken}`;
+    const url = `http://localhost:3000/reset_password?token=${resetToken}`;
     await this.transporter.sendMail({
       to,
       subject: '🔒 Restablecimiento de Contraseña - HOLAA',
@@ -33,8 +33,8 @@ export class EmailService {
     });
   }
 
-  async sendEmailVerification(email: string) {
-    const url = `http://localhost:3000verify_email?email=${email}`;
+  async sendEmailVerification(token: string, email: string) {
+    const url = `${this.configService.get<string>('PREFIX_BACKEND')}/verify_email?token=${token}`;
     await this.transporter.sendMail({
       to: email,
       subject: '📧 Verificación de Cuenta - HOLAA',
@@ -42,7 +42,9 @@ export class EmailService {
         <p>Estimado usuario,</p>
         <p>¡Gracias por registrarse en <strong>HOLAA</strong>! Para completar su registro, necesitamos que verifique su dirección de correo electrónico.</p>
         <p>Haga clic en el siguiente enlace para verificar su cuenta:</p>
-        <a href="${url}" style="color: #4CAF50;">Verificar Cuenta</a>
+        <form action="${url}" method="GET">
+        <button type="submit" style="background-color: #4CAF50; color: white;">Activar Cuenta</button>
+        </form>
         <p>Si no realizó esta solicitud, puede ignorar este mensaje.</p>
         <p>Atentamente,</p>
         <p><strong>El equipo de HOLAA</strong></p>
@@ -50,7 +52,4 @@ export class EmailService {
     });
   }
 
-  async sendOTPCode(to:string ) {
-
-  }
 }
