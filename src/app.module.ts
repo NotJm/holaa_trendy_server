@@ -8,6 +8,8 @@ import {
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CorsMiddleware } from './cors.middleware';
+import { AuthController } from './auth/auth.controller';
+import { AuthService } from './auth/auth.service';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { CorsMiddleware } from './cors.middleware';
 
     AuthModule,
   ],
+  controllers: [AuthController],
+  providers: [AuthService]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
