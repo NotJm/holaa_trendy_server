@@ -33,23 +33,40 @@ export class EmailService {
     });
   }
 
-  async sendEmailVerification(token: string, email: string) {
-    const url = `${this.configService.get<string>('PREFIX_BACKEND')}/verify_email?token=${token}`;
+  // Enviar codigo de verificacion para activar cuenta
+  async send_code_verfication(otpCode: string, email: string) {
     await this.transporter.sendMail({
       to: email,
       subject: '📧 Verificación de Cuenta - HOLAA',
       html: `
-        <p>Estimado usuario,</p>
-        <p>¡Gracias por registrarse en <strong>HOLAA</strong>! Para completar su registro, necesitamos que verifique su dirección de correo electrónico.</p>
-        <p>Haga clic en el siguiente enlace para verificar su cuenta:</p>
-        <form action="${url}" method="GET">
-        <button type="submit" style="background-color: #4CAF50; color: white;">Activar Cuenta</button>
-        </form>
-        <p>Si no realizó esta solicitud, puede ignorar este mensaje.</p>
-        <p>Atentamente,</p>
-        <p><strong>El equipo de HOLAA</strong></p>
+        <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto;">
+          <div style="background-color: #0A1B39; padding: 20px; border-radius: 10px 10px 0 0; color: white; text-align: center;">
+            <h2>¡Bienvenido a <strong>HOLAA</strong>!</h2>
+          </div>
+          <div style="background-color: white; padding: 20px; border-radius: 0 0 10px 10px; color: #333;">
+            <p>Estimado usuario,</p>
+            <p style="font-size: 16px;">¡Gracias por registrarse en <strong>HOLAA</strong>! Para completar su registro, necesitamos que verifique su dirección de correo electrónico.</p>
+            <p style="text-align: center;">
+              <span style="
+                display: inline-block;
+                background-color: #00CFFF;
+                color: white;
+                padding: 15px 30px;
+                border-radius: 25px;
+                font-size: 20px;
+                font-weight: bold;
+                box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+                transition: background-color 0.3s ease, transform 0.3s ease;
+              ">
+                ${otpCode}
+              </span>
+            </p>
+            <p style="font-size: 14px;">Si no realizó esta solicitud, puede ignorar este mensaje.</p>
+            <p>Atentamente,</p>
+            <p><strong>El equipo de HOLAA</strong></p>
+          </div>
+        </div>
       `,
     });
   }
-
 }

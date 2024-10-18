@@ -4,13 +4,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
-import { ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto, SendEmailVerificationDto } from './auth.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from './auth.dto';
 import { IncidentService } from '../incident/incident.service';
 import { EmailService } from '../services/email.service';
 import { PwnedService } from '../services/pwned.service';
 import { ZxcvbnService } from '../services/zxcvbn.service';
 import { randomBytes } from 'crypto';
 import { AuthGateway } from './auth.gateway';
+import { LoginDto } from 'src/dto/login.dto';
+import { RegisterDto } from 'src/dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -42,7 +44,7 @@ export class AuthService {
     // En caso de que el usuario exista se manda una excepcion de conflicto
     if (user) {
       throw new ConflictException({
-        message: `El usuario ${user.username} ya se encuentra registrado`,
+        message: `El usuario '${user.username}' ya se encuentra registrado`,
         error: 'Conflict'
       }); 
     }
@@ -58,7 +60,7 @@ export class AuthService {
     const timesCommitted = await this.pwnedservice.verificationPassword(password);
 
     if(timesCommitted > 0) {
-      throw new BadRequestException(`La contraseña ya fue comprometida ${timesCommitted}`);
+      throw new BadRequestException(`La contraseña ya fue comprometida ${timesCommitted} veces`);
     }
 
     // Hashear contraseña
@@ -73,14 +75,14 @@ export class AuthService {
     });
 
     // Enviar email de verificacion
-    await this.send_email_verification({ email });
+    await this.send_email_verification(email);
 
     // Guardar usuario
     await newUser.save();
 
     return { 
       status: HttpStatus.OK,
-      message: 'Gracias por registrarse, hemos enviado un link de activacion de cuenta su correo'
+      message: 'Gracias por registrarse, hemos enviado un link de activacion de cuenta a su correo'
     };
   }
 
@@ -202,16 +204,12 @@ export class AuthService {
     }
   }
 
-  // TODO: Enviar correo de verificacion
-  async send_email_verification(sendEmailVerificationDto: SendEmailVerificationDto): Promise<any> {
-    const { email } = sendEmailVerificationDto;
+  // Enviar correo de verificacion por OTP
+  private async send_email_verification(email: string): Promise<any> {
+    
+    const otpCode = this.generateOTPCode();
 
-    const token = this.jwtService.sign(
-      { email }, 
-      { expiresIn: '1h'}
-    )
-
-    await this.emailService.sendEmailVerification(token, email);
+    await this.emailService.send_code_verfication(otpCode, email);
 
     return { 
       status: HttpStatus.OK,
@@ -229,8 +227,6 @@ export class AuthService {
       if (!user) throw new NotFoundException('Usuario no encontrado');
 
       user.emailIsVerify = true;
-
-      this.authGateWay.send_verify_emai_successfully(user.email);
 
       await user.save();
 
