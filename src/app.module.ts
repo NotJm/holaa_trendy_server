@@ -10,6 +10,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CorsMiddleware } from './cors.middleware';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -26,8 +28,8 @@ import { AuthService } from './auth/auth.service';
 
     AuthModule,
   ],
-  controllers: [AuthController],
-  providers: [AuthService]
+  controllers: [AppController], 
+  providers: [AppService], 
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
