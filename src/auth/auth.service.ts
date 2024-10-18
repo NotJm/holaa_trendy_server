@@ -11,8 +11,8 @@ import { PwnedService } from '../services/pwned.service';
 import { ZxcvbnService } from '../services/zxcvbn.service';
 import { randomBytes } from 'crypto';
 import { AuthGateway } from './auth.gateway';
-import { LoginDto } from 'src/dto/login.dto';
-import { RegisterDto } from 'src/dto/register.dto';
+import { LoginDto } from '../dto/login.dto';
+import { RegisterDto } from '../dto/register.dto';
 
 @Injectable()
 export class AuthService {
