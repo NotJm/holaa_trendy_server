@@ -1,4 +1,4 @@
-import * as cookieSession from 'cookie-session';
+import cookieSession from 'cookie-session';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -26,8 +26,8 @@ async function bootstrap() {
     cookieSession({
       name: 'session',
       keys: [
-        configService.get<string>("SUPER_KEY"),
-        configService.get<string>("MASTER_KEY")
+        configService.get<string>("MASTER_COOKIE_KEY_V1"),
+        configService.get<string>("MASTER_COOKIE_KEY_V2")
       ],
       cookie: {
         httpOnly: true,

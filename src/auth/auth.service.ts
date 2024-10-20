@@ -1,17 +1,16 @@
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   HttpStatus,
-  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
-import { ForgotPasswordDto, ResetPasswordDto } from './auth.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from '../dto/restauration.dto';
 import { IncidentService } from '../incident/incident.service';
 import { EmailService } from '../services/email.service';
 import { PwnedService } from '../services/pwned.service';
@@ -19,6 +18,8 @@ import { ZxcvbnService } from '../services/zxcvbn.service';
 import { randomBytes } from 'crypto';
 import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
+import { OtpService } from '../services/otp.service';
+import { ActivationDto } from '../dto/activation.dto';
 
 @Injectable()
 export class AuthService {
@@ -26,20 +27,17 @@ export class AuthService {
     return randomBytes(32).toString('hex');
   }
 
-  private generateOTPCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  }
-
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private jwtService: JwtService,
-    private incidentService: IncidentService,
-    private emailService: EmailService,
-    private pwnedservice: PwnedService,
-    private zxcvbnService: ZxcvbnService,
+    private jwtService:       JwtService,
+    private incidentService:  IncidentService,
+    private emailService:     EmailService,
+    private pwnedservice:     PwnedService,
+    private zxcvbnService:    ZxcvbnService,
+    private otpService:       OtpService
   ) {}
 
-  // TODO: Registro de usuario, hasheo de contraseña
+  // Registro de usuario, hasheo de contraseña
   async register(registerDto: RegisterDto): Promise<any> {
     const { sessionId, username, password, email } = registerDto;
 
@@ -57,17 +55,20 @@ export class AuthService {
     const zxcvbn = this.zxcvbnService.validatePassword(password);
 
     if (zxcvbn) {
-      throw new BadRequestException('Contraseña debil');
+      throw new BadRequestException({
+        message: 'La contraseña ingresada, es debil',
+        error: 'BadRequest'
+      });
     }
 
     // Verificar si la contraseña comprometida
-    const timesCommitted =
-      await this.pwnedservice.verificationPassword(password);
+    const timesCommitted = await this.pwnedservice.verificationPassword(password);
 
     if (timesCommitted > 0) {
-      throw new BadRequestException(
-        `La contraseña ya fue comprometida ${timesCommitted} veces`,
-      );
+      throw new BadRequestException({
+        message: `La contraseña ya fue comprometida ${timesCommitted} veces`,
+        error: 'BadRequest'
+      });
     }
 
     // Hashear contraseña
@@ -214,7 +215,8 @@ export class AuthService {
 
   // Enviar correo de verificacion por OTP
   private async send_email_verification(email: string): Promise<any> {
-    const otpCode = this.generateOTPCode();
+
+    const otpCode = this.otpService.generateOTP();
 
     await this.emailService.send_code_verfication(otpCode, email);
 
@@ -224,26 +226,36 @@ export class AuthService {
     };
   }
 
-  // TODO: Verificacion de Email
-  async verify_email(token: string): Promise<any> {
-    try {
-      const decoded = this.jwtService.verify(token);
+  // Verificacion de Email
+  async verify_email(activationDto: ActivationDto): Promise<any> {
+    const { email, otp } = activationDto;
 
-      const user = await this.userModel.findOne({ email: decoded.email });
+    const isValid = this.otpService.verifyOTP(otp);
+    if (isValid) {
 
-      if (!user) throw new NotFoundException('Usuario no encontrado');
+      const user = await this.userModel.findOne({ email });
+
+      if(!user) {
+        throw new BadRequestException({
+          message: 'El correo no estra registrado',
+          error: 'BadRequest',
+        });
+      }
 
       user.emailIsVerify = true;
 
       await user.save();
 
-      return {
+      return { 
         status: HttpStatus.OK,
-        message: 'Correo verificado exitosamente',
-      };
-    } catch (err) {
-      throw new ForbiddenException('Token invalido o expirado');
+        message: 'Se ha verificado con exito la cuenta'
+      }
     }
+
+    throw new ConflictException({
+      message: 'El codigo es invalido',
+      error: 'conflict'
+    });
   }
 
   // TODO: Revocacion de cookies (session)

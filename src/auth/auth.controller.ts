@@ -1,8 +1,9 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ForgotPasswordDto, ResetPasswordDto } from './auth.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from '../dto/restauration.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
+import { ActivationDto } from 'src/dto/activation.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -28,9 +29,9 @@ export class AuthController {
     return await this.authService.reset_password(resetPasswordDto);
   }
 
-  @Get('verify/otp/code')
-  async verify_email(@Query('otp') otp: string) {
-    return await this.authService.verify_email(otp);
+  @Post('verify/otp/code')
+  async verify_email(@Body() activationDto: ActivationDto) {
+    return await this.authService.verify_email(activationDto);
   }
   
 

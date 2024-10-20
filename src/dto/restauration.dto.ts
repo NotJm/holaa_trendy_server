@@ -1,6 +1,5 @@
 import { Prop } from "@nestjs/mongoose";
-import { IsEmail, IsNotEmpty, IsString, Matches, MinLength } from "class-validator";
-
+import { IsEmail, IsNotEmpty, IsString, MinLength } from "class-validator";
 
 export class ForgotPasswordDto {
     @Prop({ required: true })
@@ -19,9 +18,3 @@ export class ResetPasswordDto {
     @MinLength(8, { message: "La contraseña debe tener al menos 8 caracteres "})
     new_password: string
 }
-export class SendEmailVerificationDto {
-    @Prop({ required: true })
-    @IsEmail({}, { message: "Por favor, proporciona un correo valido" })
-    email: string;
-}
-

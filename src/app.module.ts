@@ -1,3 +1,4 @@
+import { OtpService } from './services/otp.service';
 import { AuthModule } from './auth/auth.module';
 import {
   MiddlewareConsumer,
@@ -8,13 +9,13 @@ import {
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CorsMiddleware } from './cors.middleware';
-import { AuthController } from './auth/auth.controller';
-import { AuthService } from './auth/auth.service';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 @Module({
   imports: [
+    AuthModule,
+
     ConfigModule.forRoot({ isGlobal: true }),
 
     MongooseModule.forRootAsync({
@@ -25,11 +26,10 @@ import { AppService } from './app.service';
       }),
       inject: [ConfigService],
     }),
-
-    AuthModule,
   ],
   controllers: [AppController], 
-  providers: [AppService], 
+  providers: [
+        OtpService, AppService], 
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

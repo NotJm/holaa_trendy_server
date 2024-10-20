@@ -37,11 +37,11 @@ export class EmailService {
   async send_code_verfication(otpCode: string, email: string) {
     await this.transporter.sendMail({
       to: email,
-      subject: '📧 Verificación de Cuenta - HOLAA',
+      subject: '📧 Verificación de Cuenta - HOLAA-Trendy',
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto;">
           <div style="background-color: #0A1B39; padding: 20px; border-radius: 10px 10px 0 0; color: white; text-align: center;">
-            <h2>¡Bienvenido a <strong>HOLAA</strong>!</h2>
+            <h2>¡Bienvenido a <strong>HOLAA<sub>Trendy</sub></strong>!</h2>
           </div>
           <div style="background-color: white; padding: 20px; border-radius: 0 0 10px 10px; color: #333;">
             <p>Estimado usuario,</p>
@@ -63,7 +63,7 @@ export class EmailService {
             </p>
             <p style="font-size: 14px;">Si no realizó esta solicitud, puede ignorar este mensaje.</p>
             <p>Atentamente,</p>
-            <p><strong>El equipo de HOLAA</strong></p>
+            <p><strong>El equipo de HOLAA-Trendy</strong></p>
           </div>
         </div>
       `,
