@@ -1,3 +1,4 @@
+import { LogService } from './services/log.service';
 import { AdminModule } from './admin/admin.module';
 import { AdminService } from './admin/admin.service';
 import { AdminController } from './admin/admin.controller';
@@ -43,7 +44,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+        LogService, AppService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
