@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import helmet from 'helmet';
 import csurf from 'csurf';
 import xss from 'xss-clean';
+import cookieParse from 'cookie-parser';
 
 
 async function bootstrap() {
@@ -22,10 +23,13 @@ async function bootstrap() {
   app.enableCors({
     origin: "http://localhost:4200", 
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', 
-    credentials: true, 
+    credentials: true,
+    
   });
 
   app.use(xss()); 
+
+  app.use(cookieParse());
 
   app.use(helmet());
 

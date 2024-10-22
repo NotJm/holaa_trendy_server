@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Incident, IncidentDocument } from '../schemas/incident.schema';
+import { Incident, IncidentDocument } from './schemas/incident.schema';
 import { CloseIncidentDto, UsernameIsBlockedDto } from './incident.dto';
 
 @Injectable()

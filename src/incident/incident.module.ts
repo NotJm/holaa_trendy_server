@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Incident, IncidentSchema } from '../schemas/incident.schema';
+import { Incident, IncidentSchema } from './schemas/incident.schema';
 import { IncidentController } from './incident.controller';
 import { IncidentService } from './incident.service';
 

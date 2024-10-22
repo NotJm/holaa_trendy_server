@@ -260,31 +260,32 @@ export class AuthService {
     const { email, otp } = activationDto;
 
     const isValid = this.otpService.verifyOTP(otp);
-    if (isValid) {
 
-      const user = await this.userModel.findOne({ email });
-
-      if(!user) {
-        throw new BadRequestException({
-          message: 'El correo no estra registrado',
-          error: 'BadRequest',
-        });
-      }
-
-      user.emailIsVerify = true;
-
-      await user.save();
-
-      return { 
-        status: HttpStatus.OK,
-        message: 'Se ha verificado con exito la cuenta'
-      }
+    if (!isValid) {
+      throw new ConflictException({
+        message: 'El código es inválido',
+        error: 'Conflict',
+      });
     }
 
-    throw new ConflictException({
-      message: 'El codigo es invalido',
-      error: 'conflict'
-    });
+    const user = await this.userModel.findOne({ email });
+
+    if(!user) {
+      throw new BadRequestException({
+        message: 'El correo no estra registrado',
+        error: 'BadRequest',
+      });
+    }
+
+    user.emailIsVerify = true;
+
+    await user.save();
+
+    return { 
+      status: HttpStatus.OK,
+      message: 'Se ha verificado con exito la cuenta'
+      }
+    
   }
 
   // TODO: Revocacion de cookies (session)
