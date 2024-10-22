@@ -5,6 +5,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import mongoose from 'mongoose';
 import helmet from 'helmet';
+import csurf from 'csurf';
+import xss from 'xss-clean';
 
 
 async function bootstrap() {
@@ -12,7 +14,10 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true
+  }));
 
   app.enableCors({
     origin: "*", 
@@ -20,7 +25,11 @@ async function bootstrap() {
     credentials: true, 
   });
 
+  app.use(xss()); 
+
   app.use(helmet());
+
+  app.use(csurf({ cookie: true }));
 
   app.use(
     cookieSession({
@@ -31,9 +40,9 @@ async function bootstrap() {
       ],
       cookie: {
         httpOnly: true,
-        secure: true,
+        secure: false,
         sameSite: 'strict',
-        maxAge: 3600000
+        maxAge: 24 * 60 * 60 * 1000
       }
     })
   )

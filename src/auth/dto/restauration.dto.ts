@@ -13,6 +13,7 @@ export class ResetPasswordDto {
     @IsNotEmpty({ message: "Por favor, el token es obligatorio" })
     token: string;
 
+
     @Prop({ required: true })
     @IsString()
     @MinLength(8, { message: "La contraseña debe tener al menos 8 caracteres "})

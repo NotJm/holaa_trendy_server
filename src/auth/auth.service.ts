@@ -8,23 +8,24 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from '../schemas/user.schema';
+import { User, UserDocument } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
-import { ForgotPasswordDto, ResetPasswordDto } from '../dto/restauration.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/restauration.dto';
 import { IncidentService } from '../incident/incident.service';
 import { EmailService } from '../services/email.service';
 import { PwnedService } from '../services/pwned.service';
 import { ZxcvbnService } from '../services/zxcvbn.service';
-import { randomBytes } from 'crypto';
-import { LoginDto } from '../dto/login.dto';
-import { RegisterDto } from '../dto/register.dto';
+import { v4 as uuidv4 } from 'uuid';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { OtpService } from '../services/otp.service';
-import { ActivationDto } from '../dto/activation.dto';
+import { ActivationDto } from './dto/activation.dto';
+import { ChangePasswordDto } from './dto/change.password.dto';
 
 @Injectable()
 export class AuthService {
   private generateSessionID(): string {
-    return randomBytes(32).toString('hex');
+    return uuidv4();
   }
 
   constructor(
@@ -39,7 +40,7 @@ export class AuthService {
 
   // Registro de usuario, hasheo de contraseña
   async register(registerDto: RegisterDto): Promise<any> {
-    const { sessionId, username, password, email } = registerDto;
+    const { username, password, email } = registerDto;
 
     const user = await this.userModel.findOne({ email, username });
 
@@ -76,10 +77,10 @@ export class AuthService {
 
     // Crear esquema para la base de datos
     const newUser = new this.userModel({
-      sessionID: sessionId,
       username: username,
       password: hashedPassword,
       email: email,
+      permissions: ['edit_profile', 'change_password']
     });
 
     // Enviar email de verificacion
@@ -177,7 +178,7 @@ export class AuthService {
 
     const restToken = this.jwtService.sign(
       { id: user.id },
-      { expiresIn: '1h' },
+      { expiresIn: '15m' },
     );
 
     await this.emailService.sendPasswordResetEmail(email, restToken);
@@ -185,14 +186,14 @@ export class AuthService {
     return { message: 'Se ha enviado un correo con el enlace de recuperación' };
   }
 
-  // TODO: Restablecer la contraseña
+  // Restablecer la contraseña
   async reset_password(resetPasswordDto: ResetPasswordDto): Promise<any> {
     const { token, new_password } = resetPasswordDto;
 
     try {
       const decoded = this.jwtService.verify(token);
 
-      // TODO: Buscar el usuario en base al token decodificado
+      // Buscar el usuario en base al token decodificado
       const user = await this.userModel.findById(decoded.id);
 
       if (!user) {
@@ -211,6 +212,34 @@ export class AuthService {
     } catch (err) {
       throw new BadRequestException('Token invalido o expirado');
     }
+  }
+
+  // Cambio de contraseña
+  async change_password(changePasswordDto: ChangePasswordDto) {
+    const { username, password, new_password } = changePasswordDto;
+
+    const user = await this.userModel.findOne( { username });
+
+    const isPasswordMatching = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordMatching) {
+      throw new BadRequestException({
+        message: 'La contraseña actual es incorrecta',
+        error: 'BadRequest',
+      })
+    }
+
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    user.password = hashedPassword;
+
+    await user.save();
+
+    return {
+      status: HttpStatus.OK,
+      message: "Contraseña cambia exitosamente"
+    }
+
   }
 
   // Enviar correo de verificacion por OTP

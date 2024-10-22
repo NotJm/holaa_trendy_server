@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import { IsArray, IsDate, IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
@@ -28,6 +28,18 @@ export class User {
 
   @Prop({ default: 'user'})
   role: string
+
+  @Prop({ default: []})
+  @IsArray()
+  permissions: string[];
+
+  @Prop({ default: Date.now })
+  @IsDate()
+  create_date: Date;
+
+  @Prop({ default: Date.now })
+  @IsDate()
+  update_date: Date
 }
 
 export const UserSchema = SchemaFactory.createForClass(User).set('versionKey', false);

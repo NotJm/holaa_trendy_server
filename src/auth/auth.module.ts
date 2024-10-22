@@ -1,7 +1,7 @@
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthService } from './auth.service';
 import { Module } from '@nestjs/common';
-import { User, UserSchema } from '../schemas/user.schema';
+import { User, UserSchema } from './schemas/user.schema';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { IncidentModule } from '../incident/incident.module';
@@ -10,8 +10,9 @@ import { EmailService } from '../services/email.service';
 import { PwnedService } from 'src/services/pwned.service';
 import { ZxcvbnService } from 'src/services/zxcvbn.service';
 import { HttpModule } from '@nestjs/axios';
-import { AuthGateway } from './auth.gateway';
 import { OtpService } from 'src/services/otp.service';
+import { RoleGuard } from './guard/role.guard';
+import { PermissionGuard } from './guard/permission.guard';
 @Module({
   imports: [
     HttpModule,
@@ -25,7 +26,7 @@ import { OtpService } from 'src/services/otp.service';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('SECRET_KEY'),
-        signOptions: { expiresIn: '1h' },
+        signOptions: { expiresIn: '15m' }, 
       }),
       inject: [ConfigService],
     }),
@@ -37,7 +38,6 @@ import { OtpService } from 'src/services/otp.service';
     EmailService,
     PwnedService,
     ZxcvbnService,
-    AuthGateway,
     OtpService,
   ],
   exports: [AuthService],

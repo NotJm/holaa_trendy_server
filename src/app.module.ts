@@ -1,3 +1,11 @@
+import { AdminModule } from './admin/admin.module';
+import { AdminService } from './admin/admin.service';
+import { AdminController } from './admin/admin.controller';
+import { DrModule } from './dr/dr.module';
+import { DrController } from './dr/dr.controller';
+import { UsersModule } from './users/users.module';
+import { UsersService } from './users/users.service';
+import { UsersController } from './users/users.controller';
 import { OtpService } from './services/otp.service';
 import { AuthModule } from './auth/auth.module';
 import {
@@ -27,9 +35,8 @@ import { AppService } from './app.service';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AppController], 
-  providers: [
-        OtpService, AppService], 
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
