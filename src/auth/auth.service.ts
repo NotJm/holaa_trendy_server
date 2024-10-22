@@ -21,6 +21,7 @@ import { RegisterDto } from './dto/register.dto';
 import { OtpService } from '../services/otp.service';
 import { ActivationDto } from './dto/activation.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
+import { LogService } from '../services/log.service'; // Asegúrate de importar LogService
 
 @Injectable()
 export class AuthService {
@@ -35,126 +36,143 @@ export class AuthService {
     private emailService:     EmailService,
     private pwnedservice:     PwnedService,
     private zxcvbnService:    ZxcvbnService,
-    private otpService:       OtpService
+    private otpService:       OtpService,
+    private logService: LogService // Inyectamos LogService
   ) {}
 
   // Registro de usuario, hasheo de contraseña
   async register(registerDto: RegisterDto): Promise<any> {
     const { username, password, email } = registerDto;
-
+  
     const user = await this.userModel.findOne({ email, username });
-
-    // En caso de que el usuario exista se manda una excepcion de conflicto
+  
+    // En caso de que el usuario exista se manda una excepción de conflicto
     if (user) {
+      // Registrar evento de intento fallido de registro
+      await this.logService.logEvent('REGISTER_FAIL', `Intento de registro fallido: el usuario ${username} ya existe.`, user._id.toString());
+  
       throw new ConflictException({
         message: `El usuario '${user.username}' ya se encuentra registrado`,
         error: 'Conflict',
       });
     }
-
-    // Verificar si la contraseña es debil
+  
+    // Verificar si la contraseña es débil
     const zxcvbn = this.zxcvbnService.validatePassword(password);
-
+  
     if (zxcvbn) {
       throw new BadRequestException({
-        message: 'La contraseña ingresada, es debil',
-        error: 'BadRequest'
+        message: 'La contraseña ingresada, es débil',
+        error: 'BadRequest',
       });
     }
-
-    // Verificar si la contraseña comprometida
+  
+    // Verificar si la contraseña está comprometida
     const timesCommitted = await this.pwnedservice.verificationPassword(password);
-
+  
     if (timesCommitted > 0) {
       throw new BadRequestException({
         message: `La contraseña ya fue comprometida ${timesCommitted} veces`,
-        error: 'BadRequest'
+        error: 'BadRequest',
       });
     }
-
+  
     // Hashear contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
-
+  
     // Crear esquema para la base de datos
     const newUser = new this.userModel({
       username: username,
       password: hashedPassword,
       email: email,
-      permissions: ['edit_profile', 'change_password']
+      permissions: ['edit_profile', 'change_password'],
     });
-
-    // Enviar email de verificacion
+  
+    // Enviar email de verificación
     await this.send_email_verification(email);
-
+  
     // Guardar usuario
     await newUser.save();
-
+  
+    // Registrar evento de registro exitoso
+    await this.logService.logEvent('REGISTER_SUCCESS', `El usuario ${username} se ha registrado con éxito.`, newUser._id.toString());
+  
     return {
       status: HttpStatus.OK,
-      message:
-        'Gracias por registrarse, hemos enviado un link de activacion de cuenta a su correo',
+      message: 'Gracias por registrarse, hemos enviado un link de activación de cuenta a su correo',
     };
   }
+  
 
   // TODO: Login de usuario
   async login(loginDto: LoginDto): Promise<any> {
     const { username, password } = loginDto;
-
+  
     // Generar una sessionID
     const sessionId = this.generateSessionID();
-
-    // Primero nos aseguramos que si existe la el usuario
+  
+    // Primero nos aseguramos de que existe el usuario
     const user = await this.userModel.findOne({ username });
-
+  
     // Si el usuario no se encuentra registrado
     if (!user) {
+      // Registrar evento de intento de inicio de sesión con usuario inexistente
+      await this.logService.logEvent('LOGIN_FAIL', `Intento de inicio de sesión fallido: el usuario ${username} no está registrado.`, username);
+  
       throw new ConflictException(
-        `El usuario ${username} no esta registrado, Por favor registrese`,
+        `El usuario ${username} no está registrado, Por favor regístrese.`,
       );
     }
-
+  
     // Si el usuario no ha verificado su cuenta
     if (!user.emailIsVerify) {
       throw new ForbiddenException(
         'Estimado usuario, le solicitamos que verifique su cuenta para habilitar el acceso a nuestros servicios.',
       );
     }
-
+  
     // Verificar si el usuario tiene un incidente
     const userIncident = await this.incidentService.usernameIsBlocked({
       username,
     });
-
+  
     // Si el usuario tiene su cuenta bloqueada
     if (userIncident && userIncident.isBlocked) {
       throw new ForbiddenException(
         `Su cuenta ha sido bloqueada temporalmente. Podrá acceder nuevamente a las ${new Date(userIncident.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.`,
       );
     }
-
+  
     const isPasswordMatching = await bcrypt.compare(password, user.password);
-
+  
     if (!isPasswordMatching) {
-      // Añadir una incidencia mas por si se intenga loguear mal
+      // Registrar evento de intento fallido de inicio de sesión por contraseña incorrecta
+      await this.logService.logEvent('LOGIN_FAIL', `Intento de inicio de sesión fallido: contraseña incorrecta para el usuario ${username}.`, user._id.toString());
+  
+      // Añadir una incidencia más por si se intenta iniciar sesión incorrectamente
       await this.incidentService.loginFailedAttempt(username);
-
-      throw new ConflictException('Credenciales Incorrectas');
+  
+      throw new ConflictException('Credenciales incorrectas');
     }
-
+  
     user.sessionId = sessionId;
-
+  
     await user.save();
-
+  
     const payload = { username: user.username, sub: user.id };
-
+  
     const token = this.jwtService.sign(payload);
-
+  
+    // Registrar evento de inicio de sesión exitoso
+    await this.logService.logEvent('LOGIN_SUCCESS', `El usuario ${username} ha iniciado sesión con éxito.`, user._id.toString());
+  
     return {
       status: HttpStatus.OK,
-      message: 'Sesion Iniciada Exitosamente',
+      message: 'Sesión iniciada exitosamente',
       token: token,
     };
   }
+  
 
   // TODO: Cerrar Sesion
   async logout(userId: string): Promise<any> {
@@ -217,30 +235,36 @@ export class AuthService {
   // Cambio de contraseña
   async change_password(changePasswordDto: ChangePasswordDto) {
     const { username, password, new_password } = changePasswordDto;
-
-    const user = await this.userModel.findOne( { username });
-
+  
+    const user = await this.userModel.findOne({ username });
+  
     const isPasswordMatching = await bcrypt.compare(password, user.password);
-
+  
     if (!isPasswordMatching) {
+      // Registrar intento fallido de cambio de contraseña
+      await this.logService.logEvent('CHANGE_PASSWORD_FAIL', `Intento fallido de cambio de contraseña: la contraseña actual es incorrecta para el usuario ${username}.`, user._id.toString());
+  
       throw new BadRequestException({
         message: 'La contraseña actual es incorrecta',
         error: 'BadRequest',
-      })
+      });
     }
-
+  
     const hashedPassword = await bcrypt.hash(new_password, 10);
-
+  
     user.password = hashedPassword;
-
+  
     await user.save();
-
+  
+    // Registrar evento de cambio de contraseña exitoso
+    await this.logService.logEvent('CHANGE_PASSWORD_SUCCESS', `El usuario ${username} ha cambiado su contraseña con éxito.`, user._id.toString());
+  
     return {
       status: HttpStatus.OK,
-      message: "Contraseña cambia exitosamente"
-    }
-
+      message: 'Contraseña cambiada exitosamente',
+    };
   }
+  
 
   // Enviar correo de verificacion por OTP
   private async send_email_verification(email: string): Promise<any> {
