@@ -20,7 +20,7 @@ async function bootstrap() {
   }));
 
   app.enableCors({
-    origin: "*", 
+    origin: "http://localhost:4200", 
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', 
     credentials: true, 
   });
@@ -29,7 +29,7 @@ async function bootstrap() {
 
   app.use(helmet());
 
-  app.use(csurf({ cookie: true }));
+  // app.use(csurf({ cookie: true }));
 
   app.use(
     cookieSession({

@@ -19,10 +19,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CorsMiddleware } from './cors.middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
     AuthModule,
+
+    ThrottlerModule.forRoot([{
+      ttl: 60,
+      limit: 10, 
+    }]),
 
     ConfigModule.forRoot({ isGlobal: true }),
 
@@ -34,6 +40,7 @@ import { AppService } from './app.service';
       }),
       inject: [ConfigService],
     }),
+
   ],
   controllers: [AppController],
   providers: [AppService],
