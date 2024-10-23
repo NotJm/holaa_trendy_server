@@ -1,42 +1,60 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
 import { Incident, IncidentDocument } from './schemas/incident.schema';
 import { CloseIncidentDto, UsernameIsBlockedDto } from './incident.dto';
 
 @Injectable()
 export class IncidentService {
-    constructor(@InjectModel(Incident.name) private incidentModel: Model<IncidentDocument>) {}
+    private readonly maxFailedAttempts: number;
+    private readonly blockDuration: number;
+    private readonly tokenLifetime: number;
+    private readonly verificationMessage: string;
 
-    // TODO: Registrar una nueva incidencia
+    constructor(
+        @InjectModel(Incident.name) private incidentModel: Model<IncidentDocument>,
+        private readonly configService: ConfigService
+    ) {
+        this.maxFailedAttempts = this.configService.get<number>('maxFailedAttempts');
+        this.blockDuration = this.configService.get<number>('blockDuration');
+        this.tokenLifetime = this.configService.get<number>('tokenLifetime');
+        this.verificationMessage = this.configService.get<string>('verificationMessage');
+    }
+
+    // los intentos fallidos
     async loginFailedAttempt(username: string): Promise<Incident> {
         const incident = await this.incidentModel.findOne({ username });
+        const now = new Date();
 
         if (incident) {
-            const now = new Date();
-
+            // Si la cuenta está bloqueada y el bloqueo no ha expirado
             if (incident.isBlocked && now < incident.blockExpiresAt) {
                 throw new ForbiddenException(
-                    `La cuenta esta bloqueada. Intentalo nuevamente despues de ${new Date(incident.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
-                )
+                    `La cuenta está bloqueada. Inténtalo nuevamente después de ${new Date(incident.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+                );
             }
 
+            // Si el bloqueo ha expirado, reiniciar el contador de intentos
             if (incident.isBlocked && now >= incident.blockExpiresAt) {
-                incident.failedAttempts = 0;  // Reiniciar contador
-                incident.isBlocked = false;   // Desbloquear cuenta
-                incident.blockExpiresAt = null; // Limpiar fecha de bloqueo
+                incident.failedAttempts = 0;
+                incident.isBlocked = false;
+                incident.blockExpiresAt = null;
             }
 
+            // Incrementar el número de intentos fallidos
             incident.failedAttempts += 1;
             incident.lastAttempt = now;
 
-            if (incident.failedAttempts > 5) {
+            // Bloquear si excede el número máximo de intentos fallidos
+            if (incident.failedAttempts >= this.maxFailedAttempts) {
                 incident.isBlocked = true;
-                incident.blockExpiresAt = new Date(now.getTime() + 20 * 60 * 1000);
+                incident.blockExpiresAt = new Date(now.getTime() + this.blockDuration * 60 * 1000); // minutos
             }
 
             return incident.save();
         } else {
+            // Si no existe una incidencia para ese usuario, crearla
             const newIncident = new this.incidentModel({
                 username: username,
                 failedAttempts: 1,
@@ -46,11 +64,34 @@ export class IncidentService {
         }
     }
 
-
-    // Buscar si el usuario tiene bloqueada la cuenta
+    // Ver si un usuario está bloqueado
     async usernameIsBlocked(usernameIsBlockedDto: UsernameIsBlockedDto): Promise<Incident> {
         const { username } = usernameIsBlockedDto;
-        const incident = await this.incidentModel.findOne({ username });
-        return incident;
+        return this.incidentModel.findOne({ username });
+    }
+
+    // Obtener lista de usuarios bloqueados en los últimos 'n' días
+    async getBlockedUsers(days: number): Promise<Incident[]> {
+        const sinceDate = new Date();
+        sinceDate.setDate(sinceDate.getDate() - days);
+
+        return this.incidentModel.find({
+            isBlocked: true,
+            blockExpiresAt: { $gte: sinceDate },
+        }).exec();
+    }
+
+    // Obtener configuración de verificación
+    getVerificationConfig() {
+        return {
+            tokenLifetime: this.tokenLifetime,
+            verificationMessage: this.verificationMessage,
+        };
+    }
+
+    // Actualizar configuración de verificación
+    updateVerificationConfig(tokenLifetime: number, message: string) {
+        process.env.TOKEN_LIFETIME = tokenLifetime.toString();
+        process.env.VERIFICATION_MESSAGE = message;
     }
 }
