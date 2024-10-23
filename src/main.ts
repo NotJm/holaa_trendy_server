@@ -28,13 +28,13 @@ async function bootstrap() {
     
   });
 
-  app.use('/auth/login', rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    message: 'Demasiadas solicitudes, desde esta IP, intentelo mas tarde',
-    standardHeaders: true,
-    legacyHeaders: false,
-  }))
+  // app.use('/auth/login', rateLimit({
+  //   windowMs: 15 * 60 * 1000,
+  //   max: 5,
+  //   message: 'Demasiadas solicitudes, desde esta IP, intentelo mas tarde',
+  //   standardHeaders: true,
+  //   legacyHeaders: false,
+  // }))
 
   app.use(
     cookieSession({

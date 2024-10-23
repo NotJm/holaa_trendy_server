@@ -160,7 +160,7 @@ export class AuthService {
   
     await user.save();
   
-    const payload = { username: user.username, sub: user.id, role: user.role };
+    const payload = { username: user.username, sub: user.id, role: user.role, sessionId: sessionId };
   
     const token = this.jwtService.sign(payload, { expiresIn: '15m' });
   
