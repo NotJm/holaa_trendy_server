@@ -1,10 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { CreateDrDto } from 'src/dr/dto/create.dr.dto';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { DrService } from './dr.service';
-import { DrDocument } from 'src/dr/schemas/dr.schema';
-import { UpdateDrDto } from 'src/dr/dto/update.dr.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwtauth.guard';
+import { AdminGuard } from '../guards/admin.guard';
+import { CreateDrDto } from './dto/create.dr.dto';
+import { DrDocument } from './schemas/dr.schema';
+import { UpdateDrDto } from './dto/update.dr.dto';
+
 
 @Controller('dt')
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class DrController {
 
     constructor(private readonly drService: DrService) {}
@@ -16,7 +20,7 @@ export class DrController {
 
     @Get('get/all')
     async get_all_documents() {
-        return await this.drService.find_all();
+        return await this.drService.find_all(); 
     }
 
     @Delete('delete/dr/:id')

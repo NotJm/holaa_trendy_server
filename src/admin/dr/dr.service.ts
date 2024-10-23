@@ -1,9 +1,9 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CreateDrDto } from 'src/dr/dto/create.dr.dto';
-import { UpdateDrDto } from 'src/dr/dto/update.dr.dto';
-import { Dr, DrDocument } from 'src/dr/schemas/dr.schema';
+import { Dr, DrDocument } from './schemas/dr.schema';
+import { CreateDrDto } from './dto/create.dr.dto';
+import { UpdateDrDto } from './dto/update.dr.dto';
 
 @Injectable()
 export class DrService {
@@ -91,7 +91,6 @@ export class DrService {
 
         return await update_document.save();
     }
-
-
+    
 
 }

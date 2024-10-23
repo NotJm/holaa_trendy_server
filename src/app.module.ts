@@ -1,13 +1,6 @@
-import { LogService } from './services/log.service';
-import { AdminModule } from './admin/admin.module';
-import { AdminService } from './admin/admin.service';
-import { AdminController } from './admin/admin.controller';
-import { DrModule } from './dr/dr.module';
-import { DrController } from './dr/dr.controller';
+import { LogService } from './common/services/log.service';
+import { SocialModule } from './admin/social/social.module';
 import { UsersModule } from './users/users.module';
-import { UsersService } from './users/users.service';
-import { UsersController } from './users/users.controller';
-import { OtpService } from './services/otp.service';
 import { AuthModule } from './auth/auth.module';
 import {
   MiddlewareConsumer,
@@ -17,19 +10,15 @@ import {
 } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { CorsMiddleware } from './cors.middleware';
+import { CorsMiddleware } from './common/middleware/cors.middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
     AuthModule,
-
-    ThrottlerModule.forRoot([{
-      ttl: 60,
-      limit: 10, 
-    }]),
+    SocialModule,
+    UsersModule,
 
     ConfigModule.forRoot({ isGlobal: true }),
 

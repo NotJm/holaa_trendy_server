@@ -4,15 +4,15 @@ import { Module } from '@nestjs/common';
 import { User, UserSchema } from './schemas/user.schema';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
-import { IncidentModule } from '../incident/incident.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EmailService } from '../services/email.service';
-import { PwnedService } from 'src/services/pwned.service';
-import { ZxcvbnService } from 'src/services/zxcvbn.service';
+import { EmailService } from './service/email.service';
+import { PwnedService } from 'src/auth/service/pwned.service';
+import { ZxcvbnService } from 'src/auth/service/zxcvbn.service';
 import { HttpModule } from '@nestjs/axios';
-import { OtpService } from 'src/services/otp.service';
-import { RoleGuard } from './guard/role.guard';
-import { PermissionGuard } from './guard/permission.guard';
+import { OtpService } from 'src/auth/service/otp.service';
+import { LogService } from 'src/common/services/log.service';
+import { IncidentModule } from 'src/admin/incident/incident.module';
+
 @Module({
   imports: [
     HttpModule,
@@ -25,6 +25,7 @@ import { PermissionGuard } from './guard/permission.guard';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
+        global: true,
         secret: configService.get<string>('SECRET_KEY'),
         signOptions: { expiresIn: '15m' }, 
       }),
@@ -39,6 +40,7 @@ import { PermissionGuard } from './guard/permission.guard';
     PwnedService,
     ZxcvbnService,
     OtpService,
+    LogService
   ],
   exports: [AuthService],
 })

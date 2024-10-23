@@ -5,23 +5,24 @@ import {
   ForbiddenException,
   Injectable,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/restauration.dto';
-import { IncidentService } from '../incident/incident.service';
-import { EmailService } from '../services/email.service';
-import { PwnedService } from '../services/pwned.service';
-import { ZxcvbnService } from '../services/zxcvbn.service';
+import { EmailService } from './service/email.service';
+import { PwnedService } from './service/pwned.service';
+import { ZxcvbnService } from './service/zxcvbn.service';
 import { v4 as uuidv4 } from 'uuid';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { OtpService } from '../services/otp.service';
+import { OtpService } from './service/otp.service';
 import { ActivationDto } from './dto/activation.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
-import { LogService } from '../services/log.service'; // Asegúrate de importar LogService
+import { LogService } from '../common/services/log.service'; // Asegúrate de importar LogService
+import { IncidentService } from 'src/admin/incident/incident.service';
 
 @Injectable()
 export class AuthService {
@@ -37,11 +38,11 @@ export class AuthService {
     private pwnedservice:     PwnedService,
     private zxcvbnService:    ZxcvbnService,
     private otpService:       OtpService,
-    private logService: LogService // Inyectamos LogService
+    private logService:       LogService 
   ) {}
 
   // Registro de usuario, hasheo de contraseña
-  async register(registerDto: RegisterDto): Promise<any> {
+  async signIn(registerDto: RegisterDto): Promise<any> {
     const { username, password, email } = registerDto;
   
     const user = await this.userModel.findOne({ email, username });
@@ -85,7 +86,7 @@ export class AuthService {
       username: username,
       password: hashedPassword,
       email: email,
-      permissions: ['edit_profile', 'change_password'],
+      permissions: ['change_password'],
     });
   
     // Enviar email de verificación
@@ -105,7 +106,7 @@ export class AuthService {
   
 
   // TODO: Login de usuario
-  async login(loginDto: LoginDto): Promise<any> {
+  async logIn(loginDto: LoginDto): Promise<any> {
     const { username, password } = loginDto;
   
     // Generar una sessionID
@@ -159,9 +160,9 @@ export class AuthService {
   
     await user.save();
   
-    const payload = { username: user.username, sub: user.id };
+    const payload = { username: user.username, sub: user.id, role: user.role };
   
-    const token = this.jwtService.sign(payload);
+    const token = this.jwtService.sign(payload, { expiresIn: '15m' });
   
     // Registrar evento de inicio de sesión exitoso
     await this.logService.logEvent('LOGIN_SUCCESS', `El usuario ${username} ha iniciado sesión con éxito.`, user._id.toString());
@@ -171,6 +172,36 @@ export class AuthService {
       message: 'Sesión iniciada exitosamente',
       token: token,
     };
+  }
+
+  async refresh_access_token(token: string) {
+    try {
+      const decode = this.jwtService.verify(token);
+
+      const user = await this.userModel.findById(decode.sub);
+
+      if (!user) {
+        throw new UnauthorizedException('Usuario no encontrado');
+      }
+
+      const payload = {
+        username: user.username,
+        sub: user.id
+      }
+
+      const new_token = this.jwtService.sign(payload,{
+        expiresIn: '15m'
+      })
+
+      return {
+        status: HttpStatus.OK,
+        message: "Token refrescado con exito",
+        token: new_token
+      }
+
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
   
 

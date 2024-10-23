@@ -8,7 +8,7 @@ export class LogService {
 
   constructor() {
     // Definimos la ruta del archivo de logs
-    this.logFilePath = path.join(__dirname, '../../logs.txt'); // Cambia la ruta si lo deseas
+    this.logFilePath = path.join(__dirname, '../../logs.log'); // Cambia la ruta si lo deseas
   }
 
   // Método para registrar un evento en el archivo

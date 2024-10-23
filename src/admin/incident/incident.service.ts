@@ -46,22 +46,8 @@ export class IncidentService {
         }
     }
 
-    //TODO: Obtener una incidencia
-    async getOpenIncident(): Promise<Incident[]> {
-        return this.incidentModel.find({ status: 'open' }).exec();
-    }
 
-    //TODO: Cerrar una incidencia
-    async closeIncident(closeIncidentDto: CloseIncidentDto): Promise<Incident> {
-        const { username } = closeIncidentDto;
-        return this.incidentModel.findOneAndUpdate(
-            { username },
-            { status: 'close', failedAttempts: 0, isBlocked: false, blockExpiresAt: null },
-            { new: true},
-        ).exec();
-    }
-
-    //TODO: Buscar si el usuario tiene bloqueada la cuenta
+    // Buscar si el usuario tiene bloqueada la cuenta
     async usernameIsBlocked(usernameIsBlockedDto: UsernameIsBlockedDto): Promise<Incident> {
         const { username } = usernameIsBlockedDto;
         const incident = await this.incidentModel.findOne({ username });

@@ -1,8 +1,9 @@
-import cookieSession from 'cookie-session';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import cookieSession from 'cookie-session';
+import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
 import helmet from 'helmet';
 import csurf from 'csurf';
@@ -27,13 +28,13 @@ async function bootstrap() {
     
   });
 
-  app.use(xss()); 
-
-  app.use(cookieParse());
-
-  app.use(helmet());
-
-  // app.use(csurf({ cookie: true }));
+  app.use('/auth/login', rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: 'Demasiadas solicitudes, desde esta IP, intentelo mas tarde',
+    standardHeaders: true,
+    legacyHeaders: false,
+  }))
 
   app.use(
     cookieSession({
@@ -50,6 +51,14 @@ async function bootstrap() {
       }
     })
   )
+
+  app.use(xss()); 
+
+  app.use(cookieParse());
+
+  app.use(helmet());
+
+  // app.use(csurf({ cookie: true }));
 
   mongoose.set('sanitizeFilter', true);
 

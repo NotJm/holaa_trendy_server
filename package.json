@@ -35,14 +35,11 @@
         "class-sanitizer": "^1.0.1",
         "class-transformer": "^0.5.1",
         "class-validator": "^0.14.1",
-<<<<<<< HEAD
         "cookie-parser": "^1.4.7",
-=======
-        "cloudinary": "^2.5.1",
->>>>>>> 101d8ac3a184c9c482e94781edd315439b0fb15b
         "cookie-session": "^2.1.0",
         "csurf": "^1.11.0",
         "dotenv": "^16.4.5",
+        "express-rate-limit": "^7.4.1",
         "helmet": "^8.0.0",
         "mongoose": "^8.7.1",
         "nodemailer": "^6.9.15",

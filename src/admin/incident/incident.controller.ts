@@ -1,23 +1,20 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { IncidentService } from './incident.service';
 import { CloseIncidentDto, RegisterIncidentDto } from './incident.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwtauth.guard';
+import { AdminGuard } from 'src/admin/guards/admin.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
-@Controller()
+@UseGuards(JwtAuthGuard, AdminGuard)
+@Controller('incident')
 export class IncidentController {
     constructor(private readonly incidentService:IncidentService) {}
 
-    @Post('incident')
+    @Post('register')
+    @Roles('user')
     async registerFailedAttempt(@Body() registerIncidentDto: RegisterIncidentDto) {
         return this.incidentService.loginFailedAttempt(registerIncidentDto.username);
     }
 
-    @Get('open')
-    async getOpenIncident() {
-        return this.incidentService.getOpenIncident();
-    }
-
-    @Post('close')
-    async closeOpenIncident(@Body() closeIncidentDto: CloseIncidentDto) {
-        return this.incidentService.closeIncident(closeIncidentDto);
-    }
+    // @Post('')
 }
