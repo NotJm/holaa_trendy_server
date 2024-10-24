@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { IncidentService } from './incident.service';
 import { RegisterIncidentDto } from './incident.dto';
-import { JwtAuthGuard } from 'src/common/guards/jwtauth.guard';
-import { AdminGuard } from 'src/admin/guards/admin.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwtauth.guard';
+import { AdminGuard } from '../../admin/guards/admin.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('incident')

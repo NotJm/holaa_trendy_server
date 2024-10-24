@@ -23,7 +23,7 @@ import { OtpService } from './service/otp.service';
 import { ActivationDto } from './dto/activation.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
 import { LogService } from '../common/services/log.service'; // Asegúrate de importar LogService
-import { IncidentService } from 'src/admin/incident/incident.service';
+import { IncidentService } from '../admin/incident/incident.service';
 import { Response } from 'express';
 
 

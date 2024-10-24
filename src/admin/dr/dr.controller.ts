@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { DrService } from './dr.service';
-import { JwtAuthGuard } from 'src/common/guards/jwtauth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwtauth.guard';
 import { AdminGuard } from '../guards/admin.guard';
 import { CreateDrDto } from './dto/create.dr.dto';
 import { DrDocument } from './schemas/dr.schema';

@@ -89,7 +89,7 @@ export class IncidentService {
         };
     }
 
-    // Actualizar configuración de verificación
+    // Actualizar configuración de verificación  
     updateVerificationConfig(tokenLifetime: number, message: string) {
         process.env.TOKEN_LIFETIME = tokenLifetime.toString();
         process.env.VERIFICATION_MESSAGE = message;
