@@ -10,18 +10,8 @@ import { AuthService } from './auth.service';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/restauration.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-<<<<<<< HEAD
 import { ActivationDto } from 'src/auth/dto/activation.dto';
 import { Request } from 'express';
-=======
-import { ActivationDto } from '../auth/dto/activation.dto';
-import { ChangePasswordDto } from './dto/change.password.dto';
-import { Roles } from '../common/decorators/roles.decorator';
-import { JwtAuthGuard } from '../common/guards/jwtauth.guard';
-import { AuthGuard } from './guards/auth.guard';
-import { Response } from 'express';
-import { COOKIE_AGE } from '../common/constants/enviroment.contants';
->>>>>>> 2f52e8a68d935756f9c4ad75617f37270851cfac
 
 @Controller('auth')
 export class AuthController {

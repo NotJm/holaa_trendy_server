@@ -78,53 +78,29 @@ export class IncidentService {
   }
 
   // Obtener lista de usuarios bloqueados en los últimos 'n' días
-async getBlockedUsers(days: number): Promise<Incident[]> {
-    try {
-      // Obtener la fecha límite restando 'days' a la fecha actual
-      const now = new Date();
-      const sinceDate = new Date(now.setDate(now.getDate() - days));
-    
-      // Mostrar la fecha generada en los logs para verificación
-      console.log('Fecha límite para la consulta:', sinceDate);
-      console.log(sinceDate instanceof Date);  // Verificar que sea una fecha válida
-    
-      // Realizar la consulta para incidentes bloqueados
-      const blockedUsers = await this.incidentModel.find({
+  async getBlockedUsers(days: number): Promise<Incident[]> {
+    const dateThreshold = new Date();
+    dateThreshold.setDate(dateThreshold.getDate() - days);
+
+    return this.incidentModel
+      .find({
         isBlocked: true,
-        $and: [
-          { blockExpiresAt: { $ne: null } }, // Verifica que no sea null
-          { blockExpiresAt: { $gte: sinceDate } } // Luego verifica que sea mayor o igual a sinceDate
-        ]
-      }).exec();
-      
-    
-      // Si no hay usuarios bloqueados, retornar un array vacío
-      if (!blockedUsers || blockedUsers.length === 0) {
-        console.log(`No se encontraron usuarios bloqueados en los últimos ${days} días.`);
-        return [];
-      }
-    
-      // Retornar los usuarios bloqueados encontrados
-      return blockedUsers;
-  
-    } catch (error) {
-      console.error('Error al obtener usuarios bloqueados:', error);
-      throw new Error('Error al obtener usuarios bloqueados');
-    }
+        blockExpiresAt: { $gte: dateThreshold }, // Filtra usuarios cuyo bloqueo sigue vigente o recién expiró
+      })
+      .exec();
   }
-  
 
-    // Obtener configuración de verificación
-    getVerificationConfig() {
-        return {
-            tokenLifetime: this.tokenLifetime,
-            verificationMessage: this.verificationMessage,
-        };
-    }
+  // Obtener configuración de verificación
+  getVerificationConfig() {
+    return {
+      tokenLifetime: this.tokenLifetime,
+      verificationMessage: this.verificationMessage,
+    };
+  }
 
-    // Actualizar configuración de verificación  
-    updateVerificationConfig(tokenLifetime: number, message: string) {
-        process.env.TOKEN_LIFETIME = tokenLifetime.toString();
-        process.env.VERIFICATION_MESSAGE = message;
-    }
+  // Actualizar configuración de verificación
+  updateVerificationConfig(tokenLifetime: number, message: string) {
+    process.env.TOKEN_LIFETIME = tokenLifetime.toString();
+    process.env.VERIFICATION_MESSAGE = message;
+  }
 }
