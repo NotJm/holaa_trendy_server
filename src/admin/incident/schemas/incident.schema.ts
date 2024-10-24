@@ -21,7 +21,8 @@ export class Incident {
   @Prop({ default: false })
   isBlocked: boolean
 
-  @Prop({ type: Date })
+  @Prop({ default: null })
+  @IsDate()
   blockExpiresAt: Date; 
 
 
