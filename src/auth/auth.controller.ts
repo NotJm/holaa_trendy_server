@@ -10,7 +10,7 @@ import { AuthService } from './auth.service';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/restauration.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { ActivationDto } from 'src/auth/dto/activation.dto';
+import { ActivationDto } from '../auth/dto/activation.dto';
 import { Request } from 'express';
 
 @Controller('auth')
