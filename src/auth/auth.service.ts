@@ -21,7 +21,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { OtpService } from './service/otp.service';
-import { ActivationDto } from './dto/activation.dto';
+import { ActivationDto, ActivationDto2 } from './dto/activation.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
 import { LogService } from '../common/services/log.service'; // Asegúrate de importar LogService
 import { IncidentService } from '../admin/incident/incident.service';
@@ -267,7 +267,7 @@ export class AuthService {
   }
 
   async reset_password(resetPasswordDto: ResetPasswordDto): Promise<any> {
-    const { email, otpCode, new_password } = resetPasswordDto;
+    const { email, new_password } = resetPasswordDto;
 
     // Buscar el usuario por su email
     const user = await this.userModel.findOne({ email });
@@ -372,6 +372,24 @@ export class AuthService {
     return {
       status: HttpStatus.OK,
       message: 'Se ha verificado con exito la cuenta',
+    };
+  }
+
+  async verify_otp(activationDto: ActivationDto2): Promise<any> {
+    const { otp } = activationDto;
+
+    const isValid = this.otpService.verifyOTP(otp);
+
+    if (!isValid) {
+      throw new ConflictException({
+        message: 'El código es inválido',
+        error: 'Conflict',
+      });
+    }
+
+    return {
+      status: HttpStatus.OK,
+      message: 'Se ha verificado con exito el OTP',
     };
   }
 

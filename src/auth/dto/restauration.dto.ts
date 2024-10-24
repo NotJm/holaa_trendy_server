@@ -12,9 +12,6 @@ export class ResetPasswordDto {
   @IsNotEmpty({ message: 'El correo electrónico es obligatorio' })
   email: string;
 
-  @IsString()
-  @IsNotEmpty({ message: 'El código OTP es obligatorio' })
-  otpCode: string;
 
   @IsString()
   @MinLength(8, {

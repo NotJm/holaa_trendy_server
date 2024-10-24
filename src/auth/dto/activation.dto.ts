@@ -8,3 +8,8 @@ export class ActivationDto {
     @IsString({ message: "Por favor, proporciona un codigo otp valido" })
     otp: string;
 }
+
+export class ActivationDto2 {
+    @IsString({ message: "Por favor, proporciona un codigo otp valido" })
+    otp: string;
+}

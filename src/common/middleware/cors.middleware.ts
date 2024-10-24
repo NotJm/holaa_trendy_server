@@ -4,7 +4,7 @@ import { Request, Response, NextFunction } from 'express';
 @Injectable()
 export class CorsMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    const allowedOrigin = 'https://slategray-jay-602961.hostingersite.com/';  // Cambia esto al origen de tu frontend
+    const allowedOrigin = 'http://localhost:4200';  // Cambia esto al origen de tu frontend
 
     // Establecer el origen permitido de forma explícita
     res.header('Access-Control-Allow-Origin', allowedOrigin);

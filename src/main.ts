@@ -3,10 +3,8 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import cookieSession from 'cookie-session';
-import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
 import helmet from 'helmet';
-import csurf from 'csurf';
 import xss from 'xss-clean';
 import cookieParse from 'cookie-parser';
 import { COOKIE_AGE } from './common/constants/enviroment.contants';
@@ -23,7 +21,7 @@ async function bootstrap() {
   }));
 
   app.enableCors({
-    origin: "https://slategray-jay-602961.hostingersite.com/", 
+    origin: "http://localhost:4200", 
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', 
     credentials: true,
     
