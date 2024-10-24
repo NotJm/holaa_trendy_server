@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import csurf from 'csurf';
 import xss from 'xss-clean';
 import cookieParse from 'cookie-parser';
+import { COOKIE_AGE } from './common/constants/enviroment.contants';
 
 
 async function bootstrap() {
@@ -28,13 +29,6 @@ async function bootstrap() {
     
   });
 
-  // app.use('/auth/login', rateLimit({
-  //   windowMs: 15 * 60 * 1000,
-  //   max: 5,
-  //   message: 'Demasiadas solicitudes, desde esta IP, intentelo mas tarde',
-  //   standardHeaders: true,
-  //   legacyHeaders: false,
-  // }))
 
   app.use(
     cookieSession({
@@ -46,8 +40,8 @@ async function bootstrap() {
       cookie: {
         httpOnly: true,
         secure: false,
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000
+        sameSite: 'lax',
+        maxAge: COOKIE_AGE
       }
     })
   )
@@ -57,8 +51,6 @@ async function bootstrap() {
   app.use(cookieParse());
 
   app.use(helmet());
-
-  // app.use(csurf({ cookie: true }));
 
   mongoose.set('sanitizeFilter', true);
 

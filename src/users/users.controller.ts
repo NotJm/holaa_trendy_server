@@ -11,8 +11,8 @@ export class UsersController {
 
     constructor(private userService: UsersService) {}
 
-    @UseGuards(JwtAuthGuard, AdminGuard)
-    @Roles('admin')
+    // @UseGuards(JwtAuthGuard, AdminGuard)
+    // @Roles('admin')
     @Get('get/all')
     async findAll() {
         return this.userService.findAll();

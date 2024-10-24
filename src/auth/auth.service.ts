@@ -7,6 +7,7 @@ import {
   HttpStatus,
   UnauthorizedException,
   Req,
+  Res,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -23,8 +24,9 @@ import { OtpService } from './service/otp.service';
 import { ActivationDto } from './dto/activation.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
 import { LogService } from '../common/services/log.service'; // Asegúrate de importar LogService
-import { IncidentService } from '../admin/incident/incident.service';
-import { Response } from 'express';
+import { IncidentService } from 'src/admin/incident/incident.service';
+import { Request, Response } from 'express';
+import { COOKIE_AGE } from 'src/common/constants/enviroment.contants';
 
 
 @Injectable()
@@ -109,7 +111,7 @@ export class AuthService {
   
 
   // Manejo de login del usuario
-  async logIn(loginDto: LoginDto): Promise<any> {
+  async logIn(loginDto: LoginDto, @Res() res: Response): Promise<any> {
     // Obtenemos los datos importantes
     const { username, password } = loginDto;
   
@@ -177,9 +179,22 @@ export class AuthService {
       `El usuario ${username} ha iniciado sesión con éxito.`, user._id.toString()
     );  
 
-    return token;
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      maxAge: COOKIE_AGE,
+      path: '/'
+    });
+
+    return {
+      status: HttpStatus.OK,
+      message: 'Sesión iniciada exitosamente',
+    };
+
     
   }
+
 
   async refreshAccessToken(token: string) {
     try {
@@ -211,13 +226,7 @@ export class AuthService {
     }
   }
   
-
-  // Cerrar Sesion
-  async logOut(res: Response): Promise<any> {
-    res.clearCookie('token');
-  }
-
-  // TODO: Olvidar Contraseña
+  // Olvidar Contraseña
   async forgot_password(forgotPasswordDto: ForgotPasswordDto): Promise<any> {
     const { email } = forgotPasswordDto;
 
@@ -298,7 +307,6 @@ export class AuthService {
     };
   }
   
-
   // Enviar correo de verificacion por OTP
   private async send_email_verification(email: string): Promise<any> {
 
@@ -345,7 +353,28 @@ export class AuthService {
     
   }
 
-  // TODO: Revocacion de cookies (session)
+  // Verificacion token
+  async verify_token(@Req() req: Request) {
+    const token = req.cookies['token'];
+
+    console.log('cookies ', req.cookies);
+
+    console.log('token ', token);
+  
+      if (!token) {
+        return {
+          message: 'Autorizacion no vigente',
+          authenticate: false,
+        };
+      }
+  
+      return {
+        message: 'Autorizacion vigente',
+        authenticate: true,
+      };
+  }
+
+  // Revocacion de cookies (session)
   private async revokeSessions(userId: string): Promise<any> {
     await this.userModel.updateOne(
       { _id: userId },

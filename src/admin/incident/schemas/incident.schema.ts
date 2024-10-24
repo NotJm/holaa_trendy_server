@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { IsDate } from 'class-validator';
 import { Document } from 'mongoose';
 
 export type IncidentDocument = Incident & Document;
@@ -20,7 +21,8 @@ export class Incident {
   @Prop({ default: false })
   isBlocked: boolean
 
-  @Prop({ default: null })
+  @Prop()
+  @IsDate()
   blockExpiresAt: Date; 
 
 
