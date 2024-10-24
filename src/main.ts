@@ -23,7 +23,7 @@ async function bootstrap() {
   }));
 
   app.enableCors({
-    origin: "http://localhost:4200", 
+    origin: "https://slategray-jay-602961.hostingersite.com/", 
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', 
     credentials: true,
     
