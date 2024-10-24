@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/common/guards/jwtauth.guard';
-import { AdminGuard } from 'src/admin/guards/admin.guard';
+import { JwtAuthGuard } from '../../common/guards/jwtauth.guard';
+import { AdminGuard } from '../../admin/guards/admin.guard';
 import { SocialService } from './social.service';
 import { CreateSocialSiteDto } from './dto/create.social.dto';
 import { updateSocialSiteDto } from './dto/update.social.dto';
