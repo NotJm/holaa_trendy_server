@@ -6,6 +6,7 @@ import {
   Injectable,
   HttpStatus,
   UnauthorizedException,
+  Req,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -23,6 +24,8 @@ import { ActivationDto } from './dto/activation.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
 import { LogService } from '../common/services/log.service'; // Asegúrate de importar LogService
 import { IncidentService } from 'src/admin/incident/incident.service';
+import { Response } from 'express';
+
 
 @Injectable()
 export class AuthService {
@@ -105,8 +108,9 @@ export class AuthService {
   }
   
 
-  // TODO: Login de usuario
+  // Manejo de login del usuario
   async logIn(loginDto: LoginDto): Promise<any> {
+    // Obtenemos los datos importantes
     const { username, password } = loginDto;
   
     // Generar una sessionID
@@ -160,21 +164,24 @@ export class AuthService {
   
     await user.save();
   
-    const payload = { username: user.username, sub: user.id, role: user.role, sessionId: sessionId };
+    const payload = { 
+      sessionId: sessionId,
+      user: user, 
+    };
   
     const token = this.jwtService.sign(payload, { expiresIn: '15m' });
-  
+
     // Registrar evento de inicio de sesión exitoso
-    await this.logService.logEvent('LOGIN_SUCCESS', `El usuario ${username} ha iniciado sesión con éxito.`, user._id.toString());
-  
-    return {
-      status: HttpStatus.OK,
-      message: 'Sesión iniciada exitosamente',
-      token: token,
-    };
+    await this.logService.logEvent(
+      'LOGIN_SUCCESS', 
+      `El usuario ${username} ha iniciado sesión con éxito.`, user._id.toString()
+    );  
+
+    return token;
+    
   }
 
-  async refresh_access_token(token: string) {
+  async refreshAccessToken(token: string) {
     try {
       const decode = this.jwtService.verify(token);
 
@@ -205,14 +212,9 @@ export class AuthService {
   }
   
 
-  // TODO: Cerrar Sesion
-  async logout(userId: string): Promise<any> {
-    await this.revokeSessions(userId);
-
-    return {
-      status: HttpStatus.OK,
-      message: 'Sesion Cerrada Exitosamente',
-    };
+  // Cerrar Sesion
+  async logOut(res: Response): Promise<any> {
+    res.clearCookie('token');
   }
 
   // TODO: Olvidar Contraseña
