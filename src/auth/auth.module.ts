@@ -6,12 +6,12 @@ import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EmailService } from './service/email.service';
-import { PwnedService } from 'src/auth/service/pwned.service';
-import { ZxcvbnService } from 'src/auth/service/zxcvbn.service';
+import { PwnedService } from '../auth/service/pwned.service';
+import { ZxcvbnService } from '../auth/service/zxcvbn.service';
 import { HttpModule } from '@nestjs/axios';
-import { OtpService } from 'src/auth/service/otp.service';
-import { LogService } from 'src/common/services/log.service';
-import { IncidentModule } from 'src/admin/incident/incident.module';
+import { OtpService } from '../auth/service/otp.service';
+import { LogService } from '../common/services/log.service';
+import { IncidentModule } from '../admin/incident/incident.module';
 
 @Module({
   imports: [

@@ -124,9 +124,36 @@ async getBlockedUsers(days: number): Promise<Incident[]> {
     };
   }
 
+<<<<<<< HEAD
   // Actualizar configuración de verificación
   updateVerificationConfig(tokenLifetime: number, message: string) {
     process.env.TOKEN_LIFETIME = tokenLifetime.toString();
     process.env.VERIFICATION_MESSAGE = message;
   }
+=======
+    // Obtener lista de usuarios bloqueados en los últimos 'n' días
+    async getBlockedUsers(days: number): Promise<Incident[]> {
+        const sinceDate = new Date();
+        sinceDate.setDate(sinceDate.getDate() - days);
+
+        return this.incidentModel.find({
+            isBlocked: true,
+            blockExpiresAt: { $gte: sinceDate },
+        }).exec();
+    }
+
+    // Obtener configuración de verificación
+    getVerificationConfig() {
+        return {
+            tokenLifetime: this.tokenLifetime,
+            verificationMessage: this.verificationMessage,
+        };
+    }
+
+    // Actualizar configuración de verificación  
+    updateVerificationConfig(tokenLifetime: number, message: string) {
+        process.env.TOKEN_LIFETIME = tokenLifetime.toString();
+        process.env.VERIFICATION_MESSAGE = message;
+    }
+>>>>>>> 2f52e8a68d935756f9c4ad75617f37270851cfac
 }
