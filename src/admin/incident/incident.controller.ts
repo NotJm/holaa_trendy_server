@@ -5,35 +5,35 @@ import { JwtAuthGuard } from 'src/common/guards/jwtauth.guard';
 import { AdminGuard } from 'src/admin/guards/admin.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 
-@UseGuards(JwtAuthGuard, AdminGuard)
-@Controller('incident')
+// @UseGuards(JwtAuthGuard, AdminGuard)
+@Controller('incidents')
 export class IncidentController {
     constructor(private readonly incidentService: IncidentService) {}
 
     // Registrar intento fallido de login
     @Post('register')
-    @Roles('user')
+    // @Roles('user')
     async registerFailedAttempt(@Body() registerIncidentDto: RegisterIncidentDto) {
         return this.incidentService.loginFailedAttempt(registerIncidentDto.username);
     }
 
     // Obtener usuarios bloqueados en los últimos n días
     @Get('blocked-users')
-    @Roles('admin')
+    // @Roles('admin')
     async getBlockedUsers(@Query('days') days: number = 30) {
         return this.incidentService.getBlockedUsers(days);
     }
 
     // Obtener la configuración actual de verificación
     @Get('verification-config')
-    @Roles('admin')
+    // @Roles('admin')
     getVerificationConfig() {
         return this.incidentService.getVerificationConfig();
     }
 
     // Actualizar configuración de tiempo de vida del token y mensaje de verificación
     @Post('update-verification')
-    @Roles('admin')
+    // @Roles('admin')
     updateVerificationConfig(
         @Body('tokenLifetime') tokenLifetime: number,
         @Body('message') message: string
