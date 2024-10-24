@@ -20,7 +20,7 @@ export class DrService {
 
 
     // Metodo para crear un nuevo documento regulatorio
-    async create(registerDtDto: CreateDrDto): Promise<any> {
+    async create(registerDtDto: any): Promise<any> {
         const lastDocument = await this.drModel.findOne().sort({ version: -1 }).exec();
 
         let new_current_version = '1.0';

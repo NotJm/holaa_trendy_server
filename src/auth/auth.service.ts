@@ -180,7 +180,7 @@ export class AuthService {
     );  
 
     res.cookie('token', token, {
-      httpOnly: true,
+      httpOnly: false,
       secure: false,
       sameSite: 'lax',
       maxAge: COOKIE_AGE,

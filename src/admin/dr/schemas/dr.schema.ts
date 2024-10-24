@@ -6,10 +6,6 @@ export type DrDocument = Dr & Document;
 
 @Schema()
 export class Dr {
-  @Prop({ required: true})
-  @IsString()
-  id: string;
-
   @Prop({ required: true })
   @IsString()
   title: string;

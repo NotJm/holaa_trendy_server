@@ -8,13 +8,12 @@ import { UpdateDrDto } from './dto/update.dr.dto';
 
 
 @Controller('dt')
-@UseGuards(JwtAuthGuard, AdminGuard)
 export class DrController {
 
     constructor(private readonly drService: DrService) {}
 
     @Post('create/dr')
-    async create(@Body() registerDtDto: CreateDrDto) {
+    async create(@Body() registerDtDto: any) {
         return await this.drService.create(registerDtDto);
     }
 

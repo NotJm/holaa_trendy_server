@@ -1,31 +1,78 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
 import { Incident, IncidentDocument } from './schemas/incident.schema';
-import { CloseIncidentDto, UsernameIsBlockedDto } from './incident.dto';
+import { UsernameIsBlockedDto } from './incident.dto';
+import { Config, ConfigDocument } from './schemas/config.schemas';
+import { EmailMessage, EmailMessageDocument } from './schemas/emai.schema';
 
 @Injectable()
 export class IncidentService {
-  private readonly maxFailedAttempts: number;
-  private readonly blockDuration: number;
-  private readonly tokenLifetime: number;
-  private readonly verificationMessage: string;
+  private maxFailedAttempts: number;
+  private blockDuration: number;
+  private tokenLifetime: number;
+  private verificationMessage: string;
 
   constructor(
     @InjectModel(Incident.name) private incidentModel: Model<IncidentDocument>,
-    private readonly configService: ConfigService,
+    @InjectModel(Config.name) private configModel: Model<ConfigDocument>,
+    @InjectModel(EmailMessage.name) private emailMessageModel: Model<EmailMessageDocument>
   ) {
-    this.maxFailedAttempts =
-      this.configService.get<number>('maxFailedAttempts');
-    this.blockDuration = this.configService.get<number>('blockDuration');
-    this.tokenLifetime = this.configService.get<number>('tokenLifetime');
-    this.verificationMessage = this.configService.get<string>(
-      'verificationMessage',
-    );
+    this.loadConfig();
   }
 
-  // los intentos fallidos
+  // Cargar configuración desde la base de datos
+  private async loadConfig() {
+    const config = await this.configModel.findOne();
+    if (config) {
+      this.maxFailedAttempts = config.maxFailedAttempts;
+      this.blockDuration = config.blockDuration;
+    } else {
+      // Valores por defecto si no se encuentra una configuración
+      this.maxFailedAttempts = 5;
+      this.blockDuration = 60; // minutos
+      this.tokenLifetime = 1440; // minutos
+      this.verificationMessage = 'Por favor, verifica tu cuenta.';
+    }
+  }
+
+  // Actualizar el número de intentos fallidos
+  async updateFailedAttempts(maxAttempts: number): Promise<any> {
+    let config = await this.configModel.findOne();
+    if (!config) {
+      config = new this.configModel({
+        maxFailedAttempts: maxAttempts,
+      });
+    } else {
+      config.maxFailedAttempts = maxAttempts;
+    }
+    await config.save();
+
+    // Actualizamos los valores en la instancia actual del servicio
+    this.maxFailedAttempts = maxAttempts;
+
+    return { message: 'Número de intentos fallidos actualizado correctamente' };
+  }
+
+  // Actualizar la duración del bloqueo
+  async updateBlockDuration(blockDuration: number): Promise<any> {
+    let config = await this.configModel.findOne();
+    if (!config) {
+      config = new this.configModel({
+        blockDuration: blockDuration,
+      });
+    } else {
+      config.blockDuration = blockDuration;
+    }
+    await config.save();
+
+    // Actualizamos los valores en la instancia actual del servicio
+    this.blockDuration = blockDuration;
+
+    return { message: 'Duración del bloqueo actualizada correctamente' };
+  }
+
+  // Lógica para manejar los intentos fallidos
   async loginFailedAttempt(username: string): Promise<Incident> {
     const incident = await this.incidentModel.findOne({ username });
     const now = new Date();
@@ -69,32 +116,6 @@ export class IncidentService {
     }
   }
 
-  // Ver si un usuario está bloqueado
-  async usernameIsBlocked(
-    usernameIsBlockedDto: UsernameIsBlockedDto,
-  ): Promise<Incident> {
-    const { username } = usernameIsBlockedDto;
-    return this.incidentModel.findOne({ username });
-  }
-
-  async getBlockedUsers(days: number): Promise<Incident[]> {
-    // Obtener la fecha límite, restando los días indicados a la fecha actual
-    const dateThreshold = new Date();
-    dateThreshold.setDate(dateThreshold.getDate() - days);
-  
-    console.log('Date Threshold:', dateThreshold);  // Para asegurarse de que sea una fecha válida
-  
-    // Verificar que blockExpiresAt es un campo de tipo Date válido
-    return this.incidentModel.find({
-      isBlocked: true,
-      blockExpiresAt: {
-        $gte: dateThreshold // Asegúrate de que dateThreshold sea una instancia válida de Date
-      }
-    }).exec();
-  }
-  
-  
-
   // Obtener configuración de verificación
   getVerificationConfig() {
     return {
@@ -104,8 +125,85 @@ export class IncidentService {
   }
 
   // Actualizar configuración de verificación
-  updateVerificationConfig(tokenLifetime: number, message: string) {
-    process.env.TOKEN_LIFETIME = tokenLifetime.toString();
-    process.env.VERIFICATION_MESSAGE = message;
+  async updateVerificationConfig(tokenLifetime: number, message: string) {
+    const config = await this.configModel.findOne();
+    if (config) {
+    //   config.tokenLifetime = tokenLifetime;
+    //   config.verificationMessage = message;
+      await config.save();
+    } else {
+      const newConfig = new this.configModel({
+        tokenLifetime: tokenLifetime,
+        verificationMessage: message,
+      });
+      await newConfig.save();
+    }
+
+    // Actualizamos los valores en la instancia actual del servicio
+    this.tokenLifetime = tokenLifetime;
+    this.verificationMessage = message;
+
+    return { message: 'Configuración de verificación actualizada correctamente' };
   }
+
+  async usernameIsBlocked(
+    usernameIsBlockedDto: UsernameIsBlockedDto,
+  ): Promise<Incident> {
+    const { username } = usernameIsBlockedDto;
+    return this.incidentModel.findOne({ username });
+  }
+
+  getConfig(): { maxFailedAttempts: number; blockDuration: number } {
+    return {
+      maxFailedAttempts: this.maxFailedAttempts,
+      blockDuration: this.blockDuration,
+    };
+  }
+
+  async getBlockedUsers(days: number): Promise<Incident[]> {
+    const dateThreshold = new Date();
+    dateThreshold.setDate(dateThreshold.getDate() - days);
+  
+    // Obtener todos los usuarios que están bloqueados
+    const blockedUsers = await this.incidentModel.find({ isBlocked: true }).exec();
+  
+    // Filtrar manualmente los usuarios cuyo bloqueo ha expirado después del dateThreshold
+    const filteredUsers = blockedUsers.filter(user => {
+      return user.blockExpiresAt && user.blockExpiresAt >= dateThreshold;
+    });
+  
+    return filteredUsers;
+  }
+  
+  
+
+  // Obtener el mensaje de correo
+  async getEmailMessage(): Promise<EmailMessage> {
+    const emailMessage = await this.emailMessageModel.findOne();
+    if (!emailMessage) {
+      return this.createDefaultEmailMessage();
+    }
+    return emailMessage;
+  }
+
+  // Actualizar el mensaje de correo
+  async updateEmailMessage(newMessage: string): Promise<EmailMessage> {
+    let emailMessage = await this.emailMessageModel.findOne();
+    if (!emailMessage) {
+      emailMessage = new this.emailMessageModel({ message: newMessage });
+    } else {
+      emailMessage.message = newMessage;
+    }
+    return emailMessage.save();
+  }
+
+  // Crear mensaje de correo por defecto
+  private async createDefaultEmailMessage(): Promise<EmailMessage> {
+    const defaultMessage = new this.emailMessageModel({
+      message: 'Este es un mensaje predeterminado de correo...',
+    });
+    return defaultMessage.save();
+  }
+
+  
 }

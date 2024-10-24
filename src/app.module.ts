@@ -13,12 +13,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CorsMiddleware } from './common/middleware/cors.middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PolicyModule } from './admin/politicas/policy.module';
+import { DrModule } from './admin/dr/dr.module';
 
 @Module({
   imports: [
+    PolicyModule, 
     AuthModule,
     SocialModule,
     UsersModule,
+    DrModule,
 
     ConfigModule.forRoot({ isGlobal: true }),
 
