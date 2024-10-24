@@ -15,5 +15,6 @@ import { Dr, DrSchema } from './schemas/dr.schema';
   ],
   controllers: [DrController],
   providers: [DrService],
+  exports: [DrService],
 })
 export class DrModule {}

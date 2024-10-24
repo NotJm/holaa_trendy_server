@@ -35,6 +35,7 @@ import { AppService } from './app.service';
   controllers: [AppController],
   providers: [
         LogService, AppService],
+  exports: [LogService]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
