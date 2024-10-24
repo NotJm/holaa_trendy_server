@@ -77,18 +77,23 @@ export class IncidentService {
     return this.incidentModel.findOne({ username });
   }
 
-  // Obtener lista de usuarios bloqueados en los últimos 'n' días
   async getBlockedUsers(days: number): Promise<Incident[]> {
+    // Obtener la fecha límite, restando los días indicados a la fecha actual
     const dateThreshold = new Date();
     dateThreshold.setDate(dateThreshold.getDate() - days);
-
-    return this.incidentModel
-      .find({
-        isBlocked: true,
-        blockExpiresAt: { $gte: dateThreshold }, // Filtra usuarios cuyo bloqueo sigue vigente o recién expiró
-      })
-      .exec();
+  
+    console.log('Date Threshold:', dateThreshold);  // Para asegurarse de que sea una fecha válida
+  
+    // Verificar que blockExpiresAt es un campo de tipo Date válido
+    return this.incidentModel.find({
+      isBlocked: true,
+      blockExpiresAt: {
+        $gte: dateThreshold // Asegúrate de que dateThreshold sea una instancia válida de Date
+      }
+    }).exec();
   }
+  
+  
 
   // Obtener configuración de verificación
   getVerificationConfig() {
