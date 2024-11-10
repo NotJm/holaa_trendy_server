@@ -1,149 +1,140 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Incident, IncidentDocument } from './schemas/incident.schema';
-import { UsernameIsBlockedDto } from './incident.dto';
-import { Config, ConfigDocument } from './schemas/config.schemas';
-import { EmailMessage, EmailMessageDocument } from './schemas/emai.schema';
+import {
+  FilterUsernameForDaysDto,
+  RegisterIncidentDto,
+  UsernameIsBlockedDto,
+} from './dto/incident.dto';
+import {
+  IncidentConfiguration,
+  IncidentConfigurationDocument,
+} from './schemas/incident.config.schemas';
+import {
+  EmailConfiguration,
+  EmailConfiguraionDocument,
+} from '../email/schemas/email.config.schema';
+import { UpdateConfigurationDto } from './dto/configuration.dto';
 
 @Injectable()
-export class IncidentService {
-  private maxFailedAttempts: number;
-  private blockDuration: number;
-  private tokenLifetime: number;
-  private verificationMessage: string;
+export class IncidentService implements OnModuleInit {
+  
+  async onModuleInit() {
+    await this.createDefaultConfiguration();
+  }
+
 
   constructor(
     @InjectModel(Incident.name) private incidentModel: Model<IncidentDocument>,
-    @InjectModel(Config.name) private configModel: Model<ConfigDocument>,
-    @InjectModel(EmailMessage.name) private emailMessageModel: Model<EmailMessageDocument>
-  ) {
-    this.loadConfig();
-  }
+    @InjectModel(IncidentConfiguration.name)
+    private incidentConfigurationModel: Model<IncidentConfigurationDocument>,
+  ) {}
 
-  // Cargar configuración desde la base de datos
-  private async loadConfig() {
-    const config = await this.configModel.findOne();
-    if (config) {
-      this.maxFailedAttempts = config.maxFailedAttempts;
-      this.blockDuration = config.blockDuration;
-    } else {
-      // Valores por defecto si no se encuentra una configuración
-      this.maxFailedAttempts = 5;
-      this.blockDuration = 60; // minutos
-      this.tokenLifetime = 1440; // minutos
-      this.verificationMessage = 'Por favor, verifica tu cuenta.';
+  async createDefaultConfiguration(): Promise<void> {
+    const existsConfiguration = await this.incidentConfigurationModel.findOne().exec();
+
+    if (!existsConfiguration) {
+      const defaultConfiguration = new this.incidentConfigurationModel();
+      await defaultConfiguration.save();
     }
   }
 
-  // Actualizar el número de intentos fallidos
-  async updateFailedAttempts(maxAttempts: number): Promise<any> {
-    let config = await this.configModel.findOne();
-    if (!config) {
-      config = new this.configModel({
-        maxFailedAttempts: maxAttempts,
-      });
-    } else {
-      config.maxFailedAttempts = maxAttempts;
-    }
-    await config.save();
-
-    // Actualizamos los valores en la instancia actual del servicio
-    this.maxFailedAttempts = maxAttempts;
-
-    return { message: 'Número de intentos fallidos actualizado correctamente' };
+  // Obtener Configuracion de incidencias
+  async getIncidentConfiguration(): Promise<IncidentConfigurationDocument[]> {
+    return await this.incidentConfigurationModel.find().exec();
   }
 
-  // Actualizar la duración del bloqueo
-  async updateBlockDuration(blockDuration: number): Promise<any> {
-    let config = await this.configModel.findOne();
-    if (!config) {
-      config = new this.configModel({
-        blockDuration: blockDuration,
-      });
-    } else {
-      config.blockDuration = blockDuration;
+  // Actualizar configuracion para todos
+  async updateIncidentConfiguration(
+    id: string,
+    updateConfigurationDto: UpdateConfigurationDto,
+  ): Promise<{ state: boolean; message: string }> {
+    console.log(updateConfigurationDto)
+
+    const incidentConfiguration = await this.incidentConfigurationModel.findById(id).exec();
+
+    if (!incidentConfiguration) {
+      throw new NotFoundException(
+        `La configuracion con la ID ${id} no ha sido encontrada`,
+      );
     }
-    await config.save();
 
-    // Actualizamos los valores en la instancia actual del servicio
-    this.blockDuration = blockDuration;
+    await incidentConfiguration.updateOne(updateConfigurationDto);
 
-    return { message: 'Duración del bloqueo actualizada correctamente' };
-  }
+    await incidentConfiguration.save();
 
-  // Lógica para manejar los intentos fallidos
-  async loginFailedAttempt(username: string): Promise<Incident> {
-    const incident = await this.incidentModel.findOne({ username });
-    const now = new Date();
-
-    if (incident) {
-      // Si la cuenta está bloqueada y el bloqueo no ha expirado
-      if (incident.isBlocked && now < incident.blockExpiresAt) {
-        throw new ForbiddenException(
-          `La cuenta está bloqueada. Inténtalo nuevamente después de ${new Date(incident.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`,
-        );
-      }
-
-      // Si el bloqueo ha expirado, reiniciar el contador de intentos
-      if (incident.isBlocked && now >= incident.blockExpiresAt) {
-        incident.failedAttempts = 0;
-        incident.isBlocked = false;
-        incident.blockExpiresAt = null;
-      }
-
-      // Incrementar el número de intentos fallidos
-      incident.failedAttempts += 1;
-      incident.lastAttempt = now;
-
-      // Bloquear si excede el número máximo de intentos fallidos
-      if (incident.failedAttempts >= this.maxFailedAttempts) {
-        incident.isBlocked = true;
-        incident.blockExpiresAt = new Date(
-          now.getTime() + this.blockDuration * 60 * 1000,
-        ); // minutos
-      }
-
-      return incident.save();
-    } else {
-      // Si no existe una incidencia para ese usuario, crearla
-      const newIncident = new this.incidentModel({
-        username: username,
-        failedAttempts: 1,
-        lastAttempt: new Date(),
-      });
-      return newIncident.save();
-    }
-  }
-
-  // Obtener configuración de verificación
-  getVerificationConfig() {
     return {
-      tokenLifetime: this.tokenLifetime,
-      verificationMessage: this.verificationMessage,
+      state: true,
+      message: 'Configuracion actualizada con exito',
     };
   }
 
-  // Actualizar configuración de verificación
-  async updateVerificationConfig(tokenLifetime: number, message: string) {
-    const config = await this.configModel.findOne();
-    if (config) {
-    //   config.tokenLifetime = tokenLifetime;
-    //   config.verificationMessage = message;
-      await config.save();
+  // Lógica para manejar los intentos fallidos
+  async registerFailedAttempt(
+    registerIncidentDto: RegisterIncidentDto,
+  ): Promise<Incident> {
+    const { email } = registerIncidentDto;
+  
+    const incident = await this.incidentModel.findOne({ username: email });
+    const incidentConfiguration = await this.incidentConfigurationModel.findOne().exec();
+    const now = new Date();
+  
+    if (incident) {
+      if (this.isAccountBlocked(incident, now)) {
+        throw new ForbiddenException(
+          `La cuenta está bloqueada. Inténtalo nuevamente después de ${incident.blockExpiresAt.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`,
+        );
+      }
+  
+      this.resetAttemptsIfBlockExpired(incident, now);
+  
+      incident.failedAttempts += 1;
+      incident.lastAttempt = now;
+  
+      if (incident.failedAttempts >= incidentConfiguration.maxFailedAttempts) {
+        this.blockAccount(incident, incidentConfiguration.blockDuration, now);
+      }
+  
+      return incident.save();
     } else {
-      const newConfig = new this.configModel({
-        tokenLifetime: tokenLifetime,
-        verificationMessage: message,
-      });
-      await newConfig.save();
+      return this.createIncident(email);
     }
-
-    // Actualizamos los valores en la instancia actual del servicio
-    this.tokenLifetime = tokenLifetime;
-    this.verificationMessage = message;
-
-    return { message: 'Configuración de verificación actualizada correctamente' };
+  }
+  
+  // Verifica si la cuenta está bloqueada y el bloqueo no ha expirado
+  private isAccountBlocked(incident: Incident, now: Date): boolean {
+    return incident.isBlocked && now < incident.blockExpiresAt;
+  }
+  
+  // Reinicia los intentos fallidos y desbloquea la cuenta si el bloqueo ha expirado
+  private resetAttemptsIfBlockExpired(incident: Incident, now: Date): void {
+    if (incident.isBlocked && now >= incident.blockExpiresAt) {
+      incident.failedAttempts = 0;
+      incident.isBlocked = false;
+      incident.blockExpiresAt = null;
+    }
+  }
+  
+  // Bloquea la cuenta y establece la duración del bloqueo
+  private blockAccount(incident: Incident, blockDuration: number, now: Date): void {
+    incident.isBlocked = true;
+    incident.blockExpiresAt = new Date(now.getTime() + blockDuration * 60 * 1000); 
+  }
+  
+  // Crea una nueva incidencia para el usuario
+  private async createIncident(email: string): Promise<Incident> {
+    const newIncident = new this.incidentModel({
+      username: email,
+      failedAttempts: 1,
+      lastAttempt: new Date(),
+    });
+    return newIncident.save();
   }
 
   async usernameIsBlocked(
@@ -153,57 +144,24 @@ export class IncidentService {
     return this.incidentModel.findOne({ username });
   }
 
-  getConfig(): { maxFailedAttempts: number; blockDuration: number } {
-    return {
-      maxFailedAttempts: this.maxFailedAttempts,
-      blockDuration: this.blockDuration,
-    };
-  }
+  async getBlockedUsers(
+    filterUsernameForDaysDto: FilterUsernameForDaysDto,
+  ): Promise<Incident[]> {
+    const { days } = filterUsernameForDaysDto;
 
-  async getBlockedUsers(days: number): Promise<Incident[]> {
     const dateThreshold = new Date();
     dateThreshold.setDate(dateThreshold.getDate() - days);
-  
-    // Obtener todos los usuarios que están bloqueados
-    const blockedUsers = await this.incidentModel.find({ isBlocked: true }).exec();
-  
-    // Filtrar manualmente los usuarios cuyo bloqueo ha expirado después del dateThreshold
-    const filteredUsers = blockedUsers.filter(user => {
-      return user.blockExpiresAt && user.blockExpiresAt >= dateThreshold;
-    });
-  
+
+    const filteredUsers = await this.incidentModel
+      .find({
+        isBlocked: true,
+        $and: [
+          { blockExpiresAt: { $ne: null } },
+          { blockExpiresAt: { $gte: new Date(dateThreshold) } },
+        ],
+      })
+      .exec();
+
     return filteredUsers;
   }
-  
-  
-
-  // Obtener el mensaje de correo
-  async getEmailMessage(): Promise<EmailMessage> {
-    const emailMessage = await this.emailMessageModel.findOne();
-    if (!emailMessage) {
-      return this.createDefaultEmailMessage();
-    }
-    return emailMessage;
-  }
-
-  // Actualizar el mensaje de correo
-  async updateEmailMessage(newMessage: string): Promise<EmailMessage> {
-    let emailMessage = await this.emailMessageModel.findOne();
-    if (!emailMessage) {
-      emailMessage = new this.emailMessageModel({ message: newMessage });
-    } else {
-      emailMessage.message = newMessage;
-    }
-    return emailMessage.save();
-  }
-
-  // Crear mensaje de correo por defecto
-  private async createDefaultEmailMessage(): Promise<EmailMessage> {
-    const defaultMessage = new this.emailMessageModel({
-      message: 'Este es un mensaje predeterminado de correo...',
-    });
-    return defaultMessage.save();
-  }
-
-  
 }

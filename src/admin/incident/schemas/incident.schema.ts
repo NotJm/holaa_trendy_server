@@ -15,14 +15,10 @@ export class Incident {
   @Prop()
   lastAttempt: Date;
 
-  @Prop({ default: "open" })
-  state: string;
-
   @Prop({ default: false })
   isBlocked: boolean
 
-  @Prop({ default: null })
-  @IsDate()
+  @Prop({ type:Date, default: new Date() })
   blockExpiresAt: Date; 
 
 

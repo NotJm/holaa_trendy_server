@@ -14,19 +14,19 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/restauration.dto';
-import { EmailService } from '../shared/service/email.service';
-import { PwnedService } from '../shared/service/pwned.service';
-import { ZxcvbnService } from '../shared/service/zxcvbn.service';
+import { EmailService } from '../core/services/email.service';
+import { PwnedService } from '../core/services/pwned.service';
+import { ZxcvbnService } from '../core/services/zxcvbn.service';
 import { v4 as uuidv4 } from 'uuid';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { OtpService } from '../shared/service/otp.service';
-import { ActivationDto, ActivationDto2 } from './dto/activation.dto';
+import { OtpService } from '../core/services/otp.service';
+import { ActivationDto } from './dto/activation.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
-import { LogService } from '../common/services/log.service'; // Asegúrate de importar LogService
+import { LogService } from '../core/services/log.service'; // Asegúrate de importar LogService
 import { IncidentService } from '../admin/incident/incident.service';
 import { Request, Response } from 'express';
-import { COOKIE_AGE, JWT_AGE } from '../constants/enviroment.contants';
+import { COOKIE_AGE, JWT_AGE } from '../constants/contants';
 
 @Injectable()
 export class AuthService {
@@ -166,7 +166,7 @@ export class AuthService {
       );
 
       // Añadir una incidencia más por si se intenta iniciar sesión incorrectamente
-      await this.incidentService.loginFailedAttempt(email);
+      await this.incidentService.registerFailedAttempt({ email });
 
       throw new ConflictException('Credenciales incorrectas');
     }
@@ -182,7 +182,7 @@ export class AuthService {
 
     await user.save();
 
-    const payload = { id: user._id };
+    const payload = { username: user.username, role: user.role };
 
     const token = this.jwtService.sign(payload, { expiresIn: JWT_AGE });
 
@@ -194,7 +194,7 @@ export class AuthService {
     );
 
     // Informacion de la cookie que se envia al frontend de manera segura
-    res.cookie('token', token, {
+    res.cookie('authentication', token, {
       httpOnly: true,
       secure: false,
       sameSite: 'strict',
@@ -267,7 +267,7 @@ export class AuthService {
   }
 
   async reset_password(resetPasswordDto: ResetPasswordDto): Promise<any> {
-    const { email, new_password } = resetPasswordDto;
+    const { email, password: new_password } = resetPasswordDto;
 
     // Buscar el usuario por su email
     const user = await this.userModel.findOne({ email });
@@ -406,7 +406,7 @@ export class AuthService {
     };
   }
 
-  async verify_otp(activationDto: ActivationDto2): Promise<any> {
+  async verify_otp(activationDto: ActivationDto): Promise<any> {
     const { otp } = activationDto;
 
     const isValid = this.otpService.verificationOTP(otp);

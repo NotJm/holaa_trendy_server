@@ -1,74 +1,46 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { IncidentService } from './incident.service';
-import { RegisterIncidentDto } from './incident.dto';
+import { FilterUsernameForDaysDto, RegisterIncidentDto } from './dto/incident.dto';
+import { Roles } from 'src/core/decorators/roles.decorator';
+import { Role } from 'src/constants/contants';
+import { JwtAuthGuard } from 'src/core/guards/jwt.auth.guard';
+import { RoleGuard } from '../../core/guards/role.guard';
+import { UpdateConfigurationDto } from './dto/configuration.dto';
 
-@Controller('incidents')
+// Implementacion de controlador para el manejo de incidencias este metodo solo es accesible para ciertos
+// usuarios como por ejmplo auth o administradores
+@Controller('incident')
+@UseGuards(JwtAuthGuard, RoleGuard)
 export class IncidentController {
   constructor(private readonly incidentService: IncidentService) {}
 
-  // Registrar intento fallido de login
+  // Metodo que se encarga de registrar al usuarios que hacen un intento fallido
+  // de iniciar sesion
   @Post('register')
-  async registerFailedAttempt(
-    @Body() registerIncidentDto: RegisterIncidentDto,
-  ) {
-    return this.incidentService.loginFailedAttempt(
-      registerIncidentDto.username,
-    );
+  async registerFailedAttempt(@Body() registerIncidentDto: RegisterIncidentDto) {
+    return await this.incidentService.registerFailedAttempt(registerIncidentDto);
   }
 
-  // Obtener usuarios bloqueados en los últimos n días
-  @Get('blocked-users')
-  async getBlockedUsers(@Query('days') days: number = 30) {
-    return this.incidentService.getBlockedUsers(days);
+  // Metodo para obtener a los usuarios bloquedos filtrando por el numero de dias bloqueados
+  @Get('blocked/users')
+  @Roles(Role.ADMIN)
+  async getBlockedUsers(@Body() filterUsernameForDaysDto: FilterUsernameForDaysDto) {
+    return await this.incidentService.getBlockedUsers(filterUsernameForDaysDto);
   }
 
   // Obtener la configuración actual de intentos fallidos y duración del bloqueo
-  @Get('config')
-  async getConfig() {
-    return this.incidentService.getConfig();
+  @Get('get/configuration')
+  @Roles(Role.ADMIN)
+  async getConfiguration() {
+    return await this.incidentService.getIncidentConfiguration();
   }
 
-  // Obtener la configuración actual de verificación
-  @Get('verification-config')
-  getVerificationConfig() {
-    return this.incidentService.getVerificationConfig();
+  @Put('update/configuration/:id')
+  @Roles(Role.ADMIN)
+  async updateConfiguration(@Param('id') id: string, @Body() updateConfigurationDto: UpdateConfigurationDto) {
+    return await this.incidentService.updateIncidentConfiguration(id, updateConfigurationDto);
   }
 
-  // Actualizar el número de intentos fallidos
-  @Post('update-failed-attempts')
-  async updateFailedAttempts(@Body('maxAttempts') maxAttempts: number) {
-    return this.incidentService.updateFailedAttempts(maxAttempts);
-  }
-
-  // Actualizar la duración del bloqueo
-  @Post('update-block-duration')
-  async updateBlockDuration(@Body('blockDuration') blockDuration: number) {
-    return this.incidentService.updateBlockDuration(blockDuration);
-  }
-
-  // Actualizar configuración de tiempo de vida del token y mensaje de verificación
-  @Post('update-verification')
-  updateVerificationConfig(
-    @Body('tokenLifetime') tokenLifetime: number,
-    @Body('message') message: string,
-  ) {
-    return this.incidentService.updateVerificationConfig(
-      tokenLifetime,
-      message,
-    );
-  }
-
-   // Obtener el mensaje de correo
-   @Get('email-message')
-   async getEmailMessage() {
-     return this.incidentService.getEmailMessage();
-   }
- 
-   // Actualizar el mensaje de correo
-   @Post('update-email-message')
-   async updateEmailMessage(@Body('message') newMessage: string) {
-     return this.incidentService.updateEmailMessage(newMessage);
-   }
 
    
 }

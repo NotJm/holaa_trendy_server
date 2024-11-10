@@ -1,17 +1,19 @@
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthService } from './auth.service';
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { User, UserSchema } from './schemas/user.schema';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EmailService } from '../shared/service/email.service';
-import { PwnedService } from '../shared/service/pwned.service';
-import { ZxcvbnService } from '../shared/service/zxcvbn.service';
+import { EmailService } from '../core/services/email.service';
+import { PwnedService } from '../core/services/pwned.service';
+import { ZxcvbnService } from '../core/services/zxcvbn.service';
 import { HttpModule } from '@nestjs/axios';
-import { OtpService } from '../shared/service/otp.service';
-import { LogService } from '../common/services/log.service';
+import { OtpService } from '../core/services/otp.service';
+import { LogService } from '../core/services/log.service';
 import { IncidentModule } from '../admin/incident/incident.module';
+
+
 
 @Module({
   imports: [
@@ -40,7 +42,7 @@ import { IncidentModule } from '../admin/incident/incident.module';
     PwnedService,
     ZxcvbnService,
     OtpService,
-    LogService
+    LogService,
   ],
   exports: [AuthService],
 })

@@ -1,6 +1,8 @@
 import { Prop } from "@nestjs/mongoose";
 import { IsEmail, IsNotEmpty, Matches, MinLength } from "class-validator";
 
+// Implementacion de esta estructura para el Request se encarga de verificar
+// datos para el registro
 export class RegisterDto {
     @Prop({ default: ''})
     sessionId: string;    

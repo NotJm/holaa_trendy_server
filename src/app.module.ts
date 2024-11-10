@@ -1,6 +1,7 @@
-import { LogService } from './common/services/log.service';
-import { SocialModule } from './admin/social/social.module';
-import { UsersModule } from './users/users.module';
+import { EmailModule } from './admin/email/email.module';
+import { AuditModule } from './admin/audit/audit.module';
+import { BusinessModule } from './admin/business/business.module';
+import { LogService } from './core/services/log.service';
 import { AuthModule } from './auth/auth.module';
 import {
   MiddlewareConsumer,
@@ -14,15 +15,18 @@ import { CorsMiddleware } from './middleware/cors.middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PolicyModule } from './admin/politicas/policy.module';
-import { DrModule } from './admin/dr/dr.module';
+import { UsersModule } from './admin/users/users.module';
+import { DocumentModule } from './admin/documents/document.module';
 
 @Module({
   imports: [
-    PolicyModule, 
+    EmailModule,
+    AuditModule,
+    BusinessModule,
+    PolicyModule,
     AuthModule,
-    SocialModule,
     UsersModule,
-    DrModule,
+    DocumentModule,
 
     ConfigModule.forRoot({ isGlobal: true }),
 
@@ -34,14 +38,11 @@ import { DrModule } from './admin/dr/dr.module';
       }),
       inject: [ConfigService],
     }),
-
   ],
-  controllers: [AppController], 
-  providers: [
-        LogService, AppService],
-  exports: [LogService]
+  controllers: [AppController],
+  providers: [LogService, AppService],
+  exports: [LogService],
 })
-
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
