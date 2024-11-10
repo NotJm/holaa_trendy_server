@@ -10,45 +10,31 @@ import { Request } from 'express';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('login')
-  // Enviar peticiones para inicio de sesion
-  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res) {
-    // Esperamos a que el servicio se conecte y confime credenciales
+  @Post('logIn')
+  async logIn(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res) {
+    // Este metodo se encarga de  authenticar al usuario y si todo sale bien se regresa un JWT
     return await this.authService.logIn(loginDto, res);
   }
 
-  @Post('register')
-  async register(@Body() registerDto: RegisterDto) {
+  @Post('signIn')
+  async signIn(@Body() registerDto: RegisterDto) {
+    // La implementacion de este metodo se encuentra correctamente organizada
+    // En este caso solo debe de verificar la funcionalidad del Codigo OTP como verificacion extra
+    // Una vez que se verifica se encuentra otro endpoint 'activation-email'
     return await this.authService.signIn(registerDto);
   }
 
-  @Post('forgot/password')
-  async forgot_password(@Body() forgotPassworDto: ForgotPasswordDto) {
-    return await this.authService.forgot_password(forgotPassworDto);
+  @Post('activation-email')
+  async activationEmail(@Body() activationDto: ActivationDto) {
+    // Endpoint encargado de la activacion del correo solo cuando se registra
+    return await this.authService.activationEmail(activationDto);
   }
 
-  @Post('reset/password')
-  async reset_password(@Body() resetPasswordDto: ResetPasswordDto) {
-    return await this.authService.reset_password(resetPasswordDto);
-  }
-
-  @Post('verify/otp/code')
-  async verify_email(@Body() activationDto: ActivationDto) {
-    return await this.authService.verify_email(activationDto);
-  }
-
-  @Post('verify/otp')
-  async verify_otp(@Body() activationDto: ActivationDto2) {
-    return await this.authService.verify_otp(activationDto);
-  }
-
-  @Post('refresh/token')
-  async refresh_token(@Body() token: string) {
-    return await this.authService.refreshAccessToken(token);
-  }
-
-  @Get('verify')
+  @Get('authenticate-verification')
   async verify_token(@Req() req: Request) {
-    return await this.authService.verify_token(req);
+    // Implementacion de logica para verifacion de authenticacion mediante JWT
+    // una vez que el usuario este logueado el guardia que esta programado en el fronend
+    // actuara enviando las cookies a este endpoint para la verificacion del usuario authenticado
+    return await this.authService.verificationAuthenticate(req);
   }
 }

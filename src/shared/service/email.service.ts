@@ -17,6 +17,7 @@ export class EmailService {
   }
 
   async sendPasswordResetEmail(to: string, resetToken: string) {
+    // La implementacion de este metodo es dudosa todavia esta cuestion si es correcto 
     const url = `http://localhost:3000/reset_password?token=${resetToken}`;
     await this.transporter.sendMail({
       to,
@@ -34,10 +35,14 @@ export class EmailService {
   }
 
   // Enviar codigo de verificacion para activar cuenta
-  async send_code_verfication(otpCode: string, email: string) {
+  async sendCodeVerification(otpCode: string, email: string) {
+    // Implementacion de logica para poder integrar personalizacion de mensajes de email
+    // Primeramente deberia poder integrar ciertos elementos en variables para poder personalizarla
+    // Esto totalmente conectado a mongo, en este caso se crearia un coleccion nueva
+    // Sin embargo deberia dividirla porque son diferentes mensajes con diferentes definiciones
     await this.transporter.sendMail({
       to: email,
-      subject: '📧 Verificación de Cuenta - HOLAA-Trendy',
+      subject: 'Verificación de Cuenta - HOLAA-Trendy',
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; border-radius: 10px; max-width: 600px; margin: auto;">
           <div style="background-color: #0A1B39; padding: 20px; border-radius: 10px 10px 0 0; color: white; text-align: center;">
@@ -70,7 +75,12 @@ export class EmailService {
     });
   }
 
-  async send_code_password(otpCode: string, email: string) {
+  async sendCodePassword(otpCode: string, email: string) {
+    // La implementacion para poder resetear contraseña deberia ser la siguiente
+    // Usuario no recuerda su contraseña -> Da click a olvidar contraseña
+    // Usuario debe poner su email para poder continuar con su recuperacion
+    // Usuario recibe email con codigo otp para poder restablecer su contraseña
+    // Se deberia personalizar cada mensaje de email por separado?
     await this.transporter.sendMail({
       to: email,
       subject: '🔒 Recuperación de Contraseña - HOLAA-Trendy',

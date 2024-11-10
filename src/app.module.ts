@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { CorsMiddleware } from './common/middleware/cors.middleware';
+import { CorsMiddleware } from './middleware/cors.middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PolicyModule } from './admin/politicas/policy.module';
@@ -36,11 +36,12 @@ import { DrModule } from './admin/dr/dr.module';
     }),
 
   ],
-  controllers: [AppController],
+  controllers: [AppController], 
   providers: [
         LogService, AppService],
   exports: [LogService]
 })
+
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer

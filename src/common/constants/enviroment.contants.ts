@@ -1,1 +1,0 @@
-export const COOKIE_AGE = 15 * 60 * 1000;

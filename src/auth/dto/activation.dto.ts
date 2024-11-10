@@ -1,12 +1,11 @@
 import { Prop } from "@nestjs/mongoose";
 import { IsEmail, IsString } from "class-validator";
 
+// Implementacion de DTO solo para la activacion de correo donde solamente
+// gracias a los cambios recientes solo necesita el codigo OTP
 export class ActivationDto {
-    @IsEmail({}, { message: "Por favor, proporciona un email válido" })
-    email: string;
-
     @IsString({ message: "Por favor, proporciona un codigo otp valido" })
-    otp: string;
+    readonly otp: string;
 }
 
 export class ActivationDto2 {

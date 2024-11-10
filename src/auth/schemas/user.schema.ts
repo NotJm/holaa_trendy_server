@@ -4,11 +4,22 @@ import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
+// Implementacion de esquema de usuario para ser lanzado
+// como coleccion en la base de  datos
+// Atributos:
+// sessionId: se encarga de manejar las sesiones que tiene usuario
+// TODO sigue en proceso el correcto uso de este atributo
+// username: Nombre de usuario es requerido
+// password: Contraseña que da el usuario y que respeta ciertas caracteristicas
+// email: Correo del usuario
+// verification: Verificacion, menciona si el usuario se encuentra verificado
+// role: Por defecto un usuario tiene el role basico ('user') pero para administrador se cambia desde la base de datos
 @Schema()
 export class User {
   @Prop({ default: ''})
-  sessionId: string;
+  sessionId?: string;
 
+  
   @Prop({ required: true })
   @IsNotEmpty({ message: "Por favor, ingrese su nombre de usuario"})
   @MinLength(6, { message: "El nombre de usuario debe tener al menos 6 caracteres"})
@@ -24,22 +35,28 @@ export class User {
   email: string;
 
   @Prop({ default: false })
-  emailIsVerify: boolean;
+  verification?: boolean;
 
-  @Prop({ default: 'user'})
-  role: string
+  @Prop({ default: 'user' })
+  role?: string
 
-  @Prop({ default: []})
+  @Prop({ default: '' })
+  otpCode?: string
+
+  @Prop({ default: null })
+  otpExpiration?: Date;
+
+  @Prop({ default: [] })
   @IsArray()
-  permissions: string[];
+  permissions?: string[];
 
   @Prop({ default: Date.now })
   @IsDate()
-  create_date: Date;
+  readonly create_date?: Date;
 
   @Prop({ default: Date.now })
   @IsDate()
-  update_date: Date
+  readonly update_date?: Date
 }
 
 export const UserSchema = SchemaFactory.createForClass(User).set('versionKey', false);

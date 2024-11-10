@@ -5,11 +5,11 @@ import { User, UserSchema } from './schemas/user.schema';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EmailService } from './service/email.service';
-import { PwnedService } from '../auth/service/pwned.service';
-import { ZxcvbnService } from '../auth/service/zxcvbn.service';
+import { EmailService } from '../shared/service/email.service';
+import { PwnedService } from '../shared/service/pwned.service';
+import { ZxcvbnService } from '../shared/service/zxcvbn.service';
 import { HttpModule } from '@nestjs/axios';
-import { OtpService } from '../auth/service/otp.service';
+import { OtpService } from '../shared/service/otp.service';
 import { LogService } from '../common/services/log.service';
 import { IncidentModule } from '../admin/incident/incident.module';
 
