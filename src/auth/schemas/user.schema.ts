@@ -22,7 +22,7 @@ export class User {
   
   @Prop({ required: true })
   @IsNotEmpty({ message: "Por favor, ingrese su nombre de usuario"})
-  @MinLength(6, { message: "El nombre de usuario debe tener al menos 6 caracteres"})
+  @MinLength(5, { message: "El nombre de usuario debe tener al menos 6 caracteres"})
   username: string;
 
   @Prop({ required: true })

@@ -18,7 +18,7 @@ export class CreateBusinessProfileDto {
     @IsString()
     address: string;
 
-    @IsEmail()
+    @IsEmail()  
     email: string;
 
     @IsPhoneNumber("MX")

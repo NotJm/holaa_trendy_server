@@ -16,10 +16,7 @@ import {
   IncidentConfiguration,
   IncidentConfigurationDocument,
 } from './schemas/incident.config.schemas';
-import {
-  EmailConfiguration,
-  EmailConfiguraionDocument,
-} from '../email/schemas/email.config.schema';
+
 import { UpdateConfigurationDto } from './dto/configuration.dto';
 
 @Injectable()
@@ -46,8 +43,8 @@ export class IncidentService implements OnModuleInit {
   }
 
   // Obtener Configuracion de incidencias
-  async getIncidentConfiguration(): Promise<IncidentConfigurationDocument[]> {
-    return await this.incidentConfigurationModel.find().exec();
+  async getIncidentConfiguration(): Promise<IncidentConfigurationDocument> {
+    return await this.incidentConfigurationModel.findOne().exec();
   }
 
   // Actualizar configuracion para todos
@@ -55,7 +52,6 @@ export class IncidentService implements OnModuleInit {
     id: string,
     updateConfigurationDto: UpdateConfigurationDto,
   ): Promise<{ state: boolean; message: string }> {
-    console.log(updateConfigurationDto)
 
     const incidentConfiguration = await this.incidentConfigurationModel.findById(id).exec();
 

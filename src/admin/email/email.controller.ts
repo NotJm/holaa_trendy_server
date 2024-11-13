@@ -12,7 +12,7 @@ export class EmailController {
 
     constructor(private readonly emailService: EmailService) {}
 
-    @Get('get/configuration')
+    @Get('configuration')
     @Roles(Role.ADMIN)
     async getEmailConfiguration() {
         return await this.emailService.getEmailConfigurattion();

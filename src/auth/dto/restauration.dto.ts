@@ -5,7 +5,6 @@ import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 // empezar con el primer paso para olvidar contraseña en este caso se maneja solo
 // el correo electronico para poder confirmar le usuario
 export class ForgotPasswordDto {
-  @Prop({ required: true })
   @IsEmail({}, { message: 'Por favor, proporciona un correo valido' })
   readonly email: string;
 }
@@ -14,7 +13,6 @@ export class ForgotPasswordDto {
 // para esto debe de insertar su email y su nueva contraseña
 export class ResetPasswordDto {
   @IsEmail()
-  @IsNotEmpty({ message: 'El correo electrónico es obligatorio' })
   email: string;
 
   @IsString()

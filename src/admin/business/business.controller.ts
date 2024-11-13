@@ -10,8 +10,6 @@ import { Roles } from 'src/core/decorators/roles.decorator';
 import { Role } from 'src/constants/contants';
 
 @Controller('business')
-@UseInterceptors(AuditInterceptor)
-@UseGuards(JwtAuthGuard, RoleGuard)
 export class BusinessController {
 
     constructor(private readonly businessService: BusinessService) {}
@@ -19,26 +17,31 @@ export class BusinessController {
     // Implementacion de metodos para la creacion, leer, actualizacion y eliminacion de redes sociales
 
     @Post('create/social')
+    @UseInterceptors(AuditInterceptor)
+    @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
     async createSocialSite(@Body() createSocialSiteDto: CreateSocialSiteDto) {
         return await this.businessService.creatSocialSite(createSocialSiteDto);
     }
 
     @Get('get/social')
-    @Roles(Role.ADMIN)
     async getSocialSite() {
         return await this.businessService.getSocialSites();
     }
 
     @Put('update/social/:id')
+    @UseInterceptors(AuditInterceptor)
+    @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
-    async updateSocialSite(@Param() id: string, @Body() updateSocialSiteDto: updateSocialSiteDto) {
-        await this.businessService.updateSocialSite(id, updateSocialSiteDto);
+    async updateSocialSite(@Param('id') id: string, @Body() updateSocialSiteDto: updateSocialSiteDto) {
+        return await this.businessService.updateSocialSite(id, updateSocialSiteDto);
     }
 
     @Delete('delete/social/:id')
+    @UseInterceptors(AuditInterceptor)
+    @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
-    async deleteSocialSite(@Param() id: string) {
+    async deleteSocialSite(@Param('id') id: string) {
         return await this.businessService.deleteSocialSite(id);
     }
 
@@ -46,18 +49,21 @@ export class BusinessController {
     // Implementacion de metodos para la Gestion de Slogan
 
     @Get('info')
-    @Roles(Role.ADMIN)
     async getBusinessInformation() {
         return await this.businessService.getBusinessInformation();
     }
 
     @Post('create/profile')
+    @UseInterceptors(AuditInterceptor)
+    @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
     async createBusinessProfile(@Body() createBusinessProfileDto: CreateBusinessProfileDto) {
         return await this.businessService.createBusinessProfile(createBusinessProfileDto);
     }
 
     @Put('update/profile/:id')
+    @UseInterceptors(AuditInterceptor)
+    @UseGuards(JwtAuthGuard, RoleGuard)
     @Roles(Role.ADMIN)
     async updateBusinessProfile(@Param('id') id: string, @Body() upateBusinessProfileDto: UpdtaeBusinessProfileDto) {
         return await this.businessService.updateBusinessProfile(id, upateBusinessProfileDto);

@@ -8,8 +8,8 @@ import { RoleGuard } from '../../core/guards/role.guard';
 export class AuditController {
     constructor(private readonly auditService: AuditService) {}
 
-    @Get('get/all')
+    @Get('info')
     async getAudit() {
-        await this.auditService.getAudit();
+        return await this.auditService.getAudit();
     }
 }

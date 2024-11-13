@@ -1,14 +1,23 @@
 import speakeasy from 'speakeasy';
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { IncidentService } from 'src/admin/incident/incident.service';
 
 @Injectable()
-export class OtpService {
+export class OtpService implements OnModuleInit {
 
     private readonly secret = this.configService.get<string>('OTP_KEY');
-    private readonly step = this.configService.get<number>('OTP_STEP');
+    private step = 300;
 
-    constructor(private readonly configService: ConfigService) {}
+    constructor(private readonly configService: ConfigService,
+        private readonly incidentService: IncidentService
+    ) { }
+
+    async onModuleInit() {
+        let incidenConfiguration:any = await this.incidentService.getIncidentConfiguration();
+
+        this.step = incidenConfiguration.otpLifeTime;
+    }
     
     generateOTP() {
         return {

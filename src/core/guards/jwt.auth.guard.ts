@@ -35,7 +35,10 @@ export class JwtAuthGuard implements CanActivate {
 
       return true;
     } catch (e) {
-      throw new UnauthorizedException(`Token de autenticacion invalido o expirado`);
+      throw new UnauthorizedException({
+        message: `Acceso Denegado`, 
+        access: false
+      });
     }
   }
 

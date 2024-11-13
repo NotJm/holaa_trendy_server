@@ -4,6 +4,7 @@ import { EmailService } from './email.service';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EmailConfiguration, EmailConfigurationSchema } from './schemas/email.config.schema';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [

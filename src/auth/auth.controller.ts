@@ -1,14 +1,22 @@
-import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ForgotPasswordDto, ResetPasswordDto } from './dto/restauration.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ActivationDto } from '../auth/dto/activation.dto';
-import { Request } from 'express';
+import { Request, Response } from 'express';
+import { RoleGuard } from 'src/core/guards/role.guard';
+import { JwtAuthGuard } from 'src/core/guards/jwt.auth.guard';
+import { Roles } from 'src/core/decorators/roles.decorator';
+import { Role } from 'src/constants/contants';
+import { EmailService } from 'src/admin/email/email.service';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/restauration.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly emailService: EmailService
+  ) {}
 
   @Post('logIn')
   async logIn(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res) {
@@ -24,17 +32,43 @@ export class AuthController {
     return await this.authService.signIn(registerDto);
   }
 
-  @Post('activation-email')
-  async activationEmail(@Body() activationDto: ActivationDto) {
-    // Endpoint encargado de la activacion del correo solo cuando se registra
-    return await this.authService.activationEmail(activationDto);
+  @Get('logOut')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.USER, Role.ADMIN)
+  async logout(@Res() res: Response) {
+    return await this.authService.logOut(res);
   }
 
+  @Post('account-activation')
+  async accountActivation(@Body() activationDto: ActivationDto) {
+    // Endpoint encargado de la activacion del correo solo cuando se registra
+    return await this.authService.accountActivation(activationDto);
+  }
+
+  /**
+   * Metodo para verificar la authenticacion del usuario
+   * @param req 
+   * @returns Regresa booleano si existe la cookie de authenticate para verifcacion
+   */
   @Get('authenticate-verification')
-  async verify_token(@Req() req: Request) {
-    // Implementacion de logica para verifacion de authenticacion mediante JWT
-    // una vez que el usuario este logueado el guardia que esta programado en el fronend
-    // actuara enviando las cookies a este endpoint para la verificacion del usuario authenticado
+  async verifyToken(@Req() req: Request) {
     return await this.authService.verificationAuthenticate(req);
+  }
+
+  @Post('refresh-token') 
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.USER, Role.ADMIN)
+  async refresAccessToken(@Req() req: Request, @Res() res: Response) {
+    return await this.authService.refreshAccessToken(req, res)
+  }
+
+  @Post('request-password')
+  async requestPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return await this.authService.forgotPassword(forgotPasswordDto);
+  }
+
+  @Put('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return await this.authService.reset_password(resetPasswordDto);
   }
 }

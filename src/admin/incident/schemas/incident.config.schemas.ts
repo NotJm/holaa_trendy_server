@@ -15,6 +15,9 @@ export class IncidentConfiguration {
   @Prop({ required: true, default: 60 }) 
   blockDuration: number;
 
+  @Prop({ required: true, default: 300})
+  otpLifeTime: number;
+
 }
 
 export const IncidentConfigurationSchema = SchemaFactory.createForClass(IncidentConfiguration).set('versionKey', false);

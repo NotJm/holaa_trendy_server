@@ -12,4 +12,9 @@ export class UpdateConfigurationDto {
     @IsOptional()
     blockDuration: number;
 
+    @IsNumber()
+    @IsNotEmpty()
+    @IsOptional()
+    otpLifeTime: number;
+
 }

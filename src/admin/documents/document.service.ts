@@ -21,7 +21,7 @@ export class DrService {
 
     // Implementacion para la creacion de un documento regulatorio 
     // Este ocupa totalmente el dto paral creacion de un documento
-    async createDocument(createDocumentoDto: CreateDocumentDto ): Promise<{ state: boolean }> {
+    async createDocument(createDocumentoDto: CreateDocumentDto ): Promise<{ state: boolean; message: string }> {
 
         // Primero ordenamos mediante las versiones mas viejas
         const lastDocument = await this.documentModel.findOne().sort({ version: -1 }).exec();
@@ -43,7 +43,10 @@ export class DrService {
         await newDocument.save();
 
         // Regresamos que se creo con exito
-        return { state: true }
+        return { 
+            state: true,
+            message: "Documento creado con exito"
+         }
 
     }
 
@@ -58,7 +61,7 @@ export class DrService {
     // Implementacion de eliminacion (de manera logica) esto quiere decir
     // que el documento solo marca eliminado pero como tal no se elimina de la 
     // base de datos
-    async deleteDocument(id:string): Promise<{ state: boolean }> {
+    async deleteDocument(id:string): Promise<{ state: boolean; message: string }> {
 
         // Busca documento dentro de la base de datos
         const document = await this.documentModel.findById(id);
@@ -76,7 +79,10 @@ export class DrService {
         await document.save();
 
         // Regresamos operacion exitosa
-        return { state: true }
+        return { 
+            state: true,
+            message: "Documento eliminado con exito"
+        }
 
     }
 
@@ -99,13 +105,18 @@ export class DrService {
         // Creamos una nueva version incrementando la que queremos modificar
         const newVersion = this.increment(document.version);
 
+        document.current = false;
+
+        await document.save();
+
         const updateDocument = new this.documentModel({
             ...document.toObject(),
             ...updateDocumentDto,
             _id: undefined,
             version: newVersion,
+            current: true,
             create_date: document.create_date,
-            update_date: Date.now(),
+            update_date: new Date(),
         })
 
         await updateDocument.save();
@@ -114,7 +125,7 @@ export class DrService {
     }
 
     // Implementacion de metodo para la activacion de documento (vigente)
-    async activationDocument(id: string) : Promise<{ state: boolean }> {
+    async activationDocument(id: string) : Promise<{ state: boolean; message: string }> {
         // Buscamos documento que sea el vigente, si existe un documento 
         // ya vigente se tiene que marcar el nuevo como vigente y el anterior ya no
         const currentDocument = await this.documentModel.findOne({ current: true }).exec();
@@ -143,14 +154,18 @@ export class DrService {
             // Quitamos al documento ya existente como vigente y se lo damos al nuevo
             currentDocument.current = false;
             document.current = true;
-            
+
+            await currentDocument.save();    
         }
 
-        await currentDocument.save();
+        
 
         await document.save();
 
-        return { state: true }
+        return { 
+            state: true,
+            message: "Documento marcado como vigente con exito"
+         }
     }
     
 }

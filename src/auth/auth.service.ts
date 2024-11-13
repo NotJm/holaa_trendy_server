@@ -5,7 +5,6 @@ import {
   ForbiddenException,
   Injectable,
   HttpStatus,
-  UnauthorizedException,
   Req,
   Res,
 } from '@nestjs/common';
@@ -14,7 +13,6 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/restauration.dto';
-import { EmailService } from '../core/services/email.service';
 import { PwnedService } from '../core/services/pwned.service';
 import { ZxcvbnService } from '../core/services/zxcvbn.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -26,7 +24,8 @@ import { ChangePasswordDto } from './dto/change.password.dto';
 import { LogService } from '../core/services/log.service'; // Asegúrate de importar LogService
 import { IncidentService } from '../admin/incident/incident.service';
 import { Request, Response } from 'express';
-import { COOKIE_AGE, JWT_AGE } from '../constants/contants';
+import { COOKIE_AGE, JWT_AGE, Role } from '../constants/contants';
+import { EmailService } from 'src/admin/email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -46,7 +45,9 @@ export class AuthService {
   ) {}
 
   // Registro de usuario, hasheo de contraseña
-  async signIn(registerDto: RegisterDto): Promise<any> {
+  async signIn(
+    registerDto: RegisterDto,
+  ): Promise<{ status: number; message: string }> {
     const { username, password, email } = registerDto;
 
     const user = await this.userModel.findOne({ email });
@@ -98,11 +99,11 @@ export class AuthService {
       permissions: ['change_password'],
     });
 
-    // Enviar email de verificación
-    await this.sendEmailVerification(email);
-
     // Guardar usuario
     await newUser.save();
+
+    // Enviar email de verificación
+    await this.sendEmailVerification(email);
 
     // Registrar evento de registro exitoso
     await this.logService.logEvent(
@@ -114,7 +115,7 @@ export class AuthService {
     return {
       status: HttpStatus.OK,
       message:
-        'Gracias por registrarse, hemos enviado un link de activación de cuenta a su correo',
+        'Gracias por registrarse, hemos enviado un codigo de activación de cuenta a su correo',
     };
   }
 
@@ -174,13 +175,19 @@ export class AuthService {
     // Si el usuario no ha verificado su cuenta
     if (!user.verification) {
       throw new ForbiddenException({
-        message: 'Estimado usuario, le solicitamos que verifique su cuenta para habilitar el acceso a nuestros servicios.',
+        message:
+          'Estimado usuario, le solicitamos que verifique su cuenta para habilitar el acceso a nuestros servicios.',
       });
     }
 
     user.sessionId = sessionId;
 
     await user.save();
+
+    if (user.role != Role.ADMIN) {
+      // Enviar email de verificación
+      await this.sendEmailVerification(email);
+    }
 
     const payload = { username: user.username, role: user.role };
 
@@ -204,40 +211,52 @@ export class AuthService {
 
     return {
       status: HttpStatus.OK,
-      message: 'Sesión iniciada exitosamente',
+      message: 'Verificacion Necesaria',
     };
   }
 
-  async refreshAccessToken(token: string) {
+  async logOut(res: Response): Promise<any> {
+    res.clearCookie('authentication');
+    res.clearCookie('authenticate');
+    res.clearCookie('authenticate-admin');
+    return res
+      .status(200)
+      .json({ status: true, message: 'Sesión cerrada exitosamente' });
+  }
+
+  async refreshAccessToken(@Req() req: Request, res: Response): Promise<any> {
+    const token = req.cookies['authentication'];
+
+    if (!token) {
+      return res.status(HttpStatus.UNAUTHORIZED).json({
+        message: 'Acceso Denegado',
+      });
+    }
+
     try {
-      const decode = this.jwtService.verify(token);
+      const payload = this.jwtService.verify(token); // Verifica el token existente
 
-      const user = await this.userModel.findById(decode.sub);
+      // Genera un nuevo token basado en el payload del usuario
+      const newToken = this.jwtService.sign(payload, { expiresIn: JWT_AGE });
 
-      if (!user) {
-        throw new UnauthorizedException('Usuario no encontrado');
-      }
-
-      const payload = {
-        username: user.username,
-        sub: user.id,
-      };
-
-      const new_token = this.jwtService.sign(payload, {
-        expiresIn: '15m',
+      // Actualiza la cookie con el nuevo token
+      res.cookie('authentication', newToken, {
+        httpOnly: true,
+        sameSite: 'strict',
+        secure: false,
+        path: '/',
+        maxAge: COOKIE_AGE,
       });
 
-      return {
-        status: HttpStatus.OK,
-        message: 'Token refrescado con exito',
-        token: new_token,
-      };
+      return res.status(HttpStatus.OK).json({ message: 'Token Refrescado' });
     } catch (error) {
-      throw new UnauthorizedException('Invalid refresh token');
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json({ message: 'Token Invalido' });
     }
   }
 
-  // Implementacion de olvidar se divide en 
+  // Implementacion de olvidar se divide en
   // Enviar correo de para validar y empezar el proceso (actual)
   // TODO Arreglar el codigo OTP implementacion de guardar datos
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<any> {
@@ -252,13 +271,13 @@ export class AuthService {
     }
 
     // Generar el código OTP utilizando el servicio OTP
-    const otpCode = this.otpService.generateOTP();
+    // const otpCode = this.otpService.generateOTP();
 
     // Enviar el código OTP por correo al usuario
-    // await this.emailService.sendCodePassword(otpCode, email);
+    await this.sendEmailVerification(email);
 
     // Guardar los cambios en la base de datos
-    await user.save();
+    // await user.save();
 
     return {
       message:
@@ -337,35 +356,33 @@ export class AuthService {
       // Obtenemos el codigo y la expiracion del OTP
       const { otp, exp } = this.otpService.generateOTP();
 
+      console.log(exp);
+
       // Buscamos el usuario por medio del email
-      const user = await this.userModel.findOne({ email });
+      const user = await this.userModel.findOne({ email }).exec();
 
-      // Guaramos los siguientes datos del usuario
-      user.otpCode = otp;
-
-      // Guardamos la expiracion del otp en los datos del usuario
-      user.otpExpiration = new Date(Date.now() + exp * 1000);
+      await user
+        .updateOne({
+          otpCode: otp,
+          otpExpiration: new Date(Date.now() + exp * 1000),
+        })
+        .exec();
 
       // Enviamos un correo de activacion a la cuenta
       await this.emailService.sendCodeVerification(otp, email);
-
-      // Regresamos respuesta satisfactoria
-      return {
-        status: HttpStatus.OK, // El estado es 202
-        // Mensjae accesible para el usuario
-        message: 'Se ha enviado a su correo un link de activacion',
-      };
     } catch (error) {
       // En caso de que tengamos un error lo mostraremos
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: `Excepcion encontrada y controlada: Razon ${error}`
-      }
+        message: `Excepcion encontrada y controlada: Razon ${error}`,
+      };
     }
   }
 
   // Metodo para activacion de correo
-  async activationEmail(activationDto: ActivationDto): Promise<any> {
+  async accountActivation(
+    activationDto: ActivationDto,
+  ): Promise<{ status: number; message: string }> {
     // La activacion del correo consta de obtener el email para poder activar la cuenta
     // Para esta implementacion se necesita obtener email
     // Despues se busca el email y se activa la verificacion pasando el estado a verdadero
@@ -375,7 +392,7 @@ export class AuthService {
 
     // Verificamos si el codigo OTP todavia es valido
     const isValid = this.otpService.verificationOTP(otp);
-    
+
     // En caso de no ser valido regresamos una excepcion de conflicto
     if (!isValid) {
       throw new ConflictException({
@@ -385,7 +402,7 @@ export class AuthService {
     }
 
     // Buscamos por codigo otp
-    const user = await this.userModel.findOne({ otpCode: otp });
+    const user = await this.userModel.findOne({ otpCode: otp }).exec();
 
     if (!user) {
       throw new BadRequestException({
@@ -396,6 +413,10 @@ export class AuthService {
 
     // Activamos verificacion
     user.verification = true;
+
+    user.otpCode = '';
+
+    user.otpExpiration = null;
 
     // Guardamos usuario
     await user.save();
@@ -425,22 +446,36 @@ export class AuthService {
   }
 
   // Verificacion token
-  async verificationAuthenticate(@Req() req: Request) {
-    const token = req.cookies.token;
+  async verificationAuthenticate(
+    @Req() req: Request,
+  ): Promise<{ message: string; authenticate: boolean; role: string }> {
+    try {
+      const token = req.cookies.authentication;
 
-    console.log('cookies ', token);
+      const payload = this.jwtService.verify(token);
 
-    if (!token) {
+      console.log('cookies ', token);
+
+      if (!token) {
+        return {
+          message: 'Token no definido o no existente',
+          authenticate: false,
+          role: '',
+        };
+      }
+
       return {
-        message: 'Token no definido o no existente',
+        message: 'Autorizacion vigente',
+        authenticate: true,
+        role: payload.role,
+      };
+    } catch (err) {
+      return {
+        message: 'Token expirado o inexistente',
         authenticate: false,
+        role: '',
       };
     }
-
-    return {
-      message: 'Autorizacion vigente',
-      authenticate: true,
-    };
   }
 
   // Revocacion de cookies (session)

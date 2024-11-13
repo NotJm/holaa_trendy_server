@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsDate, IsOptional, IsString } from 'class-validator';
 
 // Impelementacion de actualizacion de datos mediante la estructura DTO
@@ -13,6 +14,7 @@ export class UpdateDocumentDto {
 
   @IsOptional()
   @IsDate({ message: 'Por favor ingrese una fecha valida' })
+  @Type(() => Date)
   effective_date?: Date;
 
 }

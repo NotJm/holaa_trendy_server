@@ -10,7 +10,6 @@ import { UpdateConfigurationDto } from './dto/configuration.dto';
 // Implementacion de controlador para el manejo de incidencias este metodo solo es accesible para ciertos
 // usuarios como por ejmplo auth o administradores
 @Controller('incident')
-@UseGuards(JwtAuthGuard, RoleGuard)
 export class IncidentController {
   constructor(private readonly incidentService: IncidentService) {}
 
@@ -23,19 +22,20 @@ export class IncidentController {
 
   // Metodo para obtener a los usuarios bloquedos filtrando por el numero de dias bloqueados
   @Get('blocked/users')
+  @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.ADMIN)
   async getBlockedUsers(@Body() filterUsernameForDaysDto: FilterUsernameForDaysDto) {
     return await this.incidentService.getBlockedUsers(filterUsernameForDaysDto);
   }
 
   // Obtener la configuración actual de intentos fallidos y duración del bloqueo
-  @Get('get/configuration')
-  @Roles(Role.ADMIN)
+  @Get('configuration')
   async getConfiguration() {
     return await this.incidentService.getIncidentConfiguration();
   }
 
   @Put('update/configuration/:id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.ADMIN)
   async updateConfiguration(@Param('id') id: string, @Body() updateConfigurationDto: UpdateConfigurationDto) {
     return await this.incidentService.updateIncidentConfiguration(id, updateConfigurationDto);

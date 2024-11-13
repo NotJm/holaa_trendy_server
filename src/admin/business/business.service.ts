@@ -16,7 +16,7 @@ export class BusinessService {
 
     // Implementacion de metodo para la creacion una red social 
     // mediante la estructura de datos DTO
-    async creatSocialSite(createSocialSiteDto: CreateSocialSiteDto): Promise<{ state: boolean }> {
+    async creatSocialSite(createSocialSiteDto: CreateSocialSiteDto): Promise<{ state: boolean, message: string }> {
         const { name } = createSocialSiteDto;
         // Primero verificamos que no exista una red social con el mismo nombre
         const socialSite = await this.socialSiteModel.findOne({ name }).exec();
@@ -35,7 +35,10 @@ export class BusinessService {
         newSocialSite.save();
 
         // Regresams respuesta
-        return { state: true }
+        return { 
+            state: true,
+            message: "Se ha creado con exito la red social"
+         }
     }
 
     // Implementacion de metodo para la obtencion de todas las redes sociales
@@ -45,7 +48,7 @@ export class BusinessService {
 
     // Implementacion de metodo para la actualizacion de una red social
     // mediante la estructura de datos DTO previamente programada
-    async updateSocialSite(id:string, updateSocialSiteDto: updateSocialSiteDto): Promise<{ state: boolean }> {
+    async updateSocialSite(id:string, updateSocialSiteDto: updateSocialSiteDto): Promise<{ state: boolean, message: string }> {
         // Primero verificamos que realmente exista la red social con ese ID
         const socialSite = await this.socialSiteModel.findById(id).exec()
 
@@ -57,23 +60,22 @@ export class BusinessService {
         }
 
         // Si existiera entonces hacemos las actualizaciones correspondientes
-        const updateSocialSite = new this.socialSiteModel({
+        socialSite.updateOne({
             ...updateSocialSiteDto,
-            ...socialSite.toObject(),
-            update_date: Date.now
-        });
-
-        // Guardamos actualizacion
-        updateSocialSite.save()
+            update_date: new Date()
+        }).exec();
 
         // Regresamos el indicador que la operacion fue exitosa
-        return { state: true }
+        return { 
+            state: true,
+            message: "Se ha actualizado con exito la red social"
+        }
 
     }
 
     // Implementacion de metodo para la eliminacion de red social en la base de datos
     // mediante la estructura de datos DTO previamente programada
-    async deleteSocialSite(id: string): Promise<{ state: boolean }> {
+    async deleteSocialSite(id: string): Promise<{ state: boolean, message: string }> {
         // Primero verificamos que relamnete existe la red social asociada con la ID
         const socialSite = await this.socialSiteModel.findById(id).exec()
 
@@ -84,15 +86,18 @@ export class BusinessService {
         }
 
         // Si existe procedemos a eliminar la red social de la base de datos
-        await this.socialSiteModel.deleteOne({ id })
+        socialSite.deleteOne().exec()
 
         // Regresamos que la operacion se realizo de manera exitosa
-        return { state: true }
+        return { 
+            state: true,
+            message: "Red Social eliminada con exito"
+        }
     }
 
     // Implementacion de metodo para obtener la informacion total de la empresa
-    async getBusinessInformation(): Promise<BusinessDocument[]> {
-        return await this.businessSiteModel.find().exec();
+    async getBusinessInformation(): Promise<BusinessDocument> {
+        return await this.businessSiteModel.findOne().exec();
     }
 
     // Implementacion de creacion del perfil de la empresa
@@ -123,7 +128,7 @@ export class BusinessService {
         } else {
             existsProfile.updateOne({
                 ...updateBusinessProfile,
-                update_date: Date.now
+                update_date: new Date()
             }).exec();
 
             return { state: true, message: "El perfil de la empresa ha sido actualizado exitosamente"}

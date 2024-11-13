@@ -1,4 +1,5 @@
 import { Prop } from '@nestjs/mongoose';
+import { Type } from 'class-transformer';
 import { IsBoolean, IsDate, IsOptional, IsString } from 'class-validator';
 
 // Implementacion de un sistema para la modificacion de documentso regulatorios
@@ -10,9 +11,9 @@ export class CreateDocumentDto {
   @IsString()
   readonly content: string;
 
-  @IsOptional()
   @IsDate({ message: "Por favor ingrese una fecha valida"})
-  readonly effective_date?: Date = new Date();
+  @Type(() => Date)
+  readonly effective_date: Date;
 
   @IsOptional()
   @IsBoolean()

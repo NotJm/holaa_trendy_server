@@ -49,12 +49,13 @@ export class DocumentController {
         return await this.documentService.updateDocument(id, updateDocumentDto);
     }
 
-    @Post('activation/:id')
+    @Put('activation/:id')
     @Roles(Role.ADMIN)
     async activationDocument(@Param('id') id: string) {
         // Activacion documento (vigente) este solo puede ser uno 
         // no puede existir varios documentos vigentes
         return await this.documentService.activationDocument(id)
+        
     }
 
     
