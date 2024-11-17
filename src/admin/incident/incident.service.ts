@@ -10,7 +10,6 @@ import { Incident, IncidentDocument } from './schemas/incident.schema';
 import {
   FilterUsernameForDaysDto,
   RegisterIncidentDto,
-  UsernameIsBlockedDto,
 } from './dto/incident.dto';
 import {
   IncidentConfiguration,
@@ -21,11 +20,9 @@ import { UpdateConfigurationDto } from './dto/configuration.dto';
 
 @Injectable()
 export class IncidentService implements OnModuleInit {
-  
   async onModuleInit() {
     await this.createDefaultConfiguration();
   }
-
 
   constructor(
     @InjectModel(Incident.name) private incidentModel: Model<IncidentDocument>,
@@ -34,7 +31,9 @@ export class IncidentService implements OnModuleInit {
   ) {}
 
   async createDefaultConfiguration(): Promise<void> {
-    const existsConfiguration = await this.incidentConfigurationModel.findOne().exec();
+    const existsConfiguration = await this.incidentConfigurationModel
+      .findOne()
+      .exec();
 
     if (!existsConfiguration) {
       const defaultConfiguration = new this.incidentConfigurationModel();
@@ -52,8 +51,9 @@ export class IncidentService implements OnModuleInit {
     id: string,
     updateConfigurationDto: UpdateConfigurationDto,
   ): Promise<{ state: boolean; message: string }> {
-
-    const incidentConfiguration = await this.incidentConfigurationModel.findById(id).exec();
+    const incidentConfiguration = await this.incidentConfigurationModel
+      .findById(id)
+      .exec();
 
     if (!incidentConfiguration) {
       throw new NotFoundException(
@@ -76,38 +76,40 @@ export class IncidentService implements OnModuleInit {
     registerIncidentDto: RegisterIncidentDto,
   ): Promise<Incident> {
     const { email } = registerIncidentDto;
-  
+
     const incident = await this.incidentModel.findOne({ username: email });
-    const incidentConfiguration = await this.incidentConfigurationModel.findOne().exec();
+    const incidentConfiguration = await this.incidentConfigurationModel
+      .findOne()
+      .exec();
     const now = new Date();
-  
+
     if (incident) {
       if (this.isAccountBlocked(incident, now)) {
         throw new ForbiddenException(
           `La cuenta está bloqueada. Inténtalo nuevamente después de ${incident.blockExpiresAt.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`,
         );
       }
-  
+
       this.resetAttemptsIfBlockExpired(incident, now);
-  
+
       incident.failedAttempts += 1;
       incident.lastAttempt = now;
-  
+
       if (incident.failedAttempts >= incidentConfiguration.maxFailedAttempts) {
         this.blockAccount(incident, incidentConfiguration.blockDuration, now);
       }
-  
+
       return incident.save();
     } else {
       return this.createIncident(email);
     }
   }
-  
+
   // Verifica si la cuenta está bloqueada y el bloqueo no ha expirado
   private isAccountBlocked(incident: Incident, now: Date): boolean {
     return incident.isBlocked && now < incident.blockExpiresAt;
   }
-  
+
   // Reinicia los intentos fallidos y desbloquea la cuenta si el bloqueo ha expirado
   private resetAttemptsIfBlockExpired(incident: Incident, now: Date): void {
     if (incident.isBlocked && now >= incident.blockExpiresAt) {
@@ -116,13 +118,19 @@ export class IncidentService implements OnModuleInit {
       incident.blockExpiresAt = null;
     }
   }
-  
+
   // Bloquea la cuenta y establece la duración del bloqueo
-  private blockAccount(incident: Incident, blockDuration: number, now: Date): void {
+  private blockAccount(
+    incident: Incident,
+    blockDuration: number,
+    now: Date,
+  ): void {
     incident.isBlocked = true;
-    incident.blockExpiresAt = new Date(now.getTime() + blockDuration * 60 * 1000); 
+    incident.blockExpiresAt = new Date(
+      now.getTime() + blockDuration * 60 * 1000,
+    );
   }
-  
+
   // Crea una nueva incidencia para el usuario
   private async createIncident(email: string): Promise<Incident> {
     const newIncident = new this.incidentModel({
@@ -133,11 +141,13 @@ export class IncidentService implements OnModuleInit {
     return newIncident.save();
   }
 
-  async usernameIsBlocked(
-    usernameIsBlockedDto: UsernameIsBlockedDto,
-  ): Promise<Incident> {
-    const { username } = usernameIsBlockedDto;
-    return this.incidentModel.findOne({ username });
+  /**
+   * Metodo para saber si un usuario esta bloqueado en la base de datos
+   * @param usernameIsBlockedDto
+   * @returns Incident informacion sobre sus incidencias
+   */
+  async getIncidentUser(username: string): Promise<Incident> {
+    return await this.incidentModel.findOne({ username }).exec();
   }
 
   async getBlockedUsers(

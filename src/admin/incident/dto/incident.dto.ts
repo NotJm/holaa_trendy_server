@@ -9,11 +9,6 @@ export class RegisterIncidentDto {
   email: string;
 }
 
-export class UsernameIsBlockedDto {
-  @IsString()
-  @IsNotEmpty()
-  username: string;
-}
 
 export class FilterUsernameForDaysDto {
   @IsNumber()

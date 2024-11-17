@@ -21,7 +21,7 @@ import { RegisterDto } from './dto/register.dto';
 import { OtpService } from '../core/services/otp.service';
 import { ActivationDto } from './dto/activation.dto';
 import { ChangePasswordDto } from './dto/change.password.dto';
-import { LogService } from '../core/services/log.service'; // Asegúrate de importar LogService
+import { LogService } from '../core/services/log.service';
 import { IncidentService } from '../admin/incident/incident.service';
 import { Request, Response } from 'express';
 import { COOKIE_AGE, JWT_AGE, Role } from '../constants/contants';
@@ -29,51 +29,38 @@ import { EmailService } from 'src/admin/email/email.service';
 
 @Injectable()
 export class AuthService {
-  private generateSessionID(): string {
-    return uuidv4();
-  }
-
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
     private incidentService: IncidentService,
     private emailService: EmailService,
     private pwnedservice: PwnedService,
-    private zxcvbnService: ZxcvbnService,
     private otpService: OtpService,
     private logService: LogService,
   ) {}
 
-  // Registro de usuario, hasheo de contraseña
+  /**
+   * Metodo para registrar a un usuario en la base de datos
+   * @param registerDto
+   * @returns
+   */
   async signIn(
     registerDto: RegisterDto,
   ): Promise<{ status: number; message: string }> {
     const { username, password, email } = registerDto;
 
-    const user = await this.userModel.findOne({ email });
+    // Buscamos al usuario por correo electronico
+    const existsUser = await this.userModel.findOne({
+      $or: [{ username }, { email }],
+    }).exec();
+
 
     // En caso de que el usuario exista se manda una excepción de conflicto
-    if (user) {
-      // Registrar evento de intento fallido de registro
-      await this.logService.logEvent(
-        'REGISTER_FAIL',
-        `Intento de registro fallido: el usuario ${username} ya existe.`,
-        user._id.toString(),
-      );
-
+    if (existsUser) {
+      // Mandamos una excepcion de conflicto para notificar que el usuario esta registrado
       throw new ConflictException({
-        message: `El usuario '${user.username}' ya se encuentra registrado`,
-        error: 'Conflict',
-      });
-    }
-
-    // Verificar si la contraseña es débil
-    const zxcvbn = this.zxcvbnService.validatePassword(password);
-
-    if (zxcvbn) {
-      throw new BadRequestException({
-        message: 'La contraseña ingresada, es débil',
-        error: 'BadRequest',
+        status: HttpStatus.CONFLICT,
+        message: "El usuario o el correo electronico ya estan registrados, por favor inicie sesion",
       });
     }
 
@@ -83,12 +70,12 @@ export class AuthService {
 
     if (timesCommitted > 0) {
       throw new BadRequestException({
+        status: HttpStatus.BAD_REQUEST,
         message: `La contraseña ya fue comprometida ${timesCommitted} veces`,
-        error: 'BadRequest',
       });
     }
 
-    // Hashear contraseña
+    // Encriptamos la contrase;a de manera segura
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Crear esquema para la base de datos
@@ -105,13 +92,6 @@ export class AuthService {
     // Enviar email de verificación
     await this.sendEmailVerification(email);
 
-    // Registrar evento de registro exitoso
-    await this.logService.logEvent(
-      'REGISTER_SUCCESS',
-      `El usuario ${username} se ha registrado con éxito.`,
-      newUser._id.toString(),
-    );
-
     return {
       status: HttpStatus.OK,
       message:
@@ -119,86 +99,86 @@ export class AuthService {
     };
   }
 
-  // Manejo de login del usuario
-  async logIn(loginDto: LoginDto, @Res() res: Response): Promise<any> {
-    // Obtenemos los datos importantes
+  /**
+   * Metodo para que detectar si un suario esta en la base de datos
+   * @param loginDto
+   * @param res
+   * @returns
+   */
+  async logIn(
+    loginDto: LoginDto,
+    @Res() res: Response,
+  ): Promise<{ status: number; message: string }> {
+    // Obtenemos las credenciales
     const { email, password } = loginDto;
-
-    // Generar una sessionID
-    const sessionId = this.generateSessionID();
 
     // Primero nos aseguramos de que existe el usuario
     const user = await this.userModel.findOne({ email });
 
     // Si el usuario no se encuentra registrado
     if (!user) {
-      // Registrar evento de intento de inicio de sesión con usuario inexistente
-      await this.logService.logEvent(
-        'LOGIN_FAIL',
-        `Intento de inicio de sesión fallido: el usuario con la cuenta ${email} no está registrado.`,
-        email,
-      );
-
-      throw new ConflictException(
-        `El usuario con la cuenta ${email} no está registrado, Por favor regístrese.`,
-      );
+      // Regresamos una excepcion de conflicto
+      throw new ConflictException({
+        status: HttpStatus.CONFLICT,
+        message: `La cuenta ${email} no esta asociada a ningun usuario, Por favor regístrese.`,
+      });
     }
 
     // Verificar si el usuario tiene un incidente
-    const userIncident = await this.incidentService.usernameIsBlocked({
-      username: email,
-    });
+    const incidentUser = await this.incidentService.getIncidentUser(
+      user.username,
+    );
 
     // Si el usuario tiene su cuenta bloqueada
-    if (userIncident && userIncident.isBlocked) {
-      throw new ForbiddenException(
-        `Su cuenta ha sido bloqueada temporalmente. Podrá acceder nuevamente a las ${new Date(userIncident.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.`,
-      );
+    if (incidentUser && incidentUser.isBlocked) {
+      throw new ForbiddenException({
+        status: HttpStatus.FORBIDDEN,
+        message: `Su cuenta ha sido bloqueada temporalmente. Podrá acceder nuevamente a las ${new Date(incidentUser.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.`,
+      });
     }
 
+    // Comparacion de contraseña para verificacion de credenciales
     const isPasswordMatching = await bcrypt.compare(password, user.password);
 
+    // Si no son iguales se manda, se crea una nueva incidencia
     if (!isPasswordMatching) {
-      // Registrar evento de intento fallido de inicio de sesión por contraseña incorrecta
-      await this.logService.logEvent(
-        'LOGIN_FAIL',
-        `Intento de inicio de sesión fallido: contraseña incorrecta para el usuario ${email}.`,
-        user._id.toString(),
-      );
-
       // Añadir una incidencia más por si se intenta iniciar sesión incorrectamente
       await this.incidentService.registerFailedAttempt({ email });
 
-      throw new ConflictException('Credenciales incorrectas');
+      // Se manda una respuesta de conflicto donde las credenciales son incorrectas
+      throw new ConflictException({
+        status: HttpStatus.CONFLICT,
+        message: 'Correo electronico o contraseña incorrecta',
+      });
     }
 
     // Si el usuario no ha verificado su cuenta
     if (!user.verification) {
       throw new ForbiddenException({
+        status: HttpStatus.FORBIDDEN,
         message:
           'Estimado usuario, le solicitamos que verifique su cuenta para habilitar el acceso a nuestros servicios.',
       });
     }
 
-    user.sessionId = sessionId;
+    // Generar una sessionID
+    const sessionId = uuidv4();
 
-    await user.save();
+    // Guardamos la sesion ID
+    user.updateOne({ sessionId: sessionId }).exec();
 
-    if (user.role != Role.ADMIN) {
+    if (user.role != Role.ADMIN)
       // Enviar email de verificación
       await this.sendEmailVerification(email);
-    }
 
-    const payload = { username: user.username, role: user.role };
+    // Creamos el cuerpo del JWT para poder verificar despues
+    const payload = { 
+      session: user.sessionId, 
+      role: user.role,
+    };
 
+    // Generamos el token JWT
     const token = this.jwtService.sign(payload, { expiresIn: JWT_AGE });
-
-    // Registrar evento de inicio de sesión exitoso
-    await this.logService.logEvent(
-      'LOGIN_SUCCESS',
-      `El usuario ${email} ha iniciado sesión con éxito.`,
-      user._id.toString(),
-    );
 
     // Informacion de la cookie que se envia al frontend de manera segura
     res.cookie('authentication', token, {
@@ -210,18 +190,25 @@ export class AuthService {
     });
 
     return {
-      status: HttpStatus.OK,
-      message: 'Verificacion Necesaria',
+      status: HttpStatus.ACCEPTED,
+      message: `Bienvenido ${user.username}, necesitamos que verfique que es usted, se ha enviado un codigo a su correo electronico asociado`,
     };
   }
 
-  async logOut(res: Response): Promise<any> {
+  /**
+   * Metodo para cerrar la sesion de un usuario
+   * @param res
+   * @returns
+   */
+  async logOut(res: Response): Promise<void> {
     res.clearCookie('authentication');
     res.clearCookie('authenticate');
     res.clearCookie('authenticate-admin');
-    return res
-      .status(200)
-      .json({ status: true, message: 'Sesión cerrada exitosamente' });
+
+    res.status(HttpStatus.ACCEPTED).json({
+      status: HttpStatus.ACCEPTED,
+      message: 'Sesion cerrada exitosamente',
+    });
   }
 
   async refreshAccessToken(@Req() req: Request, res: Response): Promise<any> {
@@ -267,7 +254,9 @@ export class AuthService {
 
     // Si el usuario no existe, lanzar una excepción
     if (!user) {
-      throw new BadRequestException('El correo no está registrado');
+      throw new BadRequestException(
+        'El correo no esta asociado a ninguna cuenta',
+      );
     }
 
     // Generar el código OTP utilizando el servicio OTP
@@ -354,7 +343,7 @@ export class AuthService {
   private async sendEmailVerification(email: string): Promise<any> {
     try {
       // Obtenemos el codigo y la expiracion del OTP
-      const { otp, exp } = this.otpService.generateOTP();
+      const { otp, exp } = await this.otpService.generateOTP();
 
       console.log(exp);
 
@@ -453,8 +442,6 @@ export class AuthService {
       const token = req.cookies.authentication;
 
       const payload = this.jwtService.verify(token);
-
-      console.log('cookies ', token);
 
       if (!token) {
         return {

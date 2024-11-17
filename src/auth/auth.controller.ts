@@ -8,34 +8,33 @@ import { RoleGuard } from 'src/core/guards/role.guard';
 import { JwtAuthGuard } from 'src/core/guards/jwt.auth.guard';
 import { Roles } from 'src/core/decorators/roles.decorator';
 import { Role } from 'src/constants/contants';
-import { EmailService } from 'src/admin/email/email.service';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/restauration.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly emailService: EmailService
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('logIn')
+  /**
+   * Endpoint para poder iniciar sesion de manera sencilla requiere crendenciales.
+   * Este metodo se encarga de  authenticar al usuario y si todo sale bien se regresa un JWT
+   */
   async logIn(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res) {
-    // Este metodo se encarga de  authenticar al usuario y si todo sale bien se regresa un JWT
     return await this.authService.logIn(loginDto, res);
   }
 
   @Post('signIn')
+  /**
+   * Endpoint para poder registruar un usuario
+   */
   async signIn(@Body() registerDto: RegisterDto) {
-    // La implementacion de este metodo se encuentra correctamente organizada
-    // En este caso solo debe de verificar la funcionalidad del Codigo OTP como verificacion extra
-    // Una vez que se verifica se encuentra otro endpoint 'activation-email'
     return await this.authService.signIn(registerDto);
   }
 
   @Get('logOut')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.USER, Role.ADMIN)
-  async logout(@Res() res: Response) {
+  async logOut(@Res() res: Response) {
     return await this.authService.logOut(res);
   }
 

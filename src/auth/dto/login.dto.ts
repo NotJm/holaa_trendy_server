@@ -1,15 +1,14 @@
-import { Prop } from "@nestjs/mongoose";
 import { IsEmail, IsNotEmpty } from "class-validator";
 
-// Implementacion para la estructura DTO del login
-// debe cumplir con los siguiente atributos
+/**
+ * Implementacion para la estructura para de como se recibira los datos
+ * en este caso las credenciales para poder iniciar sesion
+ */
 export class LoginDto {
-    @Prop({ required: true })
     @IsNotEmpty({ message: "Por favor, ingrese su correo electronico" })
-    @IsEmail()
+    @IsEmail({}, { message: "Por favor, ingrese un correo electronico valido"})
     email: string;
 
-    @Prop({ required: true })
-    @IsNotEmpty({ message: "Por favor, ingrese su contraseña "})
+    @IsNotEmpty({ message: "Por favor, ingrese su contraseña"})
     password: string;
 }

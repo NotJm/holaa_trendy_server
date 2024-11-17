@@ -2,40 +2,48 @@ import speakeasy from 'speakeasy';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IncidentService } from 'src/admin/incident/incident.service';
+import { IncidentConfiguration } from 'src/admin/incident/schemas/incident.config.schemas';
 
 @Injectable()
-export class OtpService implements OnModuleInit {
+export class OtpService {
 
     private readonly secret = this.configService.get<string>('OTP_KEY');
-    private step = 300;
 
     constructor(private readonly configService: ConfigService,
         private readonly incidentService: IncidentService
     ) { }
 
-    async onModuleInit() {
-        let incidenConfiguration:any = await this.incidentService.getIncidentConfiguration();
 
-        this.step = incidenConfiguration.otpLifeTime;
+    async getOtpLifeTime(): Promise<number> {
+        const configuration: IncidentConfiguration = await this.incidentService.getIncidentConfiguration();
+
+        return configuration.otpLifeTime;
     }
+
     
-    generateOTP() {
+    async generateOTP() {
+
+        const otpLifeTime = await this.getOtpLifeTime();
+
         return {
             otp: speakeasy.totp({
                 secret: this.secret,
                 encoding: 'base32',
-                step: this.step
+                step: otpLifeTime
             }),
-            exp: this.step
+            exp: otpLifeTime
         }
     }
 
-    verificationOTP(token: string) {
+    async verificationOTP(otp: string) {
+
+        const otpLifeTime = await this.getOtpLifeTime();
+
         return speakeasy.totp.verify({
             secret: this.secret,
             encoding: 'base32',
-            token,
-            step: this.step,
+            token: otp,
+            step: otpLifeTime,
             window: 1,
         })
     }
