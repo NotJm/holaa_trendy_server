@@ -183,8 +183,8 @@ export class AuthService {
     // Informacion de la cookie que se envia al frontend de manera segura
     res.cookie('authentication', token, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       maxAge: COOKIE_AGE,
       path: '/',
     });
@@ -230,7 +230,7 @@ export class AuthService {
       res.cookie('authentication', newToken, {
         httpOnly: true,
         sameSite: 'strict',
-        secure: false,
+        secure: true,
         path: '/',
         maxAge: COOKIE_AGE,
       });
