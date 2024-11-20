@@ -11,8 +11,8 @@ import * as fs from 'fs';
 async function bootstrap() {
 
   const httpsOptions = {
-    key: fs.readFileSync("src/ssl/server.local-key.pem"),
-    cert: fs.readFileSync("src/ssl/server.local.pem")
+    key: fs.readFileSync("src/ssl/holaatrendyserve-key.pem"),
+    cert: fs.readFileSync("src/ssl/holaatrendyserve.pem")
   }
   
   const app = await NestFactory.create(AppModule, {
@@ -34,9 +34,12 @@ async function bootstrap() {
 
   mongoose.set('sanitizeFilter', true);
 
-  await app.listen(configService.get<number>("PORT"), "server.local");
+  await app.listen(
+    configService.get<number>("PORT"),
+    configService.get<string>("HOSTNAME")
+  );
 
-  console.log(`Listen in https://server.local:${configService.get<number>("PORT")}`,);
+  console.log(`Listen in https://${configService.get<string>("HOSTNAME")}:${configService.get<number>("PORT")}`,);
   
 }
 

@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
 import { Role } from 'src/constants/contants';
-import { Roles } from 'src/core/decorators/roles.decorator';
-import { JwtAuthGuard } from 'src/core/guards/jwt.auth.guard';
-import { RoleGuard } from 'src/core/guards/role.guard';
+import { Roles } from '../../core/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../core/guards/jwt.auth.guard';
+import { RoleGuard } from '../../core/guards/role.guard';
 import { EmailService } from './email.service';
 import { UpdateEmailConfigurationDto } from './dto/configuration.dto';
 

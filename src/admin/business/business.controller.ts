@@ -4,9 +4,9 @@ import { CreateSocialSiteDto } from './dto/social/create.social.dto';
 import { updateSocialSiteDto } from './dto/social/update.social.dto';
 import { CreateBusinessProfileDto, UpdtaeBusinessProfileDto } from './dto/business/business.dto';
 import { AuditInterceptor } from '../../core/interceptor/audit.interceptor';
-import { JwtAuthGuard } from 'src/core/guards/jwt.auth.guard';
+import { JwtAuthGuard } from '../../core/guards/jwt.auth.guard';
 import { RoleGuard } from '../../core/guards/role.guard';
-import { Roles } from 'src/core/decorators/roles.decorator';
+import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from 'src/constants/contants';
 
 @Controller('business')

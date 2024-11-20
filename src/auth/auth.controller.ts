@@ -4,9 +4,9 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ActivationDto } from '../auth/dto/activation.dto';
 import { Request, Response } from 'express';
-import { RoleGuard } from 'src/core/guards/role.guard';
-import { JwtAuthGuard } from 'src/core/guards/jwt.auth.guard';
-import { Roles } from 'src/core/decorators/roles.decorator';
+import { RoleGuard } from '../core/guards/role.guard';
+import { JwtAuthGuard } from '../core/guards/jwt.auth.guard';
+import { Roles } from '../core/decorators/roles.decorator';
 import { Role } from 'src/constants/contants';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/restauration.dto';
 

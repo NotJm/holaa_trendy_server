@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { IncidentService } from './incident.service';
 import { FilterUsernameForDaysDto, RegisterIncidentDto } from './dto/incident.dto';
-import { Roles } from 'src/core/decorators/roles.decorator';
+import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from 'src/constants/contants';
-import { JwtAuthGuard } from 'src/core/guards/jwt.auth.guard';
+import { JwtAuthGuard } from '../../core/guards/jwt.auth.guard';
 import { RoleGuard } from '../../core/guards/role.guard';
 import { UpdateConfigurationDto } from './dto/configuration.dto';
 

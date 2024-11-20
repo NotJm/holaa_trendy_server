@@ -2,8 +2,8 @@ import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, UseIntercep
 import { DrService } from './document.service';
 import { CreateDocumentDto as CreateDocumentDto } from './dto/create.document.dto';
 import { UpdateDocumentDto } from './dto/update.document.dto';
-import { Roles } from 'src/core/decorators/roles.decorator';
-import { JwtAuthGuard } from 'src/core/guards/jwt.auth.guard';
+import { Roles } from '../../core/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../core/guards/jwt.auth.guard';
 import { Role } from 'src/constants/contants';
 import { RoleGuard } from '../../core/guards/role.guard';
 import { AuditInterceptor } from '../../core/interceptor/audit.interceptor';

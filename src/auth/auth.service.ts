@@ -110,17 +110,17 @@ export class AuthService {
     @Res() res: Response,
   ): Promise<{ status: number; message: string }> {
     // Obtenemos las credenciales
-    const { email, password } = loginDto;
+    const { username, password } = loginDto;
 
     // Primero nos aseguramos de que existe el usuario
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userModel.findOne({ username });
 
     // Si el usuario no se encuentra registrado
     if (!user) {
       // Regresamos una excepcion de conflicto
       throw new ConflictException({
         status: HttpStatus.CONFLICT,
-        message: `La cuenta ${email} no esta asociada a ningun usuario, Por favor regístrese.`,
+        message: `El usuario ${username} no esta asociada a ninguna cuenta, Por favor regístrese.`,
       });
     }
 
@@ -143,7 +143,7 @@ export class AuthService {
     // Si no son iguales se manda, se crea una nueva incidencia
     if (!isPasswordMatching) {
       // Añadir una incidencia más por si se intenta iniciar sesión incorrectamente
-      await this.incidentService.registerFailedAttempt({ email });
+      await this.incidentService.registerFailedAttempt({ username });
 
       // Se manda una respuesta de conflicto donde las credenciales son incorrectas
       throw new ConflictException({
@@ -169,7 +169,7 @@ export class AuthService {
 
     if (user.role != Role.ADMIN)
       // Enviar email de verificación
-      await this.sendEmailVerification(email);
+      await this.sendEmailVerification(user.email);
 
     // Creamos el cuerpo del JWT para poder verificar despues
     const payload = { 
@@ -201,9 +201,21 @@ export class AuthService {
    * @returns
    */
   async logOut(res: Response): Promise<void> {
-    res.clearCookie('authentication');
-    res.clearCookie('authenticate');
-    res.clearCookie('authenticate-admin');
+    res.clearCookie('authentication', {
+      secure: true,
+      sameSite: 'none',
+      path: '/'
+    });
+    res.clearCookie('authenticate', {
+      secure: true,
+      sameSite: 'none',
+      path: '/'
+    });
+    res.clearCookie('authenticate-admin', {
+      secure: true,
+      sameSite: 'none',
+      path: '/'
+    });
 
     res.status(HttpStatus.ACCEPTED).json({
       status: HttpStatus.ACCEPTED,
@@ -344,8 +356,6 @@ export class AuthService {
     try {
       // Obtenemos el codigo y la expiracion del OTP
       const { otp, exp } = await this.otpService.generateOTP();
-
-      console.log(exp);
 
       // Buscamos el usuario por medio del email
       const user = await this.userModel.findOne({ email }).exec();

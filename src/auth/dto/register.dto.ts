@@ -13,7 +13,7 @@ export class RegisterDto {
   })
   @Matches(/^[a-zA-Z0-9_]{5,}$/, {
     message:
-      "El nombre de usuario solo puede contener caracteres alfanumericos y ocupar '_' como espacio",
+      "El nombre de usuario solo puede contener minusculas, mayusculas y numeros y '_' como espacios",
   })
   readonly username: string;
 

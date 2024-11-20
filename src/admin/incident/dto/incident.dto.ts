@@ -6,7 +6,7 @@ import { IsString, IsNotEmpty, IsNumber, IsEmail } from 'class-validator';
 export class RegisterIncidentDto {
   @IsEmail()
   @IsNotEmpty({ message: "Por favor, es necesario que ingrese el usuario "})
-  email: string;
+  username: string;
 }
 
 

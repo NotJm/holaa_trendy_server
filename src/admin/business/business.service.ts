@@ -97,6 +97,7 @@ export class BusinessService {
 
     // Implementacion de metodo para obtener la informacion total de la empresa
     async getBusinessInformation(): Promise<BusinessDocument> {
+        
         return await this.businessSiteModel.findOne().exec();
     }
 

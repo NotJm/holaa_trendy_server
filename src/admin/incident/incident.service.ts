@@ -75,9 +75,9 @@ export class IncidentService implements OnModuleInit {
   async registerFailedAttempt(
     registerIncidentDto: RegisterIncidentDto,
   ): Promise<Incident> {
-    const { email } = registerIncidentDto;
+    const { username } = registerIncidentDto;
 
-    const incident = await this.incidentModel.findOne({ username: email });
+    const incident = await this.incidentModel.findOne({ username });
     const incidentConfiguration = await this.incidentConfigurationModel
       .findOne()
       .exec();
@@ -101,7 +101,7 @@ export class IncidentService implements OnModuleInit {
 
       return incident.save();
     } else {
-      return this.createIncident(email);
+      return this.createIncident(username);
     }
   }
 
