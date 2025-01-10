@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { IncidentService } from './incident.service';
 import { FilterUsernameForDaysDto, RegisterIncidentDto } from './dto/incident.dto';
-import { Roles } from '../../core/decorators/roles.decorator';
-import { Role } from 'src/constants/contants';
-import { JwtAuthGuard } from '../../core/guards/jwt.auth.guard';
-import { RoleGuard } from '../../core/guards/role.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { ROLE } from 'src/constants/contants';
+import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
+import { RoleGuard } from '../../common/guards/role.guard';
 import { UpdateConfigurationDto } from './dto/configuration.dto';
 
 // Implementacion de controlador para el manejo de incidencias este metodo solo es accesible para ciertos
@@ -23,7 +23,7 @@ export class IncidentController {
   // Metodo para obtener a los usuarios bloquedos filtrando por el numero de dias bloqueados
   @Get('blocked/users')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles(Role.ADMIN)
+  @Roles(ROLE.ADMIN)
   async getBlockedUsers(@Body() filterUsernameForDaysDto: FilterUsernameForDaysDto) {
     return await this.incidentService.getBlockedUsers(filterUsernameForDaysDto);
   }
@@ -36,7 +36,7 @@ export class IncidentController {
 
   @Put('update/configuration/:id')
   @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles(Role.ADMIN)
+  @Roles(ROLE.ADMIN)
   async updateConfiguration(@Param('id') id: string, @Body() updateConfigurationDto: UpdateConfigurationDto) {
     return await this.incidentService.updateIncidentConfiguration(id, updateConfigurationDto);
   }

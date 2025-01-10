@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import {
   EmailConfiguration,
@@ -8,52 +14,52 @@ import { Model } from 'mongoose';
 import { UpdateEmailConfigurationDto } from './dto/configuration.dto';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { OtpService } from '../../common/providers/otp.service';
+import { UserDocument } from 'src/users/schemas/user.schema';
 
 @Injectable()
 export class EmailService implements OnModuleInit {
-  
   private transporter;
   private configuration: EmailConfiguraionDocument;
 
-  async onModuleInit() {
-    await this.createDefaultConfiguration();
-    
-  }
-
   constructor(
     @InjectModel(EmailConfiguration.name)
-    private readonly emailConfiguraionModel: Model<EmailConfiguraionDocument>,
-    private readonly configService: ConfigService,
+    private readonly email_configuration_model: Model<EmailConfiguraionDocument>,
+    private readonly config_service: ConfigService,
   ) {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: this.configService.get<string>('EMAIL_USERNAME'),
-        pass: this.configService.get<string>('EMAIL_PASSWORD'),
+        user: this.config_service.get<string>('EMAIL_USERNAME'),
+        pass: this.config_service.get<string>('EMAIL_PASSWORD'),
       },
     });
   }
 
+  async onModuleInit() {
+    await this.createDefaultConfiguration();
+  }
+
   async createDefaultConfiguration(): Promise<void> {
-    const existsEmailConfiguration = await this.emailConfiguraionModel
+    const existsEmailConfiguration = await this.email_configuration_model
       .findOne()
       .exec();
 
     if (!existsEmailConfiguration) {
-      const defaultConfiguration = new this.emailConfiguraionModel();
+      const defaultConfiguration = new this.email_configuration_model();
       await defaultConfiguration.save();
     }
   }
 
   async getEmailConfigurattion(): Promise<EmailConfiguraionDocument> {
-    return this.emailConfiguraionModel.findOne().exec();
+    return this.email_configuration_model.findOne().exec();
   }
 
   async updateEmailConfiguration(
     id: string,
     updateEmailConfigurationDto: UpdateEmailConfigurationDto,
   ): Promise<{ state: boolean; message: string }> {
-    const emailConfiguration = await this.emailConfiguraionModel
+    const emailConfiguration = await this.email_configuration_model
       .findById(id)
       .exec();
 
@@ -71,12 +77,8 @@ export class EmailService implements OnModuleInit {
     };
   }
 
-  // Enviar codigo de verificacion para activar cuenta
-  async sendCodeVerification(otpCode: string, email: string) {
-    // Implementacion de logica para poder integrar personalizacion de mensajes de email
-    // Primeramente deberia poder integrar ciertos elementos en variables para poder personalizarla
-    // Esto totalmente conectado a mongo, en este caso se crearia un coleccion nueva
-    // Sin embargo deberia dividirla porque son diferentes mensajes con diferentes definiciones
+  async send_code_verification(email: string, otp: any, exp: Date) {
+    
 
     this.configuration = await this.getEmailConfigurattion();
 
@@ -103,7 +105,7 @@ export class EmailService implements OnModuleInit {
                 box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
                 transition: background-color 0.3s ease, transform 0.3s ease;
               ">
-                ${otpCode}
+                ${otp}
               </span>
             </p>
             <p style="font-size: 14px;">${this.configuration.content}</p>
@@ -113,7 +115,6 @@ export class EmailService implements OnModuleInit {
         </div>
       `,
     });
-
   }
 
   async sendCodePassword(otpCode: string, email: string) {

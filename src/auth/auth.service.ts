@@ -7,191 +7,275 @@ import {
   HttpStatus,
   Req,
   Res,
+  NotFoundException,
+  UnauthorizedException,
+  Type,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
-import { ForgotPasswordDto, ResetPasswordDto } from './dto/restauration.dto';
-import { PwnedService } from '../core/services/pwned.service';
-import { ZxcvbnService } from '../core/services/zxcvbn.service';
+import { PwnedService } from '../common/providers/pwned.service';
 import { v4 as uuidv4 } from 'uuid';
-import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
-import { OtpService } from '../core/services/otp.service';
-import { ActivationDto } from './dto/activation.dto';
-import { ChangePasswordDto } from './dto/change.password.dto';
-import { LogService } from '../core/services/log.service';
+import { ForgotPasswordDto } from './dtos/forgot-password.dto';
+import { LoginDto } from './dtos/login.dto';
+import { SignUpDto } from './dtos/signup.dto';
+import { AccountVerificationDto } from './dtos/activation.dto';
+import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { OtpService } from '../common/providers/otp.service';
 import { IncidentService } from '../admin/incident/incident.service';
 import { Request, Response } from 'express';
-import { COOKIE_AGE, JWT_AGE, Role } from '../constants/contants';
+import {
+  COOKIE_JWT_AGE,
+  JWT_AGE,
+  COOKIE_DEFAULT_AGE,
+} from '../constants/contants';
 import { EmailService } from 'src/admin/email/email.service';
+import { UsersService } from '../users/users.service';
+import { BaseService } from 'src/shared/base.service';
 
 @Injectable()
-export class AuthService {
+export class AuthService extends BaseService<UserDocument> {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private jwtService: JwtService,
-    private incidentService: IncidentService,
-    private emailService: EmailService,
-    private pwnedservice: PwnedService,
-    private otpService: OtpService,
-    private logService: LogService,
-  ) {}
-
-  /**
-   * Metodo para registrar a un usuario en la base de datos
-   * @param registerDto
-   * @returns
-   */
-  async signIn(
-    registerDto: RegisterDto,
-  ): Promise<{ status: number; message: string }> {
-    const { username, password, email } = registerDto;
-
-    // Buscamos al usuario por correo electronico
-    const existsUser = await this.userModel.findOne({
-      $or: [{ username }, { email }],
-    }).exec();
-
-
-    // En caso de que el usuario exista se manda una excepción de conflicto
-    if (existsUser) {
-      // Mandamos una excepcion de conflicto para notificar que el usuario esta registrado
-      throw new ConflictException({
-        status: HttpStatus.CONFLICT,
-        message: "El usuario o el correo electronico ya estan registrados, por favor inicie sesion",
-      });
-    }
-
-    // Verificar si la contraseña está comprometida
-    const timesCommitted =
-      await this.pwnedservice.verificationPassword(password);
-
-    if (timesCommitted > 0) {
-      throw new BadRequestException({
-        status: HttpStatus.BAD_REQUEST,
-        message: `La contraseña ya fue comprometida ${timesCommitted} veces`,
-      });
-    }
-
-    // Encriptamos la contrase;a de manera segura
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Crear esquema para la base de datos
-    const newUser = new this.userModel({
-      username: username,
-      password: hashedPassword,
-      email: email,
-      permissions: ['change_password'],
-    });
-
-    // Guardar usuario
-    await newUser.save();
-
-    // Enviar email de verificación
-    await this.sendEmailVerification(email);
-
-    return {
-      status: HttpStatus.OK,
-      message:
-        'Gracias por registrarse, hemos enviado un codigo de activación de cuenta a su correo',
-    };
+    @InjectModel(User.name) private readonly user_model: Model<UserDocument>,
+    private readonly jwt_service: JwtService,
+    private readonly user_service: UsersService,
+    private readonly incident_service: IncidentService,
+    private readonly email_service: EmailService,
+    private readonly pwned_service: PwnedService,
+    private readonly otp_service: OtpService,
+  ) {
+    super();
+    this.model = this.user_model;
   }
 
   /**
-   * Metodo para que detectar si un suario esta en la base de datos
-   * @param loginDto
-   * @param res
-   * @returns
+   * Se asegura que el usuario este verificado
+   * @param user Objeto de tipo User
    */
-  async logIn(
-    loginDto: LoginDto,
-    @Res() res: Response,
-  ): Promise<{ status: number; message: string }> {
-    // Obtenemos las credenciales
-    const { username, password } = loginDto;
-
-    // Primero nos aseguramos de que existe el usuario
-    const user = await this.userModel.findOne({ username });
-
-    // Si el usuario no se encuentra registrado
-    if (!user) {
-      // Regresamos una excepcion de conflicto
-      throw new ConflictException({
-        status: HttpStatus.CONFLICT,
-        message: `El usuario ${username} no esta asociada a ninguna cuenta, Por favor regístrese.`,
-      });
-    }
-
-    // Verificar si el usuario tiene un incidente
-    const incidentUser = await this.incidentService.getIncidentUser(
-      user.username,
-    );
-
-    // Si el usuario tiene su cuenta bloqueada
-    if (incidentUser && incidentUser.isBlocked) {
-      throw new ForbiddenException({
-        status: HttpStatus.FORBIDDEN,
-        message: `Su cuenta ha sido bloqueada temporalmente. Podrá acceder nuevamente a las ${new Date(incidentUser.blockExpiresAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}.`,
-      });
-    }
-
-    // Comparacion de contraseña para verificacion de credenciales
-    const isPasswordMatching = await bcrypt.compare(password, user.password);
-
-    // Si no son iguales se manda, se crea una nueva incidencia
-    if (!isPasswordMatching) {
-      // Añadir una incidencia más por si se intenta iniciar sesión incorrectamente
-      await this.incidentService.registerFailedAttempt({ username });
-
-      // Se manda una respuesta de conflicto donde las credenciales son incorrectas
-      throw new ConflictException({
-        status: HttpStatus.CONFLICT,
-        message: 'Correo electronico o contraseña incorrecta',
-      });
-    }
-
-    // Si el usuario no ha verificado su cuenta
-    if (!user.verification) {
+  private ensure_user_is_verified(user: User): void {
+    if (!user.is_verified) {
       throw new ForbiddenException({
         status: HttpStatus.FORBIDDEN,
         message:
           'Estimado usuario, le solicitamos que verifique su cuenta para habilitar el acceso a nuestros servicios.',
       });
     }
+  }
 
-    // Generar una sessionID
-    const sessionId = uuidv4();
+  /**
+   * Asegura que el usuario no este bloqueado
+   * @param {string} username Nombre de usuario
+   */
+  private async ensure_account_is_not_blocked(username: string): Promise<void> {
+    const inicdent_user =
+      await this.incident_service.get_incident_user(username);
 
-    // Guardamos la sesion ID
-    user.updateOne({ sessionId: sessionId }).exec();
+    if (inicdent_user && inicdent_user.isBlocked) {
+      const un_block_time = new Date(
+        inicdent_user.blockExpiresAt,
+      ).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
-    if (user.role != Role.ADMIN)
-      // Enviar email de verificación
-      await this.sendEmailVerification(user.email);
+      throw new ForbiddenException({
+        status: HttpStatus.FORBIDDEN,
+        message: `Su cuenta ha sido bloqueada temporalmente. Podrá acceder nuevamente a las ${un_block_time}.`,
+      });
+    }
+  }
 
-    // Creamos el cuerpo del JWT para poder verificar despues
-    const payload = { 
-      session: user.sessionId, 
-      role: user.role,
-    };
+  /**
+   * Metodo que crea un token tipo JWT
+   * @param user Objeto de tipo User
+   * @returns Devuelve un token tipo JWT
+   */
+  private create_jwt_token(user: User): string {
+    const payload = { role: user.role };
+    return this.jwt_service.sign(payload, { expiresIn: JWT_AGE });
+  }
 
-    // Generamos el token JWT
-    const token = this.jwtService.sign(payload, { expiresIn: JWT_AGE });
+  /**
+   * Metodo que verifica si la contraseña del usuario ha sido comprometida
+   * @param password Contraseña del usuario
+   */
+  private async is_password_compromised(password: string): Promise<void> {
+    const times_committed =
+      await this.pwned_service.verificationPassword(password);
 
-    // Informacion de la cookie que se envia al frontend de manera segura
-    res.cookie('authentication', token, {
+    if (times_committed > 0) {
+      throw new BadRequestException({
+        status: HttpStatus.BAD_REQUEST,
+        message: `La contraseña ya fue comprometida ${times_committed} veces`,
+      });
+    }
+  }
+
+  /**
+   * Metodo que verifica que el codigo OTP sea valido
+   * @param otp codigo OTP
+   */
+  private ensure_valid_otp(otp: string): void {
+    const is_valid = this.otp_service.verify_otp(otp);
+
+    if (!is_valid) {
+      throw new ConflictException({
+        status: HttpStatus.CONFLICT,
+        message: 'El código es inválido',
+      });
+    }
+  }
+
+  /**
+   * Metodo que se encarga de cambiar la contraseña de un usuario
+   * @param user Objeto de tipo UserDocument
+   * @param new_password Nueva contraseña del usuario
+   */
+  private async change_password(
+    user: UserDocument,
+    new_password: string,
+  ): Promise<void> {
+    await this.user_model
+      .updateOne({ _id: user._id }, { password: new_password })
+      .exec();
+  }
+
+  /**
+   * Metodo que activa la cuenta del usuario
+   * @param user Objeto de tipo UserDocument
+   */
+  private async set_account_active(user: UserDocument): Promise<void> {
+    await user.updateOne({ is_verified: true }).exec();
+  }
+
+  /**
+   * Metodo para registrar a un usuario en la base de datos
+   * @param signup_dto
+   * @returns Regresa el codigo de la respuesta a si como el mensaje de la peticion
+   */
+  async signup(
+    signup_dto: SignUpDto,
+    @Res() res: Response,
+  ): Promise<{ status: number; message: string }> {
+    const { username, password, email } = signup_dto;
+
+    const exists_user = await this.find_one({
+      username: username,
+      email: email,
+    });
+
+    if (exists_user) {
+      throw new ConflictException({
+        status: HttpStatus.CONFLICT,
+        message: `El usuario "${username}" ya tiene una cuenta registrada`,
+      });
+    }
+
+    await this.is_password_compromised(password);
+
+    const hashed_password = await bcrypt.hash(password, 10);
+
+    const new_user = new this.model({
+      username: username,
+      password: hashed_password,
+      email: email,
+      permissions: ['change_password'],
+    });
+
+    this.create(new_user)
+
+    await this.otp_service.set_otp_for_user(new_user);
+
+    await this.email_service.send_code_verification(
+      email,
+      new_user.otp,
+      new_user.otp_expiration,
+    );
+
+    res.cookie('verification', 'signup', {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: COOKIE_AGE,
+      sameSite: 'strict',
+      secure: false,
       path: '/',
+      maxAge: COOKIE_DEFAULT_AGE,
     });
 
     return {
-      status: HttpStatus.ACCEPTED,
-      message: `Bienvenido ${user.username}, necesitamos que verfique que es usted, se ha enviado un codigo a su correo electronico asociado`,
+      status: HttpStatus.OK,
+      message: `Gracias por registrarse ${username}, hemos enviado un codigo de activación de cuenta a su correo`,
+    };
+  }
+
+  /**
+   * Metodo para autenticar un cliente
+   * @param loginDto Contiene informacion sobre el cliente
+   * @param res Respuesta que se envia al cliente
+   * @returns Respuesta al cliente (Cookie jwt)
+   */
+  async login(
+    loginDto: LoginDto,
+    @Res() res: Response,
+  ): Promise<{ status: number; message: string }> {
+    const { username, password } = loginDto;
+
+    const exists_user = await this.user_service.find_user_by_field({
+      username: username,
+    });
+
+    if (!exists_user) {
+      throw new NotFoundException({
+        status: HttpStatus.NOT_FOUND,
+        message: `El usuario "${username}" no se encuentra registrado, Por favor registrese`,
+      });
+    }
+
+    this.ensure_user_is_verified(exists_user);
+
+    await this.ensure_account_is_not_blocked(username);
+
+    const is_password_matching = await bcrypt.compare(
+      password,
+      exists_user.password,
+    );
+
+    if (!is_password_matching) {
+      await this.incident_service.registerFailedAttempt({ username });
+
+      throw new ConflictException({
+        status: HttpStatus.CONFLICT,
+        message: 'Nombre de usuario o contraseña incorrecta',
+      });
+    }
+
+    const sessionId = uuidv4();
+    await exists_user.updateOne({ session_id: sessionId }).exec();
+    const token = this.create_jwt_token(exists_user);
+
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: COOKIE_JWT_AGE,
+      path: '/',
+    });
+
+    res.cookie('verification', 'login', {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: false,
+      path: '/',
+      maxAge: COOKIE_DEFAULT_AGE,
+    });
+
+    await this.otp_service.set_otp_for_user(exists_user);
+
+    await this.email_service.send_code_verification(
+      exists_user.email,
+      exists_user.otp,
+      exists_user.otp_expiration,
+    );
+
+    return {
+      status: HttpStatus.OK,
+      message: `Bienvenido ${exists_user.username}, necesitamos que verfique que es usted, se ha enviado un codigo a su correo electronico asociado`,
     };
   }
 
@@ -200,21 +284,11 @@ export class AuthService {
    * @param res
    * @returns
    */
-  async logOut(res: Response): Promise<void> {
-    res.clearCookie('authentication', {
+  async logout(res: Response): Promise<void> {
+    res.clearCookie('jwt', {
       secure: true,
       sameSite: 'none',
-      path: '/'
-    });
-    res.clearCookie('authenticate', {
-      secure: true,
-      sameSite: 'none',
-      path: '/'
-    });
-    res.clearCookie('authenticate-admin', {
-      secure: true,
-      sameSite: 'none',
-      path: '/'
+      path: '/',
     });
 
     res.status(HttpStatus.ACCEPTED).json({
@@ -223,264 +297,155 @@ export class AuthService {
     });
   }
 
-  async refreshAccessToken(@Req() req: Request, res: Response): Promise<any> {
-    const token = req.cookies['authentication'];
+  /**
+   * Metodo para obtener el estado de la verificacion
+   * @param req Peticion donde contiene la cookies
+   * @returns Regresa el estado de la verificacion
+   */
+  async verification_status(@Req() req: Request): Promise<{ status: number }> {
+    const verification_cookie = req.cookies.verification;
 
-    if (!token) {
-      return res.status(HttpStatus.UNAUTHORIZED).json({
-        message: 'Acceso Denegado',
+    if (!verification_cookie) {
+      throw new UnauthorizedException({
+        status: HttpStatus.UNAUTHORIZED,
+        message: 'Proceso no autorizado',
       });
     }
 
-    try {
-      const payload = this.jwtService.verify(token); // Verifica el token existente
-
-      // Genera un nuevo token basado en el payload del usuario
-      const newToken = this.jwtService.sign(payload, { expiresIn: JWT_AGE });
-
-      // Actualiza la cookie con el nuevo token
-      res.cookie('authentication', newToken, {
-        httpOnly: true,
-        sameSite: 'strict',
-        secure: true,
-        path: '/',
-        maxAge: COOKIE_AGE,
-      });
-
-      return res.status(HttpStatus.OK).json({ message: 'Token Refrescado' });
-    } catch (error) {
-      return res
-        .status(HttpStatus.UNAUTHORIZED)
-        .json({ message: 'Token Invalido' });
-    }
+    return { status: HttpStatus.OK };
   }
 
-  // Implementacion de olvidar se divide en
-  // Enviar correo de para validar y empezar el proceso (actual)
-  // TODO Arreglar el codigo OTP implementacion de guardar datos
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<any> {
-    const { email } = forgotPasswordDto;
+  /**
+   * Metodo que se encarga de verificar la cuenta del usuario
+   * @param accountVerificationDto
+   * @param res
+   * @returns
+   */
+  async account_verification(
+    accountVerificationDto: AccountVerificationDto,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<{ status: number; message: string; route: string }> {
+    const { otp } = accountVerificationDto;
 
-    // Buscar el usuario por su email
-    const user = await this.userModel.findOne({ email });
+    const process = req.cookies.verification;
 
-    // Si el usuario no existe, lanzar una excepción
-    if (!user) {
-      throw new BadRequestException(
-        'El correo no esta asociado a ninguna cuenta',
-      );
-    }
+    const processRoute = new Map<string, string>([
+      ['login', '/auth'],
+      ['signup', '/login'],
+      ['forgot_password', '/reset-password'],
+    ]);
 
-    // Generar el código OTP utilizando el servicio OTP
-    // const otpCode = this.otpService.generateOTP();
+    const route = processRoute.get(process);
 
-    // Enviar el código OTP por correo al usuario
-    await this.sendEmailVerification(email);
+    this.ensure_valid_otp(otp);
 
-    // Guardar los cambios en la base de datos
-    // await user.save();
+    const user_selected = await this.user_service.find_user_by_field({
+      otp: otp,
+    });
+
+    await this.set_account_active(user_selected);
+
+    await this.otp_service.delete_otp_from_user(user_selected);
+
+    await user_selected.save();
+
+    res.clearCookie('verification');
 
     return {
+      status: HttpStatus.OK,
+      message: 'Se ha verificado con exito la cuenta',
+      route: route,
+    };
+  }
+
+  async forgot_password_status(
+    @Req() req: Request,
+  ): Promise<{ status: number }> {
+    const forgot_password_cookie = req.cookies.forgot_password;
+
+    if (!forgot_password_cookie) {
+      throw new UnauthorizedException({
+        status: HttpStatus.UNAUTHORIZED,
+        message: 'Proceso no autorizado',
+      });
+    }
+
+    return { status: HttpStatus.OK };
+  }
+
+  /**
+   * Metodo para poder iniciar el proceso de "Olvide Contraseña"
+   * @param forgotPasswordDto
+   * @param res
+   * @returns
+   */
+  async forgot_password(
+    forgotPasswordDto: ForgotPasswordDto,
+    @Res() res: Response,
+  ): Promise<{ status: number; message: string }> {
+    const { email } = forgotPasswordDto;
+
+    const exists_user = await this.user_service.find_user_by_field({
+      email: email,
+    });
+
+    await this.otp_service.set_otp_for_user(exists_user);
+
+    await this.email_service.send_code_verification(
+      exists_user.email,
+      exists_user.otp,
+      exists_user.otp_expiration,
+    );
+
+    res.cookie('verification', 'forgot_password', {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: false,
+      path: '/',
+      maxAge: COOKIE_DEFAULT_AGE,
+    });
+
+    res.cookie('forgot_password', 'pending', {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: false,
+      path: '/',
+      maxAge: COOKIE_DEFAULT_AGE,
+    });
+
+    return {
+      status: HttpStatus.OK,
       message:
         'Se ha enviado un código OTP a su correo para recuperar la contraseña',
     };
   }
 
-  async reset_password(resetPasswordDto: ResetPasswordDto): Promise<any> {
-    const { email, password: new_password } = resetPasswordDto;
-
-    // Buscar el usuario por su email
-    const user = await this.userModel.findOne({ email });
-
-    // Verificar si el usuario existe
-    if (!user) {
-      throw new BadRequestException('El correo no está registrado');
-    }
-
-    // Hashear la nueva contraseña
-    const hashedPassword = await bcrypt.hash(new_password, 10);
-
-    // Actualizar la contraseña del usuario
-    user.password = hashedPassword;
-
-    // Limpiar los campos OTP
-
-    await user.save();
-
-    return { message: 'Contraseña actualizada exitosamente' };
-  }
-
-  // Cambio de contraseña
-  async change_password(changePasswordDto: ChangePasswordDto) {
-    const { username, password, new_password } = changePasswordDto;
-
-    const user = await this.userModel.findOne({ username });
-
-    const isPasswordMatching = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordMatching) {
-      // Registrar intento fallido de cambio de contraseña
-      await this.logService.logEvent(
-        'CHANGE_PASSWORD_FAIL',
-        `Intento fallido de cambio de contraseña: la contraseña actual es incorrecta para el usuario ${username}.`,
-        user._id.toString(),
-      );
-
-      throw new BadRequestException({
-        message: 'La contraseña actual es incorrecta',
-        error: 'BadRequest',
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(new_password, 10);
-
-    user.password = hashedPassword;
-
-    await user.save();
-
-    // Registrar evento de cambio de contraseña exitoso
-    await this.logService.logEvent(
-      'CHANGE_PASSWORD_SUCCESS',
-      `El usuario ${username} ha cambiado su contraseña con éxito.`,
-      user._id.toString(),
-    );
-
-    return {
-      status: HttpStatus.OK,
-      message: 'Contraseña cambiada exitosamente',
-    };
-  }
-
-  // Enviar correo de verificacion por OTP
-  private async sendEmailVerification(email: string): Promise<any> {
-    try {
-      // Obtenemos el codigo y la expiracion del OTP
-      const { otp, exp } = await this.otpService.generateOTP();
-
-      // Buscamos el usuario por medio del email
-      const user = await this.userModel.findOne({ email }).exec();
-
-      await user
-        .updateOne({
-          otpCode: otp,
-          otpExpiration: new Date(Date.now() + exp * 1000),
-        })
-        .exec();
-
-      // Enviamos un correo de activacion a la cuenta
-      await this.emailService.sendCodeVerification(otp, email);
-    } catch (error) {
-      // En caso de que tengamos un error lo mostraremos
-      return {
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: `Excepcion encontrada y controlada: Razon ${error}`,
-      };
-    }
-  }
-
-  // Metodo para activacion de correo
-  async accountActivation(
-    activationDto: ActivationDto,
+  /**
+   * Metodo para poder restablecer la contraseña del usuario
+   * @param resetPasswordDto
+   * @param res
+   * @returns
+   */
+  async reset_password(
+    resetPasswordDto: ResetPasswordDto,
+    @Res() res: Response,
   ): Promise<{ status: number; message: string }> {
-    // La activacion del correo consta de obtener el email para poder activar la cuenta
-    // Para esta implementacion se necesita obtener email
-    // Despues se busca el email y se activa la verificacion pasando el estado a verdadero
-    // Implementacion de OTP temporal por el momento solo dura (5 minutos lo ideal seria un contador
-    // en tiempo real de 5 minutos)
-    const { otp } = activationDto;
+    const { email, new_password: password } = resetPasswordDto;
 
-    // Verificamos si el codigo OTP todavia es valido
-    const isValid = this.otpService.verificationOTP(otp);
+    const exists_user = await this.user_service.find_user_by_field({
+      email: email,
+    });
 
-    // En caso de no ser valido regresamos una excepcion de conflicto
-    if (!isValid) {
-      throw new ConflictException({
-        message: 'El código es inválido',
-        error: 'Conflict',
-      });
-    }
+    const hashed_password = await bcrypt.hash(password, 10);
 
-    // Buscamos por codigo otp
-    const user = await this.userModel.findOne({ otpCode: otp }).exec();
+    await this.change_password(exists_user, hashed_password);
 
-    if (!user) {
-      throw new BadRequestException({
-        message: 'El correo no estra registrado',
-        error: 'BadRequest',
-      });
-    }
-
-    // Activamos verificacion
-    user.verification = true;
-
-    user.otpCode = '';
-
-    user.otpExpiration = null;
-
-    // Guardamos usuario
-    await user.save();
+    res.clearCookie('forgot_password');
 
     return {
       status: HttpStatus.OK,
-      message: 'Se ha verificado con exito la cuenta',
+      message: 'Contraseña actualizada exitosamente',
     };
-  }
-
-  async verify_otp(activationDto: ActivationDto): Promise<any> {
-    const { otp } = activationDto;
-
-    const isValid = this.otpService.verificationOTP(otp);
-
-    if (!isValid) {
-      throw new ConflictException({
-        message: 'El código es inválido',
-        error: 'Conflict',
-      });
-    }
-
-    return {
-      status: HttpStatus.OK,
-      message: 'Se ha verificado con exito el OTP',
-    };
-  }
-
-  // Verificacion token
-  async verificationAuthenticate(
-    @Req() req: Request,
-  ): Promise<{ message: string; authenticate: boolean; role: string }> {
-    try {
-      const token = req.cookies.authentication;
-
-      const payload = this.jwtService.verify(token);
-
-      if (!token) {
-        return {
-          message: 'Token no definido o no existente',
-          authenticate: false,
-          role: '',
-        };
-      }
-
-      return {
-        message: 'Autorizacion vigente',
-        authenticate: true,
-        role: payload.role,
-      };
-    } catch (err) {
-      return {
-        message: 'Token expirado o inexistente',
-        authenticate: false,
-        role: '',
-      };
-    }
-  }
-
-  // Revocacion de cookies (session)
-  private async revokeSessions(userId: string): Promise<any> {
-    await this.userModel.updateOne(
-      { _id: userId },
-      { $unset: { sessionId: '' } },
-    );
-    return { message: 'Todas las sesiones han sido revocadas.' };
   }
 }

@@ -4,6 +4,7 @@ import { Document } from 'mongoose';
 
 export type IncidentDocument = Incident & Document;
 
+
 @Schema()
 export class Incident {
   @Prop({ required: true })

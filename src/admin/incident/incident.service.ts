@@ -146,8 +146,8 @@ export class IncidentService implements OnModuleInit {
    * @param usernameIsBlockedDto
    * @returns Incident informacion sobre sus incidencias
    */
-  async getIncidentUser(username: string): Promise<Incident> {
-    return await this.incidentModel.findOne({ username }).exec();
+  get_incident_user(username: string): Promise<Incident | null> {
+    return this.incidentModel.findOne({ username }).exec();
   }
 
   async getBlockedUsers(

@@ -2,11 +2,11 @@ import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, UseIntercep
 import { DrService } from './document.service';
 import { CreateDocumentDto as CreateDocumentDto } from './dto/create.document.dto';
 import { UpdateDocumentDto } from './dto/update.document.dto';
-import { Roles } from '../../core/decorators/roles.decorator';
-import { JwtAuthGuard } from '../../core/guards/jwt.auth.guard';
-import { Role } from 'src/constants/contants';
-import { RoleGuard } from '../../core/guards/role.guard';
-import { AuditInterceptor } from '../../core/interceptor/audit.interceptor';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
+import { ROLE } from 'src/constants/contants';
+import { RoleGuard } from '../../common/guards/role.guard';
+import { AuditInterceptor } from '../../common/interceptor/audit.interceptor';
 
 
 @Controller('document')
@@ -17,7 +17,7 @@ export class DocumentController {
     constructor(private readonly documentService: DrService) {}
 
     @Post('create')
-    @Roles(Role.ADMIN)
+    @Roles(ROLE.ADMIN)
     async createDocument(@Body() creatrDocumentDto: CreateDocumentDto) {
         // Implementacion de logica para la creacion de un documento en este caso
         // se solicitan ciertos datos que viene descritos en el DTO
@@ -25,7 +25,7 @@ export class DocumentController {
     }
 
     @Get('get/all')
-    @Roles(Role.ADMIN)
+    @Roles(ROLE.ADMIN)
     async getAllDocuments() {
         // Implementacion de logica para la obtencion de todos los documentos
         // este solo se limita a obtener todos y regresarlos
@@ -33,7 +33,7 @@ export class DocumentController {
     }
 
     @Delete('delete/:id')
-    @Roles(Role.ADMIN)
+    @Roles(ROLE.ADMIN)
     async deleteDocument(@Param('id') id: string) {
         // Implementacion de logica para la eliminacion, solo marcada
         // esto significa que solo se marca como eliminada mas no 
@@ -42,7 +42,7 @@ export class DocumentController {
     }
 
     @Put('update/:id')
-    @Roles(Role.ADMIN)
+    @Roles(ROLE.ADMIN)
     async updateDocument(@Param('id') id: string, @Body() updateDocumentDto: UpdateDocumentDto) {
         // Implementacion de actualizacion de documentos
         // esto requiere que se crea un nuevo documento apartir del actualizado
@@ -50,7 +50,7 @@ export class DocumentController {
     }
 
     @Put('activation/:id')
-    @Roles(Role.ADMIN)
+    @Roles(ROLE.ADMIN)
     async activationDocument(@Param('id') id: string) {
         // Activacion documento (vigente) este solo puede ser uno 
         // no puede existir varios documentos vigentes

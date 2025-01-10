@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
-import { Role } from 'src/constants/contants';
-import { Roles } from '../../core/decorators/roles.decorator';
-import { JwtAuthGuard } from '../../core/guards/jwt.auth.guard';
-import { RoleGuard } from '../../core/guards/role.guard';
+import { ROLE } from 'src/constants/contants';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
+import { RoleGuard } from '../../common/guards/role.guard';
 import { EmailService } from './email.service';
 import { UpdateEmailConfigurationDto } from './dto/configuration.dto';
 
@@ -13,13 +13,13 @@ export class EmailController {
     constructor(private readonly emailService: EmailService) {}
 
     @Get('configuration')
-    @Roles(Role.ADMIN)
+    @Roles(ROLE.ADMIN)
     async getEmailConfiguration() {
         return await this.emailService.getEmailConfigurattion();
     }
 
     @Put('update/configuration/:id')
-    @Roles(Role.ADMIN)
+    @Roles(ROLE.ADMIN)
     async updateEmailConfiguration(@Param('id') id: string, @Body() updateEmailConfigurationDto: UpdateEmailConfigurationDto) {
         return await this.emailService.updateEmailConfiguration(id, updateEmailConfigurationDto);
     } 

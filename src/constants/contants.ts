@@ -1,9 +1,16 @@
-export const COOKIE_AGE = 24 * 60 * 60 * 1000;
-export const JWT_AGE = "15m"
-export const ROLES_KEY = "roles"
-export enum Role {
+/** Duracion de un Json Web Token es de 15 minutos */
+export const JWT_AGE = "15m";
+/** Duracion estandar de una cookie para JWT */
+export const COOKIE_JWT_AGE = 15 * 60 * 1000;
+/** Duracion de la cookie es de 5 minutos */
+export const COOKIE_DEFAULT_AGE = 5 * 60 * 1000;
+/** Clave Necesaria para la autenticacion de roles */
+export const ROLES_KEY = "roles";
+/** Enumeracion de roles */
+export enum ROLE {
     ADMIN = "admin",
     USER = "user",
-    GUESS = "guess"
+    EMPLOYEE = "employee",
 
 }
+
