@@ -5,11 +5,10 @@ import { ConfigService } from '@nestjs/config';
 import mongoose from 'mongoose';
 import helmet from 'helmet';
 import xss from 'xss-clean';
+import csurf from 'csurf';
 import cookieParse from 'cookie-parser';
+import requestIp from 'request-ip'
 
-/**
- * Funcion principal que se encarga de ejecutar la aplicacion
- */
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -21,7 +20,11 @@ async function bootstrap() {
 
   app.use(xss());
 
+  app.use(csurf())
+
   app.use(helmet());
+
+  app.use(requestIp.mw());
 
   mongoose.set('sanitizeFilter', true);
 

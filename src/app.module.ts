@@ -1,43 +1,52 @@
-import { APP_FILTER } from '@nestjs/core';
-import { AllExceptionsFilter } from './exceptions/exception.filter';
-import { CategoryModule } from './admin/category/category.module';
-import { ProductModule } from './products/product.module';
-import { EmailModule } from './admin/email/email.module';
-import { AuditModule } from './admin/audit/audit.module';
-import { BusinessModule } from './admin/business/business.module';
-import { AuthModule } from './auth/auth.module';
+import { DatabaseModule } from './database/database.module';
+import { MFAModule } from './mfa/mfa.module';
 import {
   MiddlewareConsumer,
   Module,
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { CorsMiddleware } from './middleware/cors.middleware';
+import { APP_FILTER } from '@nestjs/core';
+import { MongooseModule } from '@nestjs/mongoose';
+import { AuditModule } from './admin/audit/audit.module';
+import { BusinessModule } from './admin/business/business.module';
+import { DocumentModule } from './admin/documents/document.module';
+import { PolicyModule } from './admin/politicas/policy.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { PolicyModule } from './admin/politicas/policy.module';
+import { AuthModule } from './auth/auth.module';
+import { CategoryModule } from './category/category.module';
+import { AllHttpExceptionsFilter } from './exceptions/http.exception.filter';
+import { CorsMiddleware } from './middleware/cors.middleware';
+import { ProductModule } from './products/product.module';
 import { UsersModule } from './users/users.module';
-import { DocumentModule } from './admin/documents/document.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
-    CategoryModule,
-    ProductModule,
-    EmailModule,
-    AuditModule,
-    BusinessModule,
-    PolicyModule,
-    AuthModule,
+    // MFAModule,
+    // CategoryModule,
+    // ProductModule,
+    // AuditModule,
+    // BusinessModule,
+    // PolicyModule,
+    // AuthModule,
     UsersModule,
-    DocumentModule,
+    // DocumentModule,
+    // MFAModule,
     ConfigModule.forRoot({ isGlobal: true }),
-    MongooseModule.forRootAsync({
+    TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGO_URI'),
-        dbName: configService.get<string>('DATABASE'),
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DB_HOST'),
+        port: configService.get<number>('DB_PORT'),
+        username: configService.get<string>('DB_USERNAME'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_NAME'),
+        synchronize: true,
+        logging: true
       }),
       inject: [ConfigService],
     }),
@@ -46,7 +55,7 @@ import { DocumentModule } from './admin/documents/document.module';
   providers: [
     {
       provide: APP_FILTER,
-      useClass: AllExceptionsFilter,
+      useClass: AllHttpExceptionsFilter,
     },
     AppService,
   ],

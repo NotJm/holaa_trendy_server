@@ -1,21 +1,22 @@
 import { Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { ProductService } from './product.service';
 
-@Controller('product')
+@Controller('products')
 export class ProductController {
 
     constructor(private readonly productService: ProductService) {}
 
     @Post('create')
-    async create_product() {}
+    async createProduct() {}
 
-    @Get('get-all')
-    async get_all_products() {}
+    @Get()
+    async findAllProducts() {
+    }
 
     @Put('update/:id')
-    async update_product(@Param('id') id: string) {}
+    async updateProduct(@Param('id') id: string) {}
 
     @Delete('delete/:id')
-    async delete_product(@Param('id') id: string) {}
+    async deleteProduct(@Param('id') id: string) {}
 
 }

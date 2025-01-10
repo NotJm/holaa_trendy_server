@@ -1,4 +1,4 @@
-import { Prop, Schema } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 /**
  * @prop {Date} created_at - Fecha de creacion
@@ -12,3 +12,12 @@ export class BaseSchema {
   @Prop({ required: false, type: Date, default: Date.now })
   update_date?: Date;
 }
+
+const BaseSchemaSchema = SchemaFactory.createForClass(BaseSchema)
+
+BaseSchemaSchema.pre('save', function (next) {
+  this.update_date = new Date();
+  next();
+})
+
+

@@ -1,16 +1,20 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { IncidentService } from '../admin/incident/incident.service';
+import { PwnedService } from '../common/providers/pwned.service';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { JwtService } from '@nestjs/jwt';
-import { User, UserSchema } from 'src/users/schemas/user.schema';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Users } from './entity/user.entity';
+
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    HttpModule,
+    TypeOrmModule.forFeature([Users])
   ],
   controllers: [UsersController],
-  providers: [UsersService, JwtService],
+  providers: [UsersService, PwnedService, IncidentService],
   exports: [UsersService],
 })
 export class UsersModule {}

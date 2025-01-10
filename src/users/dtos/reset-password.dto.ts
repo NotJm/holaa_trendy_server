@@ -11,5 +11,5 @@ export class ResetPasswordDto {
   
     @IsNotEmpty({ message: 'Se requiere una contraseña' })
     @MinLength(8, { message: 'La nueva contraseña debe tener al menos 8 caracteres' })
-    new_password: string;
+    newPassword: string;
   }

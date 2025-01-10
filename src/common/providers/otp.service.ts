@@ -1,66 +1,66 @@
-import speakeasy from 'speakeasy';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IncidentService } from 'src/admin/incident/incident.service';
-import { IncidentConfiguration } from 'src/admin/incident/schemas/incident.config.schemas';
-import { UserDocument } from 'src/users/schemas/user.schema';
+import { TotpOptions, TotpVerifyOptions } from 'speakeasy';
+import * as speakeasy from 'speakeasy';
 
 @Injectable()
 export class OtpService {
-  private readonly secret = this.configService.get<string>('OTP_KEY');
+  private readonly otpKey = this.configService.get<string>('OTP_KEY');
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly incidentService: IncidentService,
-  ) {}
+  private readonly otpLifeTime = 300;
 
-  async set_otp_for_user(user: UserDocument): Promise<void> {
+  constructor(private readonly configService: ConfigService) {}
 
-    const { otp, exp } = await this.generate_otp();
-
-    console.log(otp);
-
-    user.otp = otp;
-    user.otp_expiration = new Date(Date.now() + exp * 1000);
-
-    await user.save();
-    
-  }
-
-  async delete_otp_from_user(user: UserDocument): Promise<void> {
-    user.otp = "";
-    user.otp_expiration = null;
-  }
-
-  async get_otp_life_time(): Promise<number> {
-    const configuration: IncidentConfiguration =
-      await this.incidentService.getIncidentConfiguration();
-
-    return configuration.otpLifeTime;
-  }
-
-  async generate_otp() {
-    const otpLifeTime = await this.get_otp_life_time();
-
+  private generateOtpOptions(): TotpOptions {
     return {
-      otp: speakeasy.totp({
-        secret: this.secret,
-        encoding: 'base32',
-        step: otpLifeTime,
-      }),
-      exp: otpLifeTime,
+      secret: this.otpKey,
+      encoding: 'base32',
+      algorithm: 'sha512',
+      step: this.otpLifeTime,
     };
   }
 
-  async verify_otp(otp: string) {
-    const otpLifeTime = await this.get_otp_life_time();
-
-    return speakeasy.totp.verify({
-      secret: this.secret,
-      encoding: 'base32',
+  private generateOtpVerifyOptions(otp: string): TotpVerifyOptions {
+    return {
       token: otp,
-      step: otpLifeTime,
-      window: 1,
-    });
+      secret: this.otpKey,
+      encoding: 'base32',
+      algorithm: 'sha512',
+      step: this.otpLifeTime,
+    };
+  }
+
+  /**
+   * Genera un codigo otp
+   * @returns Regresa un codigo otp y la fecha de expiracion
+   */
+  async generate(): Promise<{ otp: string; otpExpiration: Date }> {
+    // Generamos las opciones para el otp
+    const options = this.generateOtpOptions();
+
+    // Genero el otp mediante la configuracion inicial
+    const otp = speakeasy.totp(options);
+
+    // Calculo la fecha de expiracion
+    const otpExpiration = new Date(Date.now() + this.otpLifeTime * 1000);
+
+    // Regresamos el otp y la fecha de expiracion
+    return {
+      otp: otp,
+      otpExpiration: otpExpiration,
+    };
+  }
+
+  /**
+   * Verifica que el otp no haya expirado
+   * @param otp 
+   * @returns Regresa true si el otp es valido, de lo contrario regresa false
+   */
+  async verify(otp: string): Promise<boolean> {
+    // Genero las opciones de verificacion
+    const options = this.generateOtpVerifyOptions(otp);
+
+    // Verifico el otp
+    return speakeasy.totp.verify(options);
   }
 }

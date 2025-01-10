@@ -1,35 +1,58 @@
-import { Type } from "@nestjs/common";
-import { Document, FilterQuery, Model } from "mongoose";
+import { InternalServerErrorException } from '@nestjs/common';
+import { FindOneOptions, Repository } from 'typeorm';
 
-export abstract class BaseService<T extends Document> {
-    protected model: Model<T>
-    
-    protected async find_all(filter: FilterQuery<T>): Promise<T[]> {
-        return this.model.find(filter).exec();
+export abstract class BaseService<T> {
+
+  protected repository: Repository<T>
+
+  constructor(repository: Repository<T>) {
+    this.repository = repository;
+  }
+
+  protected async findAll(): Promise<T[]> {
+    return this.repository.find();
+  }
+
+  protected async findOne(filter: FindOneOptions<T>): Promise<T> {
+    return this.repository.findOne(filter)
+  }
+
+  protected async findById(id: string): Promise<T> {
+    return this.repository.findOne({ where: { id } as any });
+  }
+
+  protected async create(data: T): Promise<T> {
+    const entity = this.repository.create(data);
+
+    if (entity) {
+      return this.repository.save(entity);
+    } else {
+      throw new InternalServerErrorException('Error al momento de crear usuario')
+    }
+  }
+
+  protected async update(id: string, data: Partial<T>): Promise<T> {
+    const entity = await this.findById(id);
+
+    if (!entity) {
+      throw new InternalServerErrorException(`Entidad con la ID ${id} no encontrada`);
     }
 
-    protected async find_one(filter: FilterQuery<T>): Promise<T> {
-        return this.model.findOne(filter).exec();
+    Object.assign(entity, data);
+
+    await this.repository.save(entity);
+    return entity;
+  }
+
+  protected async delete(id: string): Promise<void> {
+    const entity = await this.findById(id);
+
+    if (!entity) {
+      throw new InternalServerErrorException(`Entidad con la ID ${id} no encontrada`);
     }
 
-    protected async find_by_id(id: string): Promise<T> {
-        return this.model.findById(id).exec()
-    }
+    await this.repository.remove(entity);
 
-    protected async create(item: T): Promise<T> {
-        return (await this.model.create(item)).save();
-    }
-
-    protected async update(id: string, item: Type<T>): Promise<T> {
-        return this.model.findByIdAndUpdate(id, item, { new: true });
-    }
-
-    protected async delete_by_id(id: string): Promise<T> {
-        return this.model.findByIdAndDelete(id).exec();
-    }
-
-    protected async delete(filter: FilterQuery<T>): Promise<any> {
-        return this.model.deleteMany(filter).exec();
-    }
+  }
 
 } 

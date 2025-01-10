@@ -1,29 +1,20 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { IsDate } from 'class-validator';
-import { Document } from 'mongoose';
+import { Document, SchemaTypes } from 'mongoose';
+import { BaseSchema } from 'src/shared/base.schema';
 
-export type IncidentDocument = Incident & Document;
-
+export type IncidentsDocument = Incidents & Document;
 
 @Schema()
-export class Incident {
-  @Prop({ required: true })
-  username: string;
+export class Incidents extends BaseSchema {
+  @Prop({ required: true, type: SchemaTypes.ObjectId, ref: "Users" })
+  userId: string;
 
-  @Prop({ default: 0 })
-  failedAttempts: number;
+  @Prop({ required: false, type: Number, default: 1 })
+  failedAttempts?: number;
 
-  @Prop()
-  lastAttempt: Date;
-
-  @Prop({ default: false })
-  isBlocked: boolean
-
-  @Prop({ type:Date, default: new Date() })
-  blockExpiresAt: Date; 
-
-
+  @Prop({ required: false, type: Date, default: Date.now})
+  lastAttempt?: Date;
 
 }
 
-export const IncidentSchema = SchemaFactory.createForClass(Incident).set('versionKey', false);
+export const IncidentsSchema = SchemaFactory.createForClass(Incidents).set('versionKey', false);

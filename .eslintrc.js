@@ -18,10 +18,6 @@ module.exports = {
   ignorePatterns: ['.eslintrc.js'],
   rules: {
     "prettier/prettier": [
-      "error",
-      {
-        "endofLine": "auto"
-      }
     ],
     '@typescript-eslint/interface-name-prefix': 'off',
     '@typescript-eslint/explicit-function-return-type': 'off',

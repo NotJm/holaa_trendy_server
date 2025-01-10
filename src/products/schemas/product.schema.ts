@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import mongoose, { Document } from "mongoose";
-import { Category } from "src/category/schemas/category.schema";
+import { BaseSchema } from "src/shared/base.schema";
 
 export type ProductsDocument = Products & Document;
 
@@ -9,40 +9,42 @@ export type ProductsDocument = Products & Document;
  * @prop {string} img_uri - Imagen de la prenda
  * @prop {string} description - Descripcion de la prenda
  * @prop {string} type - Tipo de prenda
- * @prop {object} category - Categoria
+ * @prop {Category} category - Categoria
  * @prop {number} price - Precio de la prenda
  * @prop {number} stock - Numero de prendas en el inventario
  * @prop {string[]} size - Talla de la prenda
  */
 @Schema()
-export class Products {
+export class Products extends BaseSchema {
     @Prop({ required: true, type: String})
     code: string
 
     @Prop({ required: true, type: String })
-    img_uri: string
+    imgUri: string
 
     @Prop({ required: true, type: String })
     description: string;
 
-    // @Prop({ require: false, default: Array<String> })
-    // color: Array<String>
-
+    //TODO: []
     @Prop({ required: true, type: String })
-    type: string
-
-    @Prop({ required: true, type: mongoose.Schema.ObjectId, ref:"Category" })
-    category: Category
+    type: string;
 
     @Prop({ required: true, type: Number, min: 0 })
     price: number;
 
-    @Prop({ require: true, type: Number, min: 0 })
+    // @Prop({ required: false, type: [{type: mongoose.Schema.ObjectId, ref:"Category"}], default: []})
+    // categories: string[]
+
+    @Prop({ require: false, type: Number, min: 0, default: 0 })
     stock: number;
 
-    @Prop({ require: true, type: [String] })
-    size: Array<String>
+    @Prop({ require: false, type: [String], default: [] })
+    size: string[]
 
 }
 
 export const ProductsSchema = SchemaFactory.createForClass(Products).set("versionKey", false);
+
+ProductsSchema.pre('save', async () => {
+
+})

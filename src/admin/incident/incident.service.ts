@@ -1,173 +1,144 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Incident, IncidentDocument } from './schemas/incident.schema';
-import {
-  FilterUsernameForDaysDto,
-  RegisterIncidentDto,
-} from './dto/incident.dto';
-import {
-  IncidentConfiguration,
-  IncidentConfigurationDocument,
-} from './schemas/incident.config.schemas';
-
-import { UpdateConfigurationDto } from './dto/configuration.dto';
+import { FilterQuery, Model } from 'mongoose';
+import { BaseService } from '../../shared/base.service';
+import { Incidents, IncidentsDocument } from './schemas/incident.schema';
 
 @Injectable()
-export class IncidentService implements OnModuleInit {
-  async onModuleInit() {
-    await this.createDefaultConfiguration();
+export class IncidentService extends BaseService<IncidentsDocument> {
+  // constructor(@InjectModel(Incidents.name) private readonly incidentsModel: Model<IncidentsDocument>,
+  // ) {
+  //   // super();
+  //   // this.model = incidentsModel;
+  // }
+
+  async createOrUpdateIncident(userId: string): Promise<void> {
+    // try {
+    //   return await this.model.findOneAndUpdate(
+    //     { userId: userId },
+    //     {
+    //       $inc: { failedAttempts: 1 },
+    //       $set: { lastAttempt: new Date() },
+    //     },
+    //     { upsert: true, new: true },
+    //   );
+    // } catch (err) {
+    //   throw new InternalServerErrorException(
+    //     'Error al momento de crear la incidencia',
+    //   );
+    // }
   }
 
-  constructor(
-    @InjectModel(Incident.name) private incidentModel: Model<IncidentDocument>,
-    @InjectModel(IncidentConfiguration.name)
-    private incidentConfigurationModel: Model<IncidentConfigurationDocument>,
-  ) {}
-
-  async createDefaultConfiguration(): Promise<void> {
-    const existsConfiguration = await this.incidentConfigurationModel
-      .findOne()
-      .exec();
-
-    if (!existsConfiguration) {
-      const defaultConfiguration = new this.incidentConfigurationModel();
-      await defaultConfiguration.save();
+  async updateIncident(
+    userId: string,
+    item: FilterQuery<IncidentsDocument>,
+  ): Promise<IncidentsDocument> {
+    try {
+      return await this.update(userId, item);
+    } catch (err) {
+      throw `Error al momento de actualizar la incidencia: ${err.message}`;
     }
   }
 
-  // Obtener Configuracion de incidencias
-  async getIncidentConfiguration(): Promise<IncidentConfigurationDocument> {
-    return await this.incidentConfigurationModel.findOne().exec();
+  async findIncident(userId: string): Promise<void> {
+    // return await this.findOne({ userId });
   }
 
-  // Actualizar configuracion para todos
-  async updateIncidentConfiguration(
-    id: string,
-    updateConfigurationDto: UpdateConfigurationDto,
-  ): Promise<{ state: boolean; message: string }> {
-    const incidentConfiguration = await this.incidentConfigurationModel
-      .findById(id)
-      .exec();
-
-    if (!incidentConfiguration) {
-      throw new NotFoundException(
-        `La configuracion con la ID ${id} no ha sido encontrada`,
-      );
-    }
-
-    await incidentConfiguration.updateOne(updateConfigurationDto);
-
-    await incidentConfiguration.save();
-
-    return {
-      state: true,
-      message: 'Configuracion actualizada con exito',
-    };
+  async findIncidents(
+    filter?: FilterQuery<IncidentsDocument>,
+  ): Promise<void> {
+    // return this.findAll(filter);
   }
 
-  // Lógica para manejar los intentos fallidos
-  async registerFailedAttempt(
-    registerIncidentDto: RegisterIncidentDto,
-  ): Promise<Incident> {
-    const { username } = registerIncidentDto;
-
-    const incident = await this.incidentModel.findOne({ username });
-    const incidentConfiguration = await this.incidentConfigurationModel
-      .findOne()
-      .exec();
-    const now = new Date();
-
-    if (incident) {
-      if (this.isAccountBlocked(incident, now)) {
-        throw new ForbiddenException(
-          `La cuenta está bloqueada. Inténtalo nuevamente después de ${incident.blockExpiresAt.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`,
-        );
-      }
-
-      this.resetAttemptsIfBlockExpired(incident, now);
-
-      incident.failedAttempts += 1;
-      incident.lastAttempt = now;
-
-      if (incident.failedAttempts >= incidentConfiguration.maxFailedAttempts) {
-        this.blockAccount(incident, incidentConfiguration.blockDuration, now);
-      }
-
-      return incident.save();
-    } else {
-      return this.createIncident(username);
+  async deleteIncident(userId: string): Promise<void> {
+    try {
+      // await this.deleteById(userId);
+    } catch (err) {
+      throw new InternalServerErrorException(
+        `Error al momento de eliminar la incidencia: ${err.message}`
+      )
     }
   }
 
-  // Verifica si la cuenta está bloqueada y el bloqueo no ha expirado
-  private isAccountBlocked(incident: Incident, now: Date): boolean {
-    return incident.isBlocked && now < incident.blockExpiresAt;
+  async checkFailedAttemptsLimit(incident: IncidentsDocument): Promise<boolean> {
+    return incident.failedAttempts >= 5;
   }
 
-  // Reinicia los intentos fallidos y desbloquea la cuenta si el bloqueo ha expirado
-  private resetAttemptsIfBlockExpired(incident: Incident, now: Date): void {
-    if (incident.isBlocked && now >= incident.blockExpiresAt) {
-      incident.failedAttempts = 0;
-      incident.isBlocked = false;
-      incident.blockExpiresAt = null;
-    }
+  async resetFailedAttempts(incident: IncidentsDocument): Promise<IncidentsDocument> {
+    return await this.updateIncident(incident.userId, { failedAttempts: 0 });
   }
+  // /**
+  //  * Metodo para saber si un usuario esta bloqueado en la base de datos
+  //  * @param usernameIsBlockedDto
+  //  * @returns Incident informacion sobre sus incidencias
+  //  */
+  // get_incident_user(username: string): Promise<Incident | null> {
+  //   return this.incidentModel.findOne({ userId: username }).exec();
+  // }
 
-  // Bloquea la cuenta y establece la duración del bloqueo
-  private blockAccount(
-    incident: Incident,
-    blockDuration: number,
-    now: Date,
-  ): void {
-    incident.isBlocked = true;
-    incident.blockExpiresAt = new Date(
-      now.getTime() + blockDuration * 60 * 1000,
-    );
-  }
+  // async getBlockedUsers(
+  //   filterUsernameForDaysDto: FilterUsernameForDaysDto,
+  // ): Promise<Incident[]> {
+  //   const { days } = filterUsernameForDaysDto;
 
-  // Crea una nueva incidencia para el usuario
-  private async createIncident(email: string): Promise<Incident> {
-    const newIncident = new this.incidentModel({
-      username: email,
-      failedAttempts: 1,
-      lastAttempt: new Date(),
-    });
-    return newIncident.save();
-  }
+  //   const dateThreshold = new Date();
+  //   dateThreshold.setDate(dateThreshold.getDate() - days);
 
-  /**
-   * Metodo para saber si un usuario esta bloqueado en la base de datos
-   * @param usernameIsBlockedDto
-   * @returns Incident informacion sobre sus incidencias
-   */
-  get_incident_user(username: string): Promise<Incident | null> {
-    return this.incidentModel.findOne({ username }).exec();
-  }
+  //   const filteredUsers = await this.incidentModel
+  //     .find({
+  //       isBlocked: true,
+  //       $and: [
+  //         { blockExpiresAt: { $ne: null } },
+  //         { blockExpiresAt: { $gte: new Date(dateThreshold) } },
+  //       ],
+  //     })
+  //     .exec();
 
-  async getBlockedUsers(
-    filterUsernameForDaysDto: FilterUsernameForDaysDto,
-  ): Promise<Incident[]> {
-    const { days } = filterUsernameForDaysDto;
+  //   return filteredUsers;
+  // }
 
-    const dateThreshold = new Date();
-    dateThreshold.setDate(dateThreshold.getDate() - days);
+  // async onModuleInit() {
+  //   await this.createDefaultConfiguration();
+  // }
 
-    const filteredUsers = await this.incidentModel
-      .find({
-        isBlocked: true,
-        $and: [
-          { blockExpiresAt: { $ne: null } },
-          { blockExpiresAt: { $gte: new Date(dateThreshold) } },
-        ],
-      })
-      .exec();
+  // async createDefaultConfiguration(): Promise<void> {
+  //   const existsConfiguration = await this.incidentConfigurationModel
+  //     .findOne()
+  //     .exec();
 
-    return filteredUsers;
-  }
+  //   if (!existsConfiguration) {
+  //     const defaultConfiguration = new this.incidentConfigurationModel();
+  //     await defaultConfiguration.save();
+  //   }
+  // }
+
+  // // Obtener Configuracion de incidencias
+  // async getIncidentConfiguration(): Promise<IncidentConfigurationDocument> {
+  //   return await this.incidentConfigurationModel.findOne().exec();
+  // }
+
+  // // Actualizar configuracion para todos
+  // async updateIncidentConfiguration(
+  //   id: string,
+  //   updateConfigurationDto: UpdateConfigurationDto,
+  // ): Promise<{ state: boolean; message: string }> {
+  //   const incidentConfiguration = await this.incidentConfigurationModel
+  //     .findById(id)
+  //     .exec();
+
+  //   if (!incidentConfiguration) {
+  //     throw new NotFoundException(
+  //       `La configuracion con la ID ${id} no ha sido encontrada`,
+  //     );
+  //   }
+
+  //   await incidentConfiguration.updateOne(updateConfigurationDto);
+
+  //   await incidentConfiguration.save();
+
+  //   return {
+  //     state: true,
+  //     message: 'Configuracion actualizada con exito',
+  //   };
+  // }
 }
