@@ -3,7 +3,7 @@ import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Response } from 'express';
 import { CookieService } from 'src/common/providers/cookie.service';
 import { COOKIE_JWT_AGE, JWT_AGE } from 'src/constants/contants';
-import { User } from '../../users/schemas/user.schema';
+import { Users } from 'src/users/entity/users.entity';
 
 @Injectable()
 export class TokenService {
@@ -17,12 +17,12 @@ export class TokenService {
     private readonly cookieService: CookieService,
   ) {}
 
-  public generate(user: User): string {
-    const payload = { sessionID: user.sessionId, role: user.role };
+  public generate(user: Users): string {
+    const payload = { role: user.role };
     return this.jwtService.sign(payload, this.jwtOptions);
   }
 
   public send(res: Response, token: string): void {
-    this.cookieService.send(res, 'authToken', token, COOKIE_JWT_AGE);
+    this.cookieService.send(res, 'access-token', token, COOKIE_JWT_AGE);
   }
 }

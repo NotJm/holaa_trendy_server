@@ -1,8 +1,8 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { EmailService } from '../../common/providers/email.service';
-import { OtpService } from '../../common/providers/otp.service';
-import { UsersService } from '../../users/users.service';
 import { CookieService } from '../../common/providers/cookie.service';
+import { EmailService } from '../../common/providers/email.service';
+import { OtpService } from '../../users/otp.service';
+import { UsersService } from '../../users/users.service';
 
 @Injectable()
 export class AccountActivationService {
@@ -18,20 +18,17 @@ export class AccountActivationService {
    * @param email Correo del usuario
    */
   async send(email: string): Promise<void> {
-    const user = null;
-    // const user = await this.usersService.findUser({ email });
+    const user = await this.usersService.findUser({ 
+      where: {
+        email: email
+      }
+     });
 
     if (!user) {
       throw new InternalServerErrorException('El usuario no existe');
     }
 
-    const { otp, otpExpiration } = await this.otpService.generate();
-
-    // await this.usersService.updateUser(user.id, {
-    //   otp: otp,
-    //   otpExpiration: otpExpiration,
-    // });
-
+    const { otp, otpExpiration } = await this.otpService.generate(user, "SIGNUP");
 
     await this.emailService.sendCodeAccountActivation(
       email,
@@ -41,23 +38,22 @@ export class AccountActivationService {
   }
 
   async activate(otp: string): Promise<void> {
-    const user = null;
-    // const user = await this.usersService.findUser({ otp });
+    const userOtp = await this.otpService.findOtp(otp);
 
-    if (!user) {
+    if (!userOtp) {
       throw new InternalServerErrorException('El usuario no existe');
     }	
 
-		const isValid = this.otpService.verify(user.otp);
+		const isValid = this.otpService.verify(userOtp.otp);
 	
 		if (!isValid) {
 				throw new ConflictException('El codigo de activacion es incorrecto o ha expirado');
 		} else {
-			// await this.usersService.updateUser(user.id, {
-			// 	isVerified: true,
-      //   otp: '',
-      //   otpExpiration: null,
-			// })
+			await this.usersService.updateUser(userOtp.userId.id, {
+        isVerified: true,
+      })
+
+      await this.otpService.deleteOtp(otp);
 		}
 		
   }

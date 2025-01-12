@@ -20,7 +20,7 @@ async function bootstrap() {
 
   app.use(xss());
 
-  app.use(csurf())
+  // app.use(csurf())
 
   app.use(helmet());
 

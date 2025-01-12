@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { HttpStatus, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class PwnedService {
@@ -12,13 +13,23 @@ export class PwnedService {
     private readonly httpService: HttpService,
   ) {}
 
+  /**
+   * Metodo principal para saber si una contraseña esta comprometida
+   * @param password Contraseña en cuestion
+   * @returns True si la contraseña fue comprometida en caso contrario falso
+   */
   async isPwned(password: string): Promise<boolean> {
     const timeComitteds = await this.verify(password); 
     return timeComitteds > 0 ;
   }
 
-  private async verify(password: string): Promise<number> {
-    const hash = this.sha1(password);
+  /**
+   * Permite obtener el numero de veces que fue comprometida la contraseña
+   * @param target Contraseña del usuario
+   * @returns Numero de veces comprometida
+   */
+  private async verify(target: string): Promise<number> {
+    const hash = this.sha1(target);
     const prefix = hash.substring(0, 5);
     const suffix = hash.substring(5).toUpperCase();
 
@@ -42,8 +53,12 @@ export class PwnedService {
     }
   }
 
-  private sha1(str: string): string {
-    const crypto = require('crypto');
-    return crypto.createHash('sha1').update(str).digest('hex').toUpperCase();
+  /**
+   * Regresa una cadena de texto en formato hexadecimal mayusculas
+   * @param target Objetivo a modificar y convertir 
+   * @returns hexadecimal mayusculas
+   */
+  private sha1(target: string): string {
+    return crypto.createHash('sha1').update(target).digest('hex').toUpperCase();
   }
 }

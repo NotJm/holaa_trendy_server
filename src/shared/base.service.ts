@@ -44,7 +44,7 @@ export abstract class BaseService<T> {
     return entity;
   }
 
-  protected async delete(id: string): Promise<void> {
+  protected async deleteById(id: string): Promise<void> {
     const entity = await this.findById(id);
 
     if (!entity) {
@@ -54,5 +54,17 @@ export abstract class BaseService<T> {
     await this.repository.remove(entity);
 
   }
+
+  protected async delete(filter: FindOneOptions): Promise<void> {
+    const entity = await this.findOne(filter);
+
+    if (!entity) {
+      throw new InternalServerErrorException(`No se pudo eliminar la entidad especificada`);
+    }
+
+    await this.repository.remove(entity);
+  }
+
+
 
 } 

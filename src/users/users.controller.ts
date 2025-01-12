@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -17,16 +18,6 @@ import { SignUpDto } from 'src/auth/dtos/signup.dto';
 export class UsersController {
   constructor(private user_service: UsersService) {}
 
-  @HttpCode(HttpStatus.CREATED)
-  @Post('/create')
-  async createUser(signupDto: SignUpDto) {
-    const { username, password, email } = signupDto;
-    return await this.user_service.createUser({
-      username: username,
-      password: password,
-      email: email
-    })
-  }
 
   /**
    * Metodo para poder obtener todos los usuarios de la base de datos

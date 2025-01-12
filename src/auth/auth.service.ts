@@ -7,24 +7,21 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import { formattedDate } from '../shared/utils/formatted-date';
+import { MFAService } from '../mfa/mfa.service';
 import { UsersService } from '../users/users.service';
+import { AccountActivationDto } from './dtos/activation.dto';
 import { LoginDto } from './dtos/login.dto';
 import { SignUpDto } from './dtos/signup.dto';
-import { BcryptService } from './providers/bcrypt.service';
-import { TokenService } from './providers/token.service';
 import { AccountActivationService } from './providers/account-activation.service';
-import { MFAService } from '../mfa/mfa.service';
-import { AccountActivationDto } from './dtos/activation.dto';
-import { Op } from 'sequelize'
+import { Argon2Service } from './providers/argon2.service';
+import { TokenService } from './providers/token.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly tokenService: TokenService,
-    private readonly bcryptService: BcryptService,
+    private readonly argon2Service: Argon2Service,
     private readonly accountActivationService: AccountActivationService,
     private readonly mfaService: MFAService,
   ) {}
@@ -39,7 +36,7 @@ export class AuthService {
     res: Response,
   ): Promise<{ status: number; message: string; account_activation: string }> {
     // Obtenemos los datos necesarios para crear un usuario
-    const { username, password, email } = signUpDto;
+    const { username, password, email, phone } = signUpDto;
 
     // Nos aseguramos que no exista un usuario con el mismo nombre de usuario o correo
     const existsUser = await this.usersService.findUser({
@@ -61,15 +58,15 @@ export class AuthService {
       await this.usersService.isPasswordPwned(password);
 
       // Hasheamos la contraseña
-      const hashedPassword = await this.bcryptService.hash(password);
+      const hashedPassword = await this.argon2Service.hash(password);
 
       // Creamos al usuario
       await this.usersService.createUser({
         username: username,
         password: hashedPassword,
         email: email,
+        phone: phone
       });
-
       
       // Enviamos un correo de activacion de cuenta
       await this.accountActivationService.send(email);
@@ -101,7 +98,11 @@ export class AuthService {
     const { username, password } = loginDto;
 
     // Buscamos el usuarios y lo obtenemos
-    const user = null //await this.usersService.findUser({ username: username });
+    const user = await this.usersService.findUser({
+      where: {
+        username: username
+      }
+    });
 
     // Si el usuario no existe, Enviamos un excepcion NotFoundException
     if (!user) {
@@ -114,7 +115,11 @@ export class AuthService {
     await this.usersService.userIsVerified(user.id);
 
     // Verificamos si el usuario esta bloqueado
-    await this.usersService.userIsBlocked(user.id);
+    if (await this.usersService.isUserLocked(user)) {
+      throw new ConflictException(
+        'Cuenta bloqueada. Intente nuevamente mas tarde'
+      )
+    }
 
     // Verificamos si el usuario es valido para iniciar sesion
     if (!user.isVerified) {
@@ -124,27 +129,24 @@ export class AuthService {
     }
 
     // Comprobamos si las contraseña concuerdan con las del usuari
-    const isPasswordMatching = await this.bcryptService.compare(
-      password,
+    const isPasswordMatching = await this.argon2Service.compare(
       user.password,
+      password,
     );
 
     // Si las contraseñas no coinciden, entonces registramos una incidencia
     if (!isPasswordMatching) {
-      await this.usersService.registerFailedAttempt(user.id);
+      await this.usersService.registerIncident(user);
 
       throw new ConflictException('Nombre de usuario o contraseña incorrecta');
     }
 
-    // Creamos una session unica mediante uuidv4
-    const sessionId = uuidv4();
-    // await this.usersService.updateUser(user.id, { sessionId: sessionId });
 
     // Creamos y enviamos un token de autenticacion al usuario
     const token = this.tokenService.generate(user);
     this.tokenService.send(res, token);
 
-    await this.mfaService.send(user.email);
+    await this.mfaService.send(user.email, "LOGIN");
 
     // Regresamos respuesta al usuario
     return {

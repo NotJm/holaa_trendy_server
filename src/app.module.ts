@@ -1,5 +1,3 @@
-import { DatabaseModule } from './database/database.module';
-import { MFAModule } from './mfa/mfa.module';
 import {
   MiddlewareConsumer,
   Module,
@@ -8,20 +6,18 @@ import {
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
-import { MongooseModule } from '@nestjs/mongoose';
-import { AuditModule } from './admin/audit/audit.module';
-import { BusinessModule } from './admin/business/business.module';
-import { DocumentModule } from './admin/documents/document.module';
-import { PolicyModule } from './admin/politicas/policy.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { CategoryModule } from './category/category.module';
 import { AllHttpExceptionsFilter } from './exceptions/http.exception.filter';
 import { CorsMiddleware } from './middleware/cors.middleware';
-import { ProductModule } from './products/product.module';
+import { Address } from './users/entity/user-address.entity';
+import { UserOtp } from './users/entity/user-otp.entity';
+import { Users } from './users/entity/users.entity';
 import { UsersModule } from './users/users.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { RefreshToken } from './auth/schemas/refresh-token.entity';
+import { MFAModule } from './mfa/mfa.module';
 
 @Module({
   imports: [
@@ -31,10 +27,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     // AuditModule,
     // BusinessModule,
     // PolicyModule,
-    // AuthModule,
+    AuthModule,
     UsersModule,
     // DocumentModule,
-    // MFAModule,
+    MFAModule,
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -45,8 +41,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
+        entities: [Users, Address, UserOtp, RefreshToken],
         synchronize: true,
-        logging: true
+        logging: true,
       }),
       inject: [ConfigService],
     }),

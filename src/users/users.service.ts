@@ -3,13 +3,13 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/shared/base.service';
+import { FindOneOptions, Repository } from 'typeorm';
 import { IncidentService } from '../admin/incident/incident.service';
 import { PwnedService } from '../common/providers/pwned.service';
-import { formattedDate } from '../shared/utils/formatted-date';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Users } from './entity/user.entity';
-import { FindOneOptions, Repository } from 'typeorm';
+import { BLOCK_DURATION, LOCK_TIME_MINUTES, MAX_ATTEMPTS } from '../constants/contants';
+import { Users } from './entity/users.entity';
 
 @Injectable()
 export class UsersService extends BaseService<Users> {
@@ -32,13 +32,7 @@ export class UsersService extends BaseService<Users> {
   }
 
   async findUser(filter: FindOneOptions<Users>): Promise<Users> {
-    const user = await this.findOne(filter);
-
-    if (!user) {
-      throw new InternalServerErrorException('Usuario no encontrado');
-    }
-
-    return user;
+    return await this.findOne(filter);
   }
 
   async findUserById(userId: string): Promise<Users> {
@@ -87,7 +81,7 @@ export class UsersService extends BaseService<Users> {
 
   async deleteUser(userId: string): Promise<void> {
     try {
-      await this.delete(userId);
+      await this.deleteById(userId);
     } catch (err) {
       throw new InternalServerErrorException(
         `Error al momento de eliminar el usuario: ${err.message}`,
@@ -95,26 +89,41 @@ export class UsersService extends BaseService<Users> {
     }
   }
 
-  async registerFailedAttempt(userId: string): Promise<void> {
-    const incidentUser =
-      await this.incidentService.createOrUpdateIncident(userId);
+  async registerIncident(user: Users): Promise<void> {
+    
+    await this.incidentService.createIncident({
+      description: 'Intento fallido de inicio de sesion',
+      user: user,
+    })
 
-    const hasReachedFailedAttemptsLimit = true
-      // await this.incidentService.checkFailedAttemptsLimit(incidentUser);
+    const incidentCount = await this.incidentService.countIncidentsForUser(user);
 
-    if (hasReachedFailedAttemptsLimit) {
-      const user = await this.blockUser(userId);
-
-      throw new ConflictException(
-        `Su cuenta ha sido bloqueada. Se desbloqueará automáticamente el ${formattedDate(user.blockExpiresAt)}.`,
-      );
+    if (incidentCount >= MAX_ATTEMPTS) {
+      this.updateUser(user.id, {
+        isBlocked: true,
+        blockExpiresAt: new Date(Date.now() + BLOCK_DURATION)
+      })
     }
+
   }
 
-  async blockUser(userId: string): Promise<Users> {
-    const blockDuration = 15 * 60 * 1000;
+  async isUserLocked(user: Users): Promise<boolean> {
+    const now = new Date();
 
-    const blockExpiresAt = new Date(Date.now() + blockDuration);
+    const recetIncidents = await this.incidentService.findAllIncidentsForUser(user);
+
+    if (recetIncidents.length >= MAX_ATTEMPTS) {
+      const lastAttemptTime = new Date(recetIncidents[0].createAt);
+      const lockExpiration = new Date(lastAttemptTime.getTime() + LOCK_TIME_MINUTES * 60000);
+      return lockExpiration > now;
+    }
+
+    return false;
+
+  } 
+
+  async blockUser(userId: string): Promise<Users> {
+    const blockExpiresAt = new Date(Date.now() + BLOCK_DURATION);
 
     return await this.updateUser(userId, {
       isBlocked: true,
@@ -122,34 +131,7 @@ export class UsersService extends BaseService<Users> {
     });
   }
 
-  async userIsBlocked(userId: string): Promise<void> {
-    const user = await this.findUserById(userId);
 
-    console.log(
-      user.isBlocked &&
-        user.blockExpiresAt instanceof Date &&
-        user.blockExpiresAt < new Date(),
-    );
-
-    const shouldBeUnBlocked = await this.checkIfUserShouldBeUnblocked(user);
-
-    if (shouldBeUnBlocked) {
-      await this.updateUser(userId, {
-        isBlocked: false,
-        blockExpiresAt: null,
-      });
-
-      const incidentUser = await this.incidentService.findIncident(userId);
-
-      // await this.incidentService.resetFailedAttempts(incidentUser);
-    } else if (user.isBlocked) {
-      throw new ConflictException(
-        `Su cuenta esta bloqueada, Se desbloqueara automaticamente el ${formattedDate(user.blockExpiresAt)}`,
-      );
-    } else {
-      return;
-    }
-  }
 
   async userIsVerified(userId: string): Promise<void> {
     const user = await this.findUserById(userId);
@@ -161,20 +143,4 @@ export class UsersService extends BaseService<Users> {
     }
   }
 
-  /**
-   * Metodo que verifica si un usuario debe de ser desbloqueado
-   * @param userId ID del usuario
-   * @returns
-   */
-  checkIfUserShouldBeUnblocked(user: Users): boolean {
-    if (!user.isBlocked) {
-      return false;
-    }
-
-    if (!(user.blockExpiresAt instanceof Date)) {
-      return false;
-    }
-
-    return user.blockExpiresAt < new Date();
-  }
 }
