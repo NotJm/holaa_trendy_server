@@ -1,11 +1,10 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { FilterQuery } from 'mongoose';
-import { BaseService } from '../../shared/base.service';
-import { Incidents } from './entity/incidents.entity';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MAX_ATTEMPTS } from 'src/common/constants/contants';
 import { Users } from 'src/users/entity/users.entity';
-import { MAX_ATTEMPTS } from 'src/constants/contants';
+import { Repository } from 'typeorm';
+import { BaseService } from '../common/base.service';
+import { Incidents } from './entity/incidents.entity';
 
 @Injectable()
 export class IncidentService extends BaseService<Incidents> {
@@ -63,11 +62,13 @@ export class IncidentService extends BaseService<Incidents> {
     })
   }
 
-  async deleteIncident(user: string): Promise<void> {
+  async deleteIncident(user: Users): Promise<void> {
     try {
       await this.delete({ where: { user: user } });
     } catch (err) {
       throw err;
     }
   }
+
+
 }

@@ -1,12 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
-import { DrService } from './document.service';
-import { CreateDocumentDto as CreateDocumentDto } from './dto/create.document.dto';
-import { UpdateDocumentDto } from './dto/update.document.dto';
+import { ROLE } from 'src/common/constants/contants';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
-import { ROLE } from 'src/constants/contants';
 import { RoleGuard } from '../../common/guards/role.guard';
 import { AuditInterceptor } from '../../common/interceptor/audit.interceptor';
+import { DrService } from './document.service';
+import { CreateDocumentDto } from './dto/create.document.dto';
+import { UpdateDocumentDto } from './dto/update.document.dto';
 
 
 @Controller('document')

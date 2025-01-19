@@ -17,7 +17,6 @@ export class CreateProductDto {
     @IsArray({ message: "Se requiere que se establezca en un arreglo -> []"})
     categories: string[];
 
-
     @IsNumber({}, { message: "Se requiere el precio del producto" })
     @Min(0, { message: "El valor minimo no puede ser menor que 0" })
     price: number;

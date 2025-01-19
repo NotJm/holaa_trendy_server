@@ -14,7 +14,10 @@ import { LoginDto } from './dtos/login.dto';
 import { SignUpDto } from './dtos/signup.dto';
 import { AccountActivationService } from './providers/account-activation.service';
 import { Argon2Service } from './providers/argon2.service';
-import { TokenService } from './providers/token.service';
+import { TokenService } from '../common/providers/token.service';
+import { RequestForgotPasswordDto } from './dtos/request-forgot-password.dto';
+import { ApiResponse } from '../common/interfaces/api.response.interface';
+import { ResetPasswordDto } from './dtos/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -24,6 +27,7 @@ export class AuthService {
     private readonly argon2Service: Argon2Service,
     private readonly accountActivationService: AccountActivationService,
     private readonly mfaService: MFAService,
+    
   ) {}
 
   /**
@@ -33,7 +37,6 @@ export class AuthService {
    */
   async signUp(
     signUpDto: SignUpDto,
-    res: Response,
   ): Promise<{ status: number; message: string; account_activation: string }> {
     // Obtenemos los datos necesarios para crear un usuario
     const { username, password, email, phone } = signUpDto;
@@ -76,7 +79,9 @@ export class AuthService {
         message: `Gracias por registrarse ${username}, hemos enviado un codigo de activación de cuenta a su correo`,
         account_activation: 'pending',
       };
+
     } catch (err) {
+
       throw new InternalServerErrorException({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: `Error al registrar el usuario: ${err.message}`,
@@ -84,6 +89,7 @@ export class AuthService {
     }
   }
 
+  // TODO Implementar bloqueo temporal de usuario
   /**
    * Metodo para autenticar un cliente
    * @param loginDto Contiene informacion sobre el cliente
@@ -93,7 +99,7 @@ export class AuthService {
   async login(
     loginDto: LoginDto,
     res: Response,
-  ): Promise<{ status: number; message: string; MFA: string }> {
+  ): Promise<{ status: number; message: string; MFA: string, fromTo: string }> {
     // Obtener credenciales del usuario
     const { username, password } = loginDto;
 
@@ -114,13 +120,6 @@ export class AuthService {
     // Verificamos si el usuario esta verificado
     await this.usersService.userIsVerified(user.id);
 
-    // Verificamos si el usuario esta bloqueado
-    if (await this.usersService.isUserLocked(user)) {
-      throw new ConflictException(
-        'Cuenta bloqueada. Intente nuevamente mas tarde'
-      )
-    }
-
     // Verificamos si el usuario es valido para iniciar sesion
     if (!user.isVerified) {
       throw new ForbiddenException(
@@ -134,16 +133,16 @@ export class AuthService {
       password,
     );
 
-    // Si las contraseñas no coinciden, entonces registramos una incidencia
+    // Si las contraseñas no coinciden
     if (!isPasswordMatching) {
-      await this.usersService.registerIncident(user);
-
+      
       throw new ConflictException('Nombre de usuario o contraseña incorrecta');
     }
-
-
+    
     // Creamos y enviamos un token de autenticacion al usuario
     const token = this.tokenService.generate(user);
+    
+    // Enviamos el token con el cliente
     this.tokenService.send(res, token);
 
     await this.mfaService.send(user.email, "LOGIN");
@@ -153,6 +152,7 @@ export class AuthService {
       status: HttpStatus.OK,
       message: `Bienvenido ${user.username}, necesitamos que verfique que es usted, se ha enviado un codigo a su correo electronico asociado`,
       MFA: 'pending',
+      fromTo: "LOGIN",
     };
   }
 
@@ -165,9 +165,64 @@ export class AuthService {
     // TODO Implementar cierre de sesion
   }
 
+  /**
+   * Metodo que permite iniciar el proceso de recuperacion de contraseña
+   * @param requestForgotPasswordDto 
+   * @returns
+   */
+  async requestForgotPassword(
+    requestForgotPasswordDto: RequestForgotPasswordDto
+  ): Promise<{ status: number; message: string; MFA: string, fromTo: string }> {
+    const { email } = requestForgotPasswordDto;
+
+    await this.mfaService.send(email, "FORGOT_PASSWORD");
+
+    return {
+      status: HttpStatus.OK,
+      message: "Se ha iniciado el proceso de recuperacion de contraseña. Por favor revise su correo hemos enviado un codigo OTP",
+      MFA: 'pending',
+      fromTo: "FORGOT_PASSWORD",
+    }
+  }
+
+  /**
+   * Metodo que permite restablecer y finalizar la recuperacion de contraseña
+   * @param resetPasswordDto 
+   * @returns 
+   */
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto
+  ): Promise<ApiResponse> {
+
+    const { email, newPassword } = resetPasswordDto;
+
+    const user = await this.usersService.findUserByEmail(email);
+
+    if (!user) {
+      throw new ConflictException(
+        'El usuario no existe'
+      )
+    }
+
+    const hashedNewPassword = await this.argon2Service.hash(newPassword);
+
+    await this.usersService.updateUser(user.id, { password: hashedNewPassword })
+
+    return {
+      status: HttpStatus.OK,
+      message: "Se ha restablecido la contraseña exitosamente",
+    }
+  }
+
+
+  /**
+   * Metodo que activa la cuenta de un usuario
+   * @param accountActivationDto 
+   * @returns 
+   */
   async activate(
     accountActivationDto: AccountActivationDto,
-  ): Promise<{ status: number; message: string }> {
+  ): Promise<ApiResponse> {
     const { otp } = accountActivationDto;
 
     await this.accountActivationService.activate(otp);

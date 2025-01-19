@@ -15,6 +15,6 @@ export class RefreshToken {
     @Column({ unique: true, nullable: false })
     token: string;
 
-    @Column({ nullable: true, type: 'date', default: null})
+    @Column({ nullable: true, type: 'time with time zone', default: null})
     expiresAt: Date;
 }

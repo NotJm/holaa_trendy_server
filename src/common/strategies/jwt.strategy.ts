@@ -18,7 +18,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   async validate(payload: any) {
     // Aqui se decide que hacer con los datos de los usuarios si es valido
-    
     return { session: payload.sessionId, role: payload.role };
   }
 }

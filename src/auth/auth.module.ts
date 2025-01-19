@@ -3,26 +3,28 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { JWT_AGE } from 'src/common/constants/contants';
 import { CookieService } from 'src/common/providers/cookie.service';
 import { EmailService } from 'src/common/providers/email.service';
-import { JWT_AGE } from 'src/constants/contants';
 import { Users } from 'src/users/entity/users.entity';
 import { UsersService } from 'src/users/users.service';
+import { OtpService } from '../common/providers/otp.service';
 import { PwnedService } from '../common/providers/pwned.service';
+import { TokenService } from '../common/providers/token.service';
 import { JwtStrategy } from '../common/strategies/jwt.strategy';
 import { MFAService } from '../mfa/mfa.service';
+import { Incidents } from '../users/entity/incidents.entity';
 import { UserOtp } from '../users/entity/user-otp.entity';
-import { OtpService } from '../users/otp.service';
+import { IncidentService } from '../users/incident.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AccountActivationService } from './providers/account-activation.service';
 import { Argon2Service } from './providers/argon2.service';
-import { TokenService } from './providers/token.service';
 
 @Module({
   imports: [
     HttpModule,
-    TypeOrmModule.forFeature([Users, UserOtp]),
+    TypeOrmModule.forFeature([Users, UserOtp, Incidents]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -45,7 +47,8 @@ import { TokenService } from './providers/token.service';
     Argon2Service,
     AccountActivationService,
     MFAService,
-    OtpService
+    OtpService,
+    IncidentService
   ],
   exports: [AuthService],
 })

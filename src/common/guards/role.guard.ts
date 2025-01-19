@@ -1,7 +1,7 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
-import { ROLES_KEY } from 'src/constants/contants';
+import { ROLES_KEY } from 'src/common/constants/contants';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
@@ -25,7 +25,7 @@ export class RoleGuard implements CanActivate {
     const user = request.user;
 
     if (!user || !requiredRoles.some(role => user.role.includes(role))) {
-      throw new UnauthorizedException('Acceso denegado')
+      throw new UnauthorizedException('Acceso denegado: No tienes permisos suficientes')
     }
 
     return true

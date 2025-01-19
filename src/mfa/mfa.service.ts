@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { EmailService } from '../common/providers/email.service';
-import { OtpService } from '../users/otp.service';
+import { OtpService } from '../common/providers/otp.service';
 import { UsersService } from '../users/users.service';
 import { MFACodeDto } from './dtos/mfa-code.dto';
 

@@ -1,13 +1,15 @@
-import { Body, Controller, Get, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
+import { ROLE } from '../common/constants/contants';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt.auth.guard';
 import { RoleGuard } from '../common/guards/role.guard';
-import { ROLE } from '../constants/contants';
 import { AuthService } from './auth.service';
-import { LoginDto } from './dtos/login.dto';
-import { SignUpDto } from './dtos/signup.dto';
 import { AccountActivationDto } from './dtos/activation.dto';
+import { LoginDto } from './dtos/login.dto';
+import { RequestForgotPasswordDto } from './dtos/request-forgot-password.dto';
+import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { SignUpDto } from './dtos/signup.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -19,11 +21,8 @@ export class AuthController {
    * @returns Respues al cliente
    */
   @Post('signup')
-  async signup(
-    @Body() registerDto: SignUpDto,
-    @Res({ passthrough: true }) res,
-  ) {
-    return await this.authService.signUp(registerDto, res);
+  async signup(@Body() registerDto: SignUpDto) {
+    return await this.authService.signUp(registerDto);
   }
 
   /**
@@ -38,6 +37,33 @@ export class AuthController {
   }
 
   /**
+   * 
+   * @param requestForgotPasswordDto 
+   * @returns 
+   */
+  @HttpCode(HttpStatus.OK)
+  @Post('request/forgot-password')
+  async requestForgotPassword(
+    @Body() requestForgotPasswordDto: RequestForgotPasswordDto
+  ) {
+    return await this.authService.requestForgotPassword(requestForgotPasswordDto);
+  }
+
+    /**
+   * 
+   * @param requestForgotPasswordDto 
+   * @returns 
+   */
+    @HttpCode(HttpStatus.OK)
+    @Post('reset-password')
+    async resetPassword(
+      @Body() resetPasswordDto: ResetPasswordDto
+    ) {
+      return await this.authService.resetPassword(resetPasswordDto);
+    }
+
+
+  /**
    * Metodo para cerrar la sesion de un cliente
    * @param res Respuesta al cliente
    * @returns
@@ -49,7 +75,6 @@ export class AuthController {
     return await this.authService.logout(res);
   }
 
-
   /**
    * Metodo para activar la cuenta de un usuario
    */
@@ -57,5 +82,4 @@ export class AuthController {
   async activate(@Body() accountActivationDto: AccountActivationDto) {
     return await this.authService.activate(accountActivationDto);
   }
-
 }

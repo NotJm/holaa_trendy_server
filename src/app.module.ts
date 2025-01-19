@@ -1,3 +1,4 @@
+import { SettingsModule } from './settings/settings.module';
 import {
   MiddlewareConsumer,
   Module,
@@ -11,6 +12,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { AllHttpExceptionsFilter } from './exceptions/http.exception.filter';
+import { AllDataBaseExceptionsFilter } from './exceptions/database.exception.filter';
 import { CorsMiddleware } from './middleware/cors.middleware';
 import { Address } from './users/entity/user-address.entity';
 import { UserOtp } from './users/entity/user-otp.entity';
@@ -18,11 +20,12 @@ import { Users } from './users/entity/users.entity';
 import { UsersModule } from './users/users.module';
 import { RefreshToken } from './auth/schemas/refresh-token.entity';
 import { MFAModule } from './mfa/mfa.module';
+import { Incidents } from './users/entity/incidents.entity';
 
 @Module({
   imports: [
-    // MFAModule,
-    // CategoryModule,
+    SettingsModule,
+    MFAModule,
     // ProductModule,
     // AuditModule,
     // BusinessModule,
@@ -41,15 +44,18 @@ import { MFAModule } from './mfa/mfa.module';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [Users, Address, UserOtp, RefreshToken],
+        entities: [Users, Address, UserOtp, RefreshToken, Incidents],
         synchronize: true,
-        logging: true,
       }),
       inject: [ConfigService],
     }),
   ],
   controllers: [AppController],
   providers: [
+    {
+      provide: APP_FILTER,
+      useClass: AllDataBaseExceptionsFilter,
+    },
     {
       provide: APP_FILTER,
       useClass: AllHttpExceptionsFilter,

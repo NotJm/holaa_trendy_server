@@ -6,7 +6,7 @@ export class Address {
         name: 'address_id',
         type: 'bigint', 
     })
-    id: number;
+    id?: number;
 
     @Column({ nullable: false, default: "" })
     address: string

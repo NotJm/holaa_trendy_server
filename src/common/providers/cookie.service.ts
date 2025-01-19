@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CookieOptions, Request, Response } from 'express';
-import { COOKIE_DEFAULT_AGE } from 'src/constants/contants';
+import { COOKIE_DEFAULT_AGE } from 'src/common/constants/contants';
 
 @Injectable()
 export class CookieService {

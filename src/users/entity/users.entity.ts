@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { ROLE } from '../../constants/contants';
+import { ROLE } from '../../common/constants/contants';
+import { Incidents } from './incidents.entity';
 import { Address } from "./user-address.entity";
-import { Incidents } from '../../admin/incident/entity/incidents.entity';
 
  @Entity('users')
  export class Users {
@@ -31,7 +31,7 @@ import { Incidents } from '../../admin/incident/entity/incidents.entity';
     @Column({ nullable: false, type: 'boolean', default: false })
     isBlocked?: boolean;
 
-    @Column({ nullable: true, type: 'date', default: null })
+    @Column({ nullable: true, type: 'time with time zone', default: null })
     blockExpiresAt?: Date;
 
     @OneToOne(() => Address)

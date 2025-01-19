@@ -21,6 +21,12 @@ export class Argon2Service {
         }
     }
 
+    /**
+     * Metodo que compara el hash con la contraseña del usuario
+     * @param hash hash del usuario
+     * @param password contraseña que se quiere comparar
+     * @returns verdadero si coinciden
+     */
     async compare(hash: string, password: string): Promise<boolean> {
         try {
             return await argon2.verify(hash, password);

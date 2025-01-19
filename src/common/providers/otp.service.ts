@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
 import * as speakeasy from 'speakeasy';
 import { TotpOptions, TotpVerifyOptions } from 'speakeasy';
-import { OTP_LIFE_TIME } from '../constants/contants';
-import { UserOtp } from './entity/user-otp.entity';
-import { BaseService } from '../shared/base.service';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Users } from './entity/users.entity';
+import { UserOtp } from '../../users/entity/user-otp.entity';
+import { Users } from '../../users/entity/users.entity';
+import { BaseService } from '../base.service';
+import { OTP_LIFE_TIME } from '../constants/contants';
 
 @Injectable()
 export class OtpService extends BaseService<UserOtp> {
@@ -61,16 +61,12 @@ export class OtpService extends BaseService<UserOtp> {
    * @returns Regresa un codigo otp y la fecha de expiracion
    */
   async generate(user: Users, useCase: "LOGIN" | "SIGNUP" | "FORGOT_PASSWORD"): Promise<{ otp: string; otpExpiration: Date }> {
-    // Generamos las opciones para el otp
     const options = this.generateOtpOptions();
 
-    // Genero el otp mediante la configuracion inicial
     const otp = speakeasy.totp(options);
 
-    // Calculo la fecha de expiracion
     const expiresAt = new Date(Date.now() + OTP_LIFE_TIME * 1000);
 
-    // Creamos un registro
     await this.create({ 
       userId: user,
       otp: otp,

@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
-import { formattedDate } from '../../shared/utils/formatted-date';
+import { formattedDate } from '../utils/formatted-date';
 
 @Injectable()
 export class EmailService {
@@ -111,4 +111,6 @@ export class EmailService {
         `,
     });
   }
+
+
 }

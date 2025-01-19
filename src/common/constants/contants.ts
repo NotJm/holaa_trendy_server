@@ -16,9 +16,9 @@ export enum ROLE {
 
 export const OTP_LIFE_TIME = 300;
 
-export const BLOCK_DURATION = 15 * 60 * 1000
+export const BLOCK_DURATION = 15 * 60 * 1000;
 
 export const MAX_ATTEMPTS = 3;
 
-export const LOCK_TIME_MINUTES = 5;
+export const LOCK_TIME_MINUTES = 15;
 

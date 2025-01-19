@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Incidents } from "src/admin/incident/entity/incident.schema";
 
-export type CategoryDocument = Incidents & Document;
+export type CategoryDocument = Category & Document;
 
 /**
  * @prop {string} code - Codigo de la categoria
