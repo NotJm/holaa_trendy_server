@@ -24,10 +24,13 @@ import { JwtAuthGuard } from '../common/guards/jwt.auth.guard';
 import { RoleGuard } from '../common/guards/role.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { ROLE } from '../common/constants/contants';
+import { BaseController } from 'src/common/base.controller';
 
 @Controller('category')
-export class CategoryController {
-  constructor(private readonly categoriesService: CategoryService) {}
+export class CategoryController extends BaseController {
+  constructor(private readonly categoriesService: CategoryService) {
+    super();
+  }
 
   /**
    * Endpoint para crear una categoria
@@ -50,10 +53,10 @@ export class CategoryController {
         data: createCategory,
       };
     } catch (error) {
-      throw error;
+      return this.handleError(error);
     }
   }
-  
+
   /**
    * Endpoint para crear varias categorias
    * @param createManyCategoriesDto Estructura para crear varias categorias
@@ -66,18 +69,17 @@ export class CategoryController {
     @Body() createManyCategoriesDto: CreateManyCategoriesDto,
   ): Promise<ApiResponse> {
     try {
-      
-      const createCategories = 
-        await this.categoriesService.createMany(createManyCategoriesDto);
+      const createCategories = await this.categoriesService.createMany(
+        createManyCategoriesDto,
+      );
 
       return {
         status: HttpStatus.CREATED,
         message: 'Categorias creada exitosamente',
-        data: createCategories
-      }
-
+        data: createCategories,
+      };
     } catch (error) {
-      throw error;
+      return this.handleError(error);
     }
   }
 
@@ -98,7 +100,7 @@ export class CategoryController {
    */
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(ROLE.EMPLOYEE)
-  @Put('update/:code')
+  @Put('update')
   async updateCategory(
     @Body() updateCategorieDto: UpdateCategoryDto,
   ): Promise<ApiResponse> {
@@ -112,11 +114,7 @@ export class CategoryController {
         data: updateCategory,
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw new NotFoundException(error.message);
-      }
-
-      throw error;
+      return this.handleError(error);
     }
   }
 
@@ -142,11 +140,7 @@ export class CategoryController {
         data: updateCategories,
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw new NotFoundException(error.message);
-      }
-
-      throw error;
+      return this.handleError(error);
     }
   }
 
@@ -168,7 +162,7 @@ export class CategoryController {
         data: deleteCategory,
       };
     } catch (error) {
-      throw error;
+      return this.handleError(error);
     }
   }
 
@@ -178,7 +172,9 @@ export class CategoryController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(ROLE.EMPLOYEE)
   @Delete('delete-many')
-  async deleteManyCategories(@Body() codes: string[]): Promise<ApiResponse> {
+  async deleteManyCategories(
+    @Body('codes') codes: string[],
+  ): Promise<ApiResponse> {
     try {
       const deleteCategories = await this.categoriesService.deleteMany(codes);
 
@@ -188,7 +184,7 @@ export class CategoryController {
         data: deleteCategories,
       };
     } catch (error) {
-      throw error;
+      return this.handleError(error);
     }
   }
 }
