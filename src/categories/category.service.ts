@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/base.service';
-import { ApiResponse } from 'src/common/interfaces/api.response.interface';
 import { Repository } from 'typeorm';
 import { CreateCategoryDto as CreateCategorieDto, CreateManyCategoriesDto } from './dtos/create.category.dto';
 import {

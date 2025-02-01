@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiResponse } from '../common/interfaces/api.response.interface';
 import { CategoryService } from './category.service';
@@ -19,6 +20,10 @@ import {
   UpdateCategoryDto,
   UpdateManyCategoriesDto,
 } from './dtos/update.category.dto';
+import { JwtAuthGuard } from '../common/guards/jwt.auth.guard';
+import { RoleGuard } from '../common/guards/role.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { ROLE } from '../common/constants/contants';
 
 @Controller('category')
 export class CategoryController {
@@ -29,6 +34,8 @@ export class CategoryController {
    * @param createProductTypeDto DTO para crear un tipo de producto
    * @returns
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Post('create')
   async createCategory(
     @Body() createProductTypeDto: CreateCategoryDto,
@@ -52,6 +59,8 @@ export class CategoryController {
    * @param createManyCategoriesDto Estructura para crear varias categorias
    * @returns Regresa respuesta con las categorias creadas
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Post('create-many')
   async createManyCategories(
     @Body() createManyCategoriesDto: CreateManyCategoriesDto,
@@ -87,6 +96,8 @@ export class CategoryController {
    * @param updateCategorieDto Estructura para actualizar una categoria
    * @returns
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Put('update/:code')
   async updateCategory(
     @Body() updateCategorieDto: UpdateCategoryDto,
@@ -114,6 +125,8 @@ export class CategoryController {
    * @param updateManyCategories Estructura para actualizar varias categorias
    * @returns
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Put('update-many')
   async updateManyCategories(
     @Body() updateManyCategoriesDto: UpdateManyCategoriesDto,
@@ -142,6 +155,8 @@ export class CategoryController {
    * @param code
    * @returns
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Delete('delete/:code')
   async deleteCategory(@Param('id') code: string): Promise<ApiResponse> {
     try {
@@ -160,6 +175,8 @@ export class CategoryController {
   /**
    * Endpoint para poder eliminar varias categorias
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Delete('delete-many')
   async deleteManyCategories(@Body() codes: string[]): Promise<ApiResponse> {
     try {
