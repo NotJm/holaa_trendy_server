@@ -1,5 +1,5 @@
 import { InternalServerErrorException } from '@nestjs/common';
-import { FindOneOptions, Repository } from 'typeorm';
+import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
 
 export abstract class BaseService<T> {
 
@@ -11,6 +11,10 @@ export abstract class BaseService<T> {
 
   protected async findAll(): Promise<T[]> {
     return this.repository.find();
+  }
+  
+  protected async find(filter: FindManyOptions<T>): Promise<T[]> {
+    return this.repository.find(filter);
   }
 
   protected async findOne(filter: FindOneOptions<T>): Promise<T> {
@@ -44,14 +48,14 @@ export abstract class BaseService<T> {
     return entity;
   }
 
-  protected async deleteById(id: string): Promise<void> {
+  protected async deleteById(id: string): Promise<T> {
     const entity = await this.findById(id);
 
     if (!entity) {
       throw new InternalServerErrorException(`Entidad con la ID ${id} no encontrada`);
     }
 
-    await this.repository.remove(entity);
+    return await this.repository.remove(entity);
 
   }
 
