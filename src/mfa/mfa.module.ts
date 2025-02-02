@@ -12,6 +12,8 @@ import { OtpService } from '../common/providers/otp.service';
 import { UsersService } from '../users/users.service';
 import { MFAController } from './mfa.controller';
 import { MFAService } from './mfa.service';
+import { TokenService } from '../common/providers/token.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { MFAService } from './mfa.service';
   controllers: [MFAController],
   providers: [
     MFAService,
+    TokenService,
+    JwtService,
     OtpService,
     EmailService,
     UsersService,

@@ -1,17 +1,17 @@
 import {
-  ConflictException,
-  HttpStatus,
-  Injectable,
-  InternalServerErrorException,
+    ConflictException,
+    HttpStatus,
+    Injectable,
+    InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Request } from 'express';
 import { BaseService } from 'src/common/base.service';
 import { FindOneOptions, Repository } from 'typeorm';
 import {
-  BLOCK_DURATION,
-  LOCK_TIME_MINUTES,
-  MAX_ATTEMPTS,
+    BLOCK_DURATION,
+    LOCK_TIME_MINUTES,
+    MAX_ATTEMPTS,
 } from '../common/constants/contants';
 import { ApiResponse } from '../common/interfaces/api.response.interface';
 import { CookieService } from '../common/providers/cookie.service';
@@ -139,7 +139,7 @@ export class UsersService extends BaseService<Users> {
     const { id } = await this.tokenService.verify(accessToken);
 
     await this.updateUser(id, {
-      address: {
+      addressId: {
         ...registerAddressDto,
       },
     });
@@ -160,7 +160,7 @@ export class UsersService extends BaseService<Users> {
       await this.incidentService.countIncidentsForUser(user);
 
     if (incidentCount >= MAX_ATTEMPTS) {
-      this.blockUser(user.id);
+      this.blockUser(user.userId);
     }
   }
 

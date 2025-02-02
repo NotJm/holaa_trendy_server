@@ -19,12 +19,12 @@ export class TokenService {
   ) {}
 
   public generate(user: Users): string {
-    const payload = { id: user.id, role: user.role };
+    const payload = { id: user.userId, role: user.role };
     return this.jwtService.sign(payload, this.jwtOptions);
   }
 
   public send(res: Response, token: string): void {
-    this.cookieService.send(res, 'accessToken', token, COOKIE_JWT_AGE);
+    this.cookieService.send(res, 'accessToken', token, true, COOKIE_JWT_AGE);
   }
 
   public verify(accessToken: string): Promise<JwtPayload> {

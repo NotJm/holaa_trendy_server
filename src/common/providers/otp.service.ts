@@ -49,7 +49,7 @@ export class OtpService extends BaseService<UserOtp> {
   }
 
   async findOtp(otp: string): Promise<UserOtp> {
-    return this.findOne({ where: { otp: otp }})
+    return this.findOne({ where: { otp: otp }, relations: ['userId'] })
   }
 
   async deleteOtp(otp: string): Promise<void> {

@@ -4,11 +4,15 @@ import { COOKIE_DEFAULT_AGE } from 'src/common/constants/contants';
 
 @Injectable()
 export class CookieService {
+  /**
+   * Configuracion predeterminada para cookies seguras
+   */
   private cookieOptions: CookieOptions = {
     httpOnly: true,
-    sameSite: 'strict',
+    sameSite: 'lax',
     secure: false,
     path: '/',
+    domain: 'localhost',
     maxAge: COOKIE_DEFAULT_AGE,
   };  
 
@@ -19,9 +23,9 @@ export class CookieService {
    * @param value Valor de la cookie
    * @param age Expiracion de la cookie (opcional)
    */
-  send(res: Response, name: string, value: string, age?: number) {
+  send(res: Response, name: string, value: string, bearerToken?: boolean, age?: number) {
     res.cookie(name, value, { ...this.cookieOptions, maxAge: age });
-  }   
+  }
 
   /**
    * Elimina una cookie del cliente

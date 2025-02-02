@@ -1,44 +1,46 @@
 import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Cart } from '../../cart/entity/cart.entity';
 import { ROLE } from '../../common/constants/contants';
 import { Incidents } from './incidents.entity';
 import { Address } from "./user-address.entity";
 
  @Entity('users')
  export class Users {
-    @PrimaryGeneratedColumn("uuid", {
-        name: 'user_id',
-    })
-    id?: string;
+    @PrimaryGeneratedColumn('uuid', { name: "user_id" })
+    userId?: string;
 
-    @Column({ unique: true, nullable: false })
+    @Column({ type: 'varchar', unique: true, nullable: false })
     username: string;
 
-    @Column({ nullable: false })
+    @Column({ type: 'varchar', nullable: false })
     password: string;
 
-    @Column({ nullable: false, unique: true })
+    @Column({ type: 'varchar', nullable: false, unique: true })
     email: string;
 
-    @Column({ nullable: false, length: 13, default: "" })
+    @Column({ type: 'varchar', nullable: false, length: 13, default: "" })
     phone: string;
 
-    @Column({ nullable: false, type: 'enum', enum: Object.values(ROLE), default: ROLE.USER })
+    @Column({  type: 'enum', nullable: false, enum: Object.values(ROLE), default: ROLE.USER })
     role?: ROLE
 
-    @Column({ nullable: false, type: 'boolean', default: false })
+    @Column({ type: 'boolean', nullable: false, default: false })
     isVerified?: boolean;
 
-    @Column({ nullable: false, type: 'boolean', default: false })
+    @Column({ type: 'boolean', nullable: false, default: false })
     isBlocked?: boolean;
 
-    @Column({ nullable: true, type: 'time with time zone', default: null })
+    @Column({ type: 'time with time zone', nullable: true, default: null })
     blockExpiresAt?: Date;
 
     @OneToOne(() => Address)
     @JoinColumn({ name: "address_id" })
-    address?: Address
+    addressId?: Address
 
     @OneToMany(() => Incidents, (incident) => incident.user, { nullable: true })
     incidents?: Incidents[];
+
+    @OneToMany(() => Cart, (cart) => cart.user)
+    carts?: Cart[];
 
  }

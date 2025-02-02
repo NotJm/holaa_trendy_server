@@ -25,7 +25,7 @@ export class MFAService {
     });
 
     if (!user) {
-      throw new InternalServerErrorException('El usuario no existe');
+      throw new InternalServerErrorException('El codigo OTP es invalido o ha expirado');
     }
 
     const { otp, otpExpiration } = await this.otpService.generate(
@@ -45,7 +45,7 @@ export class MFAService {
     const userOtp = await this.otpService.findOtp(otp);
 
     if (!userOtp) {
-      throw new InternalServerErrorException('El usuario no existe');
+      throw new InternalServerErrorException('El codigo OTP es invalido o ha expirado');
     }
 
     const isValid = this.otpService.verify(userOtp.otp);
