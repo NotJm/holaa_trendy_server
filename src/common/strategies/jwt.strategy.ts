@@ -1,16 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Request } from 'express';
+import { Strategy } from 'passport-jwt';
+import { CookieService } from '../providers/cookie.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private readonly configService: ConfigService) {
+
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly cookieService: CookieService
+  ) {
     super({
       // Extrae el token de la caberecera Bearer
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: (req: Request) => {
+        return this.cookieService.get(req, 'accessToken');
+      },
       // Ignora el tiempo de expiracion
-      ignoreExpiration: false,
+      ignoreExpiration: true,
       // El secreto para validar el token
       secretOrKey: configService.get('SECRET_KEY'),
     });

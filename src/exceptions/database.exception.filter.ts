@@ -5,9 +5,9 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { EntityNotFoundError, QueryFailedError } from 'typeorm';
+import { EntityNotFoundError, EntityPropertyNotFoundError, QueryFailedError } from 'typeorm';
 
-@Catch(QueryFailedError, EntityNotFoundError)
+@Catch(QueryFailedError, EntityNotFoundError, EntityPropertyNotFoundError)
 export class AllDataBaseExceptionsFilter implements ExceptionFilter {
   catch(exception: QueryFailedError | EntityNotFoundError, host: ArgumentsHost) {
     const ctx = host.switchToHttp();

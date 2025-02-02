@@ -1,5 +1,16 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res, UseGuards } from '@nestjs/common';
-import { Response } from 'express';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { Request, Response } from 'express';
 import { ROLE } from '../common/constants/contants';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt.auth.guard';
@@ -10,6 +21,7 @@ import { LoginDto } from './dtos/login.dto';
 import { RequestForgotPasswordDto } from './dtos/request-forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SignUpDto } from './dtos/signup.dto';
+import { AuthInterceptor } from '../common/interceptor/auth.interceptor';
 
 @Controller('auth')
 export class AuthController {
@@ -37,31 +49,30 @@ export class AuthController {
   }
 
   /**
-   * 
-   * @param requestForgotPasswordDto 
-   * @returns 
+   *
+   * @param requestForgotPasswordDto
+   * @returns
    */
   @HttpCode(HttpStatus.OK)
   @Post('request/forgot-password')
   async requestForgotPassword(
-    @Body() requestForgotPasswordDto: RequestForgotPasswordDto
+    @Body() requestForgotPasswordDto: RequestForgotPasswordDto,
   ) {
-    return await this.authService.requestForgotPassword(requestForgotPasswordDto);
+    return await this.authService.requestForgotPassword(
+      requestForgotPasswordDto,
+    );
   }
 
-    /**
-   * 
-   * @param requestForgotPasswordDto 
-   * @returns 
+  /**
+   *
+   * @param requestForgotPasswordDto
+   * @returns
    */
-    @HttpCode(HttpStatus.OK)
-    @Post('reset-password')
-    async resetPassword(
-      @Body() resetPasswordDto: ResetPasswordDto
-    ) {
-      return await this.authService.resetPassword(resetPasswordDto);
-    }
-
+  @HttpCode(HttpStatus.OK)
+  @Post('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return await this.authService.resetPassword(resetPasswordDto);
+  }
 
   /**
    * Metodo para cerrar la sesion de un cliente
@@ -69,6 +80,7 @@ export class AuthController {
    * @returns
    */
   @Get('logout')
+  @UseInterceptors(AuthInterceptor)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(ROLE.USER, ROLE.ADMIN)
   async logout(@Res() res: Response) {
@@ -81,5 +93,11 @@ export class AuthController {
   @Post('activate')
   async activate(@Body() accountActivationDto: AccountActivationDto) {
     return await this.authService.activate(accountActivationDto);
+  }
+
+  // @UseInterceptors(AuthInterceptor)
+  @Post('check-session')
+  async checkSession(@Req() req: Request) {
+    return await this.authService.checkSession(req);
   }
 }

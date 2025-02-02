@@ -1,23 +1,23 @@
 import {
-  ConflictException,
-  ForbiddenException,
-  HttpStatus,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
+    ConflictException,
+    ForbiddenException,
+    HttpStatus,
+    Injectable,
+    InternalServerErrorException,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { ApiResponse } from '../common/interfaces/api.response.interface';
+import { CookieService } from '../common/providers/cookie.service';
+import { TokenService } from '../common/providers/token.service';
 import { MFAService } from '../mfa/mfa.service';
 import { UsersService } from '../users/users.service';
 import { AccountActivationDto } from './dtos/activation.dto';
 import { LoginDto } from './dtos/login.dto';
+import { RequestForgotPasswordDto } from './dtos/request-forgot-password.dto';
+import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SignUpDto } from './dtos/signup.dto';
 import { AccountActivationService } from './providers/account-activation.service';
 import { Argon2Service } from './providers/argon2.service';
-import { TokenService } from '../common/providers/token.service';
-import { RequestForgotPasswordDto } from './dtos/request-forgot-password.dto';
-import { ApiResponse } from '../common/interfaces/api.response.interface';
-import { ResetPasswordDto } from './dtos/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -27,6 +27,7 @@ export class AuthService {
     private readonly argon2Service: Argon2Service,
     private readonly accountActivationService: AccountActivationService,
     private readonly mfaService: MFAService,
+    private readonly cookieService: CookieService
     
   ) {}
 
@@ -112,13 +113,13 @@ export class AuthService {
 
     // Si el usuario no existe, Enviamos un excepcion NotFoundException
     if (!user) {
-      throw new NotFoundException(
+      throw new ConflictException(
         `El usuario "${username}" no se encuentra registrado, Por favor registrese`,
       );
     }
 
     // Verificamos si el usuario esta verificado
-    await this.usersService.userIsVerified(user.id);
+    await this.usersService.userIsVerified(user.userId);
 
     // Verificamos si el usuario es valido para iniciar sesion
     if (!user.isVerified) {
@@ -162,7 +163,10 @@ export class AuthService {
    * @returns
    */
   async logout(res: Response): Promise<void> {
-    // TODO Implementar cierre de sesion
+    this.cookieService.delete(res, 'accessToken');
+    res.send({
+      message: "Sesion Cerrada"
+    })
   }
 
   /**
@@ -206,7 +210,7 @@ export class AuthService {
 
     const hashedNewPassword = await this.argon2Service.hash(newPassword);
 
-    await this.usersService.updateUser(user.id, { password: hashedNewPassword })
+    await this.usersService.updateUser(user.userId, { password: hashedNewPassword })
 
     return {
       status: HttpStatus.OK,
@@ -231,5 +235,15 @@ export class AuthService {
       status: HttpStatus.OK,
       message: 'Su cuenta ha sido activada correctamente',
     };
+  }
+
+  async checkSession(req: Request): Promise<boolean> {
+    const existsAccessToken = this.cookieService.get(req, 'accessToken');
+
+    if (!existsAccessToken) {
+      return false;
+    } else { 
+      return true;
+    }
   }
 }

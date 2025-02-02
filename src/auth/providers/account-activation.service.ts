@@ -1,7 +1,7 @@
 import {
-  ConflictException,
-  Injectable,
-  InternalServerErrorException,
+    ConflictException,
+    Injectable,
+    InternalServerErrorException,
 } from '@nestjs/common';
 import { EmailService } from '../../common/providers/email.service';
 import { OtpService } from '../../common/providers/otp.service';
@@ -45,6 +45,8 @@ export class AccountActivationService {
   async activate(otp: string): Promise<void> {
     const userOtp = await this.otpService.findOtp(otp);
 
+    console.log(userOtp);
+
     if (!userOtp) {
       throw new InternalServerErrorException('El usuario no existe');
     }
@@ -56,7 +58,7 @@ export class AccountActivationService {
         'El codigo de activacion es incorrecto o ha expirado',
       );
     } else {
-      await this.usersService.updateUser(userOtp.userId.id, {
+      await this.usersService.updateUser(userOtp.userId.userId, {
         isVerified: true,
       });
 
