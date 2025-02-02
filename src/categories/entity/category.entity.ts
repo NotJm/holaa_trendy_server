@@ -24,7 +24,7 @@ export class Category {
   @Column({ nullable: false })
   description: string;
 
-  @ManyToMany(() => SubCategory, (subCategory) => subCategory.category, {
+  @ManyToMany(() => SubCategory, (subCategory) => subCategory.categories, {
     onDelete: 'SET NULL',
     onUpdate: 'CASCADE',
     nullable: true,
@@ -42,9 +42,17 @@ export class Category {
   @OneToMany(() => Products, (products) => products.category)
   products?: Products[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({
+    nullable: false,
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt?: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({
+    nullable: false,
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   updatedAt?: Date;
 }

@@ -1,4 +1,17 @@
-import { Check, Column, Entity, Index, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryColumn } from 'typeorm';
+import {
+  Check,
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+  OneToMany,
+  PrimaryColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Category } from '../../categories/entity/category.entity';
 import { Colors } from '../../colors/entity/colors.entity';
 import { Sizes } from '../../sizes/entity/sizes.entity';
@@ -15,10 +28,16 @@ export class Products {
   @Column({ type: 'varchar', name: 'name' })
   name: string;
 
-  @Column({ type: 'varchar', name: 'img_uri'  })
+  @Column({ type: 'varchar', name: 'img_uri' })
   imgUri: string;
 
-  @Column({ type: 'simple-array', name: 'images', default: [], array: true, nullable: true })
+  @Column({
+    type: 'simple-array',
+    name: 'images',
+    default: [],
+    array: true,
+    nullable: true,
+  })
   images: string[];
 
   @Column({ type: 'text' })
@@ -31,7 +50,7 @@ export class Products {
   stock: number;
 
   @ManyToMany(() => Sizes, { eager: true, cascade: true })
-  @JoinTable({ 
+  @JoinTable({
     name: 'products_sizes',
     joinColumn: { name: 'product_code', referencedColumnName: 'code' },
     inverseJoinColumn: { name: 'size_code', referencedColumnName: 'size' },
@@ -39,7 +58,7 @@ export class Products {
   sizes: Sizes[];
 
   @ManyToMany(() => Colors, { eager: true, cascade: true })
-  @JoinTable({ 
+  @JoinTable({
     name: 'products_colors',
     joinColumn: { name: 'product_codee', referencedColumnName: 'code' },
     inverseJoinColumn: { name: 'color_code', referencedColumnName: 'color' },
@@ -50,7 +69,6 @@ export class Products {
     onDelete: 'SET NULL',
     onUpdate: 'CASCADE',
     nullable: true,
-
   })
   @JoinColumn({ name: 'category' })
   category: Category;
@@ -60,13 +78,30 @@ export class Products {
     onUpdate: 'CASCADE',
     nullable: true,
   })
-  @JoinTable({ 
+  @JoinTable({
     name: 'products_subcategories',
-    joinColumn: { name: 'product_code', referencedColumnName: 'code'},
-    inverseJoinColumn: { name: 'subcategory_code', referencedColumnName: 'code'},
+    joinColumn: { name: 'product_code', referencedColumnName: 'code' },
+    inverseJoinColumn: {
+      name: 'subcategory_code',
+      referencedColumnName: 'code',
+    },
   })
   subCategories: SubCategory[];
 
-  @OneToMany(() => Cart, cart => cart.product)
+  @OneToMany(() => Cart, (cart) => cart.product)
   cartItems?: Cart[];
+
+  @CreateDateColumn({
+    nullable: false,
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  createdAt?: Date;
+
+  @UpdateDateColumn({
+    nullable: false,
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  updatedAt?: Date;
 }
