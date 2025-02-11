@@ -4,10 +4,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as speakeasy from 'speakeasy';
 import { TotpOptions, TotpVerifyOptions } from 'speakeasy';
 import { Repository } from 'typeorm';
-import { UserOtp } from '../../users/entity/user-otp.entity';
-import { Users } from '../../users/entity/users.entity';
+import { UserOtp } from '../../modules/users/entity/user-otp.entity';
 import { BaseService } from '../base.service';
 import { OTP_LIFE_TIME } from '../constants/contants';
+import { User } from '../../modules/users/entity/users.entity';
 
 @Injectable()
 export class OtpService extends BaseService<UserOtp> {
@@ -60,7 +60,7 @@ export class OtpService extends BaseService<UserOtp> {
    * Genera un codigo otp
    * @returns Regresa un codigo otp y la fecha de expiracion
    */
-  async generate(user: Users, useCase: "LOGIN" | "SIGNUP" | "FORGOT_PASSWORD"): Promise<{ otp: string; otpExpiration: Date }> {
+  async generate(user: User, useCase: "LOGIN" | "SIGNUP" | "FORGOT_PASSWORD"): Promise<{ otp: string; otpExpiration: Date }> {
     const options = this.generateOtpOptions();
 
     const otp = speakeasy.totp(options);
