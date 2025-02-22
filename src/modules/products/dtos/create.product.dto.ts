@@ -9,6 +9,7 @@ import {
   IsPositive,
   IsString,
   IsUrl,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -39,6 +40,11 @@ export class CreateProductDto {
   @IsPositive({ message: 'El precio deberia de ser un numero entero positivo' })
   @Min(0, { message: 'El precio deberia de tener un valor minimo de 0' })
   price: number;
+
+  @IsNumber({}, { message: 'El descuento deberia ser numero'})
+  @Min(0, { message: 'El minimo valor del descuento deberia ser 0'})
+  @Max(100, { message: 'El maximo valor del descuento deberia ser 100'})
+  discount: number;
 
 	@IsNotEmpty({ message: 'El stock es requerido' })
   @IsNumber({}, { message: 'El stock deberia de ser un numero entero' })

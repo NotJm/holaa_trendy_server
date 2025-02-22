@@ -28,7 +28,7 @@ export class CartService extends BaseService<Cart> {
     return this.findOne({
       relations: ['cartItems', 'cartItems.product'],
       where: {
-        user: user,
+        user: { userId: user.userId },
         isActive: true,
       },
     });
@@ -62,9 +62,10 @@ export class CartService extends BaseService<Cart> {
   }
 
   public async addProductToCart(
+    userId: string,
     addProductToCartDto: AddProductToCartDto,
   ): Promise<Cart> {
-    const { userId, productCode, quantity } = addProductToCartDto;
+    const { productCode, quantity } = addProductToCartDto;
 
     const user = await this.usersService.findUserById(userId);
 
@@ -108,9 +109,10 @@ export class CartService extends BaseService<Cart> {
   }
 
   public async updateProductQuantity(
+    userId: string,
     updateProductQuantityToCartDto: UpdateProductQuantityToCartDto,
   ): Promise<Cart> {
-    const { userId, productCode, quantity } = updateProductQuantityToCartDto;
+    const { productCode, quantity } = updateProductQuantityToCartDto;
 
     const user = await this.usersService.findUserById(userId);
 
@@ -142,10 +144,9 @@ export class CartService extends BaseService<Cart> {
   }
 
   public async removeProductToCart(
-    removeProductToCartDto: RemoveProducToCartDto,
+    userId: string,
+    productCode: string,
   ): Promise<Cart> {
-    const { userId, productCode } = removeProductToCartDto;
-
     const user = await this.usersService.findUserById(userId);
 
     if (!user) {

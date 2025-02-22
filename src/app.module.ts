@@ -13,7 +13,6 @@ import { AllDataBaseExceptionsFilter } from './exceptions/database.exception.fil
 import { AllHttpExceptionsFilter } from './exceptions/http.exception.filter';
 import { CorsMiddleware } from './middleware/cors.middleware';
 import { PurchaseModule } from './modules/purchase/purchase.module';
-import { DiscountModule } from './modules/discounts/discount.module';
 import { CartModule } from './modules/cart/cart.module';
 import { SizesModule } from './modules/sizes/sizes.module';
 import { ColorsModule } from './modules/colors/colors.module';
@@ -31,7 +30,6 @@ import { UsersModule } from './modules/users/users.module';
     PurchaseModule,
     WishlistModule,
     CloudinaryModule,
-    DiscountModule,
     CartModule,
     SizesModule,
     ColorsModule,

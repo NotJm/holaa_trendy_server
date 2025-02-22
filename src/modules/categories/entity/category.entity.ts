@@ -11,7 +11,7 @@ import {
 import { Product } from '../../products/entity/products.entity';
 import { SubCategory } from '../../sub-categories/entity/sub-categories.entity';
 
-@Entity('category')
+@Entity('categories')
 export class Category {
   @PrimaryGeneratedColumn('uuid')
   id?: string
@@ -19,7 +19,7 @@ export class Category {
   @Column({ type: 'varchar', unique: true, nullable: false})
   name: string;
 
-  @Column({ nullable: false })
+  @Column({ type: 'varchar', nullable: false })
   description: string;
 
   @ManyToMany(() => SubCategory, (subCategory) => subCategory.categories, {

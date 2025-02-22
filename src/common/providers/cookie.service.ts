@@ -23,7 +23,7 @@ export class CookieService {
    * @param value Valor de la cookie
    * @param age Expiracion de la cookie (opcional)
    */
-  send(res: Response, name: string, value: string, bearerToken?: boolean, age?: number) {
+  send(res: Response, name: string, value: string, age?: number) {
     res.cookie(name, value, { ...this.cookieOptions, maxAge: age });
   }
 

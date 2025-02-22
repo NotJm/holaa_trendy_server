@@ -21,11 +21,13 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AccountActivationService } from './providers/account-activation.service';
 import { Argon2Service } from './providers/argon2.service';
+import { RefreshTokenService } from './providers/refresh-token.service';
+import { RefreshToken } from './entity/refresh-token.entity';
 
 @Module({
   imports: [
     HttpModule,
-    TypeOrmModule.forFeature([User, UserOtp, Incidents]),
+    TypeOrmModule.forFeature([User, UserOtp, Incidents, RefreshToken]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => jwtConfig(configService),
@@ -46,6 +48,7 @@ import { Argon2Service } from './providers/argon2.service';
     MFAService,
     OtpService,
     IncidentService,
+    RefreshTokenService
   ],
   exports: [AuthService],
 })

@@ -1,4 +1,6 @@
 import {
+  BeforeInsert,
+  BeforeUpdate,
   Check,
   Column,
   CreateDateColumn,
@@ -20,83 +22,97 @@ import { SubCategory } from '../../sub-categories/entity/sub-categories.entity';
 import { ProductImages } from './products-images.entity';
 
 @Entity('products')
-@Check('"price"::numeric > 0.0 AND "stock" > 0 ')
+@Check('"price"::numeric > 0.0 AND "stock" > 0 AND "discount"::numeric >= 0 AND "discount"::numeric <= 100')
 export class Product {
-@PrimaryColumn('varchar')
-code: string;
+  @PrimaryColumn('varchar')
+  code: string;
 
-@Index()
-@Column({ type: 'varchar', name: 'name' })
-name: string;
+  @Index()
+  @Column({ type: 'varchar', name: 'name' })
+  name: string;
 
-@Column({ type: 'varchar', name: 'img_uri' })
-imgUri: string;
+  @Column({ type: 'varchar', name: 'img_uri' })
+  imgUri: string;
 
-@Column({ type: 'text' })
-description: string;
+  @Column({ type: 'text' })
+  description: string;
 
-@Column({ type: 'money', default: 0 })
-price: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  price: number;
 
-@Column({ type: 'int', default: 0 })
-stock: number;
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  discount: number;
 
-@OneToMany(() => ProductImages, (productImage) => productImage.product, { cascade: true })
-images?: ProductImages[];
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  finalPrice?: number;
 
-@ManyToMany(() => Size, { eager: true, cascade: true })
-@JoinTable({
-  name: 'products_to_sizes',
-  joinColumn: { name: 'product_id', referencedColumnName: 'code' },
-  inverseJoinColumn: { name: 'size_id', referencedColumnName: 'id' },
-})
-sizes: Size[];
+  @Column({ type: 'int', default: 0 })
+  stock: number;
 
-@ManyToMany(() => Color, { eager: true, cascade: true })
-@JoinTable({
-  name: 'products_to_colors',
-  joinColumn: { name: 'product_id', referencedColumnName: 'code' },
-  inverseJoinColumn: { name: 'color_id', referencedColumnName: 'id' },
-})
-colors: Color[];
+  @OneToMany(() => ProductImages, (productImage) => productImage.product, {
+    cascade: true,
+  })
+  images?: ProductImages[];
 
-@ManyToOne(() => Category, (category) => category.products, {
-  onDelete: 'SET NULL',
-  onUpdate: 'CASCADE',
-  nullable: true,
-})
-@JoinColumn({ name: "category" })
-category: Category;
+  @ManyToMany(() => Size, { eager: true, cascade: true })
+  @JoinTable({
+    name: 'products_to_sizes',
+    joinColumn: { name: 'product_id', referencedColumnName: 'code' },
+    inverseJoinColumn: { name: 'size_id', referencedColumnName: 'id' },
+  })
+  sizes: Size[];
 
-@ManyToMany(() => SubCategory, {
-  onDelete: 'SET NULL',
-  onUpdate: 'CASCADE',
-  nullable: true,
-})
-@JoinTable({
-  name: 'products_to_subcategories',
-  joinColumn: { name: 'product_id', referencedColumnName: 'code' },
-  inverseJoinColumn: {
-    name: 'subcategory_id',
-    referencedColumnName: 'id',
-  },
-})
-subCategories: SubCategory[];
+  @ManyToMany(() => Color, { eager: true, cascade: true })
+  @JoinTable({
+    name: 'products_to_colors',
+    joinColumn: { name: 'product_id', referencedColumnName: 'code' },
+    inverseJoinColumn: { name: 'color_id', referencedColumnName: 'id' },
+  })
+  colors: Color[];
 
-@OneToMany(() => CartItem, (cartItem) => cartItem.product)
-cartItems?: CartItem[];
+  @ManyToOne(() => Category, (category) => category.products, {
+    onDelete: 'SET NULL',
+    onUpdate: 'CASCADE',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'category' })
+  category: Category;
 
-@CreateDateColumn({
-  nullable: false,
-  type: 'timestamptz',
-  default: () => 'CURRENT_TIMESTAMP',
-})
-createdAt?: Date;
+  @ManyToMany(() => SubCategory, {
+    onDelete: 'SET NULL',
+    onUpdate: 'CASCADE',
+    nullable: true,
+  })
+  @JoinTable({
+    name: 'products_to_subcategories',
+    joinColumn: { name: 'product_id', referencedColumnName: 'code' },
+    inverseJoinColumn: {
+      name: 'subcategory_id',
+      referencedColumnName: 'id',
+    },
+  })
+  subCategories: SubCategory[];
 
-@UpdateDateColumn({
-  nullable: false,
-  type: 'timestamptz',
-  default: () => 'CURRENT_TIMESTAMP',
-})
-updatedAt?: Date;
+  @OneToMany(() => CartItem, (cartItem) => cartItem.product)
+  cartItems?: CartItem[];
+
+  @CreateDateColumn({
+    nullable: false,
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  createdAt?: Date;
+
+  @UpdateDateColumn({
+    nullable: false,
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  updatedAt?: Date;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  calculateFinalPrice() {
+    this.finalPrice = this.price * (1 - this.discount / 100);
+  }
 }

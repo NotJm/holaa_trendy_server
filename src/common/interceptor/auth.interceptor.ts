@@ -1,7 +1,3 @@
-/*
-https://docs.nestjs.com/interceptors#interceptors
-*/
-
 import {
   Injectable,
   NestInterceptor,
@@ -17,9 +13,6 @@ export class AuthInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest<Request>();
     const token = request.cookies['accessToken'];
 
-    if (token) {
-      request.headers['authorization'] = `Bearer ${token}`
-    }
 
     return next.handle();  
   }

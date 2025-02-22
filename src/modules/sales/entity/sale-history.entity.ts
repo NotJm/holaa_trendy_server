@@ -1,14 +1,14 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Purchase } from './purchase.entity';
+import { Sale } from './sale.entity';
 
-@Entity('purchase_history')
-export class PurchaseHistory {
+@Entity('sale_history')
+export class SaleHistory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Purchase, { nullable: false })
+  @ManyToOne(() => Sale, { nullable: false })
   @JoinColumn()
-  purchase: Purchase;
+  sale: Sale;
 
   @Column({ type: 'varchar', length: 20, nullable: false })
   status: string;

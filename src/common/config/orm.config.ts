@@ -16,6 +16,15 @@ import { SubCategory } from '../../modules/sub-categories/entity/sub-categories.
 import { Incidents } from '../../modules/users/entity/incidents.entity';
 import { Address } from '../../modules/users/entity/user-address.entity';
 import { UserOtp } from '../../modules/users/entity/user-otp.entity';
+import { Wishlist } from '../../modules/wishlist/entity/wishlist.entity';
+import { Sale } from '../../modules/sales/entity/sale.entity';
+import { SaleHistory } from '../../modules/sales/entity/sale-history.entity';
+import { SaleItem } from '../../modules/sales/entity/sale-item.entity';
+import { Purchase } from '../../modules/purchase/entity/purchase.entity';
+import { PurchaseItem } from '../../modules/purchase/entity/purchase-item.entity';
+import { Supplier } from '../../modules/suppliers/entity/suppliers.entity';
+import { SupplierEvaluation } from '../../modules/suppliers/entity/suppliers-evaluations.entity';
+import { SupplierProduct } from '../../modules/suppliers/entity/suppliers-products.entity';
 
 export const ormConfig = (
   configService: ConfigService,
@@ -44,6 +53,15 @@ export const ormConfig = (
     Shipping,
     ShippingHistory,
     PurchaseHistory,
+    Wishlist,
+    Sale,
+    SaleHistory,
+    SaleItem,
+    Purchase,
+    PurchaseItem,
+    Supplier,
+    SupplierEvaluation,
+    SupplierProduct
   ],
   synchronize: true,
   // logging: true,

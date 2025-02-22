@@ -20,14 +20,12 @@ export class AllHttpExceptionsFilter implements ExceptionFilter {
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
     response.status(status).json({
-      error: {
         statusCode: status,
         error: exception.name || 'Error Inesperado',
         message: errorMessage['message'] || "Error Inesperado",
         errors: exception.cause || null,
         timestamp: new Date().toLocaleDateString(),
         path: request ? request.url : null,
-      }
     });
   }
 }

@@ -1,9 +1,10 @@
 import {
-    ConflictException,
-    ForbiddenException,
-    HttpStatus,
-    Injectable,
-    InternalServerErrorException,
+  ConflictException,
+  ForbiddenException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { MFAService } from '../mfa/mfa.service';
@@ -18,6 +19,7 @@ import { Argon2Service } from './providers/argon2.service';
 import { TokenService } from '../../common/providers/token.service';
 import { CookieService } from '../../common/providers/cookie.service';
 import { ApiResponse } from 'src/common/interfaces/api.response.interface';
+import { RefreshTokenService } from './providers/refresh-token.service';
 
 @Injectable()
 export class AuthService {
@@ -27,8 +29,8 @@ export class AuthService {
     private readonly argon2Service: Argon2Service,
     private readonly accountActivationService: AccountActivationService,
     private readonly mfaService: MFAService,
-    private readonly cookieService: CookieService
-    
+    private readonly cookieService: CookieService,
+    private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
   /**
@@ -43,16 +45,13 @@ export class AuthService {
     const { username, password, email, phone } = signUpDto;
 
     // Nos aseguramos que no exista un usuario con el mismo nombre de usuario o correo
-    const existsUser = await this.usersService.findUser({
-      where: [ 
-          { username: username },
-          { email: email },
-      ],
+    const user = await this.usersService.findUser({
+      where: [{ username: username }, { email: email }],
     });
 
     // Si existe algun usuario con el mismo nombre de usuario o correo, entonces lanzamos una excepcion
     try {
-      if (existsUser) {
+      if (user) {
         throw new ConflictException(
           `El usuario "${username}" ya tiene una cuenta registrada`,
         );
@@ -69,9 +68,9 @@ export class AuthService {
         username: username,
         password: hashedPassword,
         email: email,
-        phone: phone
+        phone: phone,
       });
-      
+
       // Enviamos un correo de activacion de cuenta
       await this.accountActivationService.send(email);
 
@@ -80,9 +79,7 @@ export class AuthService {
         message: `Gracias por registrarse ${username}, hemos enviado un codigo de activación de cuenta a su correo`,
         account_activation: 'pending',
       };
-
     } catch (err) {
-
       throw new InternalServerErrorException({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: `Error al registrar el usuario: ${err.message}`,
@@ -100,15 +97,16 @@ export class AuthService {
   async login(
     loginDto: LoginDto,
     res: Response,
-  ): Promise<{ status: number; message: string; MFA: string, fromTo: string }> {
+    req: Request,
+  ): Promise<{ status: number; message: string; MFA: string; fromTo: string }> {
     // Obtener credenciales del usuario
     const { username, password } = loginDto;
 
     // Buscamos el usuarios y lo obtenemos
     const user = await this.usersService.findUser({
       where: {
-        username: username
-      }
+        username: username,
+      },
     });
 
     // Si el usuario no existe, Enviamos un excepcion NotFoundException
@@ -136,24 +134,33 @@ export class AuthService {
 
     // Si las contraseñas no coinciden
     if (!isPasswordMatching) {
-      
       throw new ConflictException('Nombre de usuario o contraseña incorrecta');
     }
-    
+
     // Creamos y enviamos un token de autenticacion al usuario
     const token = this.tokenService.generate(user);
-    
+
     // Enviamos el token con el cliente
     this.tokenService.send(res, token);
 
-    await this.mfaService.send(user.email, "LOGIN");
+    // Creamos el token de refresco de autenticacion al usuario
+    const refreshToken = await this.refreshTokenService.createOne(
+      user,
+      req.ip,
+      req.get('user-agent') || '',
+    );
+
+    // Enviamos el token con el cliente
+    this.refreshTokenService.send(res, refreshToken);
+
+    // await this.mfaService.send(user.email, "LOGIN");
 
     // Regresamos respuesta al usuario
     return {
       status: HttpStatus.OK,
       message: `Bienvenido ${user.username}, necesitamos que verfique que es usted, se ha enviado un codigo a su correo electronico asociado`,
       MFA: 'pending',
-      fromTo: "LOGIN",
+      fromTo: 'LOGIN',
     };
   }
 
@@ -164,65 +171,62 @@ export class AuthService {
    */
   async logout(res: Response): Promise<void> {
     this.cookieService.delete(res, 'accessToken');
-    res.send({
-      message: "Sesion Cerrada"
-    })
+    this.cookieService.delete(res, 'refreshAccessToken');
   }
 
   /**
    * Metodo que permite iniciar el proceso de recuperacion de contraseña
-   * @param requestForgotPasswordDto 
+   * @param requestForgotPasswordDto
    * @returns
    */
   async requestForgotPassword(
-    requestForgotPasswordDto: RequestForgotPasswordDto
-  ): Promise<{ status: number; message: string; MFA: string, fromTo: string }> {
+    requestForgotPasswordDto: RequestForgotPasswordDto,
+  ): Promise<{ status: number; message: string; MFA: string; fromTo: string }> {
     const { email } = requestForgotPasswordDto;
 
-    await this.mfaService.send(email, "FORGOT_PASSWORD");
+    await this.mfaService.send(email, 'FORGOT_PASSWORD');
 
     return {
       status: HttpStatus.OK,
-      message: "Se ha iniciado el proceso de recuperacion de contraseña. Por favor revise su correo hemos enviado un codigo OTP",
+      message:
+        'Se ha iniciado el proceso de recuperacion de contraseña. Por favor revise su correo hemos enviado un codigo OTP',
       MFA: 'pending',
-      fromTo: "FORGOT_PASSWORD",
-    }
+      fromTo: 'FORGOT_PASSWORD',
+    };
   }
 
   /**
    * Metodo que permite restablecer y finalizar la recuperacion de contraseña
-   * @param resetPasswordDto 
-   * @returns 
+   * @param resetPasswordDto
+   * @returns
    */
   async resetPassword(
-    resetPasswordDto: ResetPasswordDto
+    resetPasswordDto: ResetPasswordDto,
   ): Promise<ApiResponse> {
-
     const { email, newPassword } = resetPasswordDto;
 
     const user = await this.usersService.findUserByEmail(email);
 
     if (!user) {
-      throw new ConflictException(
-        'El usuario no existe'
-      )
+      throw new ConflictException('El usuario no existe');
     }
 
     const hashedNewPassword = await this.argon2Service.hash(newPassword);
 
-    await this.usersService.updateUser(user.userId, { password: hashedNewPassword })
+    await this.usersService.updateUser(user.userId, {
+      password: hashedNewPassword,
+    });
 
     return {
       status: HttpStatus.OK,
-      message: "Se ha restablecido la contraseña exitosamente",
-    }
+      message: 'Se ha restablecido la contraseña exitosamente',
+    };
   }
-
 
   /**
    * Metodo que activa la cuenta de un usuario
-   * @param accountActivationDto 
-   * @returns 
+   * @param accountActivationDto
+   * @returns
    */
   async activate(
     accountActivationDto: AccountActivationDto,
@@ -238,12 +242,45 @@ export class AuthService {
   }
 
   async checkSession(req: Request): Promise<boolean> {
-    const existsAccessToken = this.cookieService.get(req, 'accessToken');
+    const accessToken = this.cookieService.get(req, 'accessToken');
 
-    if (!existsAccessToken) {
-      return false;
-    } else { 
-      return true;
+    if (!accessToken) {
+      throw new UnauthorizedException('Token de acceso no encontrado');
     }
+
+    try {
+      const jwtPayload = this.tokenService.verify(accessToken);
+      if (!jwtPayload) {
+        throw new UnauthorizedException('Token inválido o expirado');
+      }
+      return true;
+    } catch (error) {
+      throw new UnauthorizedException('Token inválido o expirado');
+    }
+  }
+
+  async refreshToken(req: Request, res: Response): Promise<boolean> {
+    const refreshAccessToken = this.cookieService.get(
+      req,
+      'refreshAccessToken',
+    );
+
+    if (!refreshAccessToken) {
+      throw new UnauthorizedException('Token para refrescar no encontrado');
+    }
+
+    const user = await this.refreshTokenService.verify(refreshAccessToken);
+    await this.refreshTokenService.revokeRefreshToken(refreshAccessToken);
+
+    const newAccessToken = this.tokenService.generate(user);
+    const newRefreshAccessToken = await this.refreshTokenService.createOne(
+      user,
+      req.ip,
+      req.get('user-agent') || '',
+    );
+    this.tokenService.send(res, newAccessToken);
+    this.refreshTokenService.send(res, newRefreshAccessToken);
+
+    return true;
   }
 }

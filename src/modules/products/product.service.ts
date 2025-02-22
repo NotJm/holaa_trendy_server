@@ -13,9 +13,11 @@ import {
   MoreThanOrEqual,
   Repository,
 } from 'typeorm';
+import { BaseService } from '../../common/base.service';
 import { CategoryService } from '../categories/category.service';
 import { ColorsService } from '../colors/colors.service';
 import { SizesService } from '../sizes/sizes.service';
+import { SubCategoryService } from '../sub-categories/sub-category.service';
 import {
   CreateManyProductsDto,
   CreateProductDto,
@@ -26,8 +28,6 @@ import {
 } from './dtos/update.product.dto';
 import { ProductImages } from './entity/products-images.entity';
 import { Product } from './entity/products.entity';
-import { SubCategoryService } from '../sub-categories/sub-category.service';
-import { BaseService } from '../../common/base.service';
 
 @Injectable()
 export class ProductService extends BaseService<Product> {
@@ -271,14 +271,14 @@ public async getFilteredProducts(
 ): Promise<Product[]> {
   const whereConditions: any = {};
 
-  whereConditions.category = { code: category };
+  whereConditions.category = { name: category };
 
   if (subCategory) {
-    whereConditions.subCategories = { code: subCategory };
+    whereConditions.subCategories = { name: subCategory };
   }
 
   if (size) {
-    whereConditions.sizes = { size };
+    whereConditions.sizes = { size: size };
   }
   if (minPrice || maxPrice) {
     whereConditions.price = {};

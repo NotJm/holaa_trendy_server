@@ -131,6 +131,11 @@ export class ProductController extends BaseController {
     return this.productService.getProductsByKeyword(keyword);
   }
 
+  @Get('by-code/:code')
+  async getProductByCode(@Query('code') code: string) {
+    return this.productService.findProductByCode(code);
+  }
+
   /**
    * Endpoint para actualizar un producto
    * @param code ID del producto

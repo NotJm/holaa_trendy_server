@@ -1,4 +1,5 @@
 import { InternalServerErrorException } from '@nestjs/common';
+import { ClassConstructor, plainToInstance } from 'class-transformer';
 import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
 
 export abstract class BaseService<T> {
@@ -25,8 +26,10 @@ export abstract class BaseService<T> {
     return this.repository.findOne({ where: { id } as any });
   }
 
-  protected async create(data: T): Promise<T> {
-    const entity = this.repository.create(data);
+  protected async create(data: Partial<T>): Promise<T> {
+    const clearData = plainToInstance(this.repository.target as ClassConstructor<T>, data);
+
+    const entity = this.repository.create(clearData);
 
     if (entity) {
       return this.repository.save(entity);

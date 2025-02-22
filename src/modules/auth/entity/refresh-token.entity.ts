@@ -5,7 +5,7 @@ import { User } from "../../users/entity/users.entity";
 export class RefreshToken {
   
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id?: string;
 
   @Column({ type: 'varchar', unique: true, nullable: false })
   @Index()
@@ -25,7 +25,7 @@ export class RefreshToken {
   user: User;
 
   @Column({ type: 'boolean', default: false })
-  revoked: boolean;
+  revoked?: boolean;
 
   @Column({ type: 'varchar', nullable: true })
   deviceInfo: string;

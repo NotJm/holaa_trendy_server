@@ -24,7 +24,7 @@ export class TokenService {
   }
 
   public send(res: Response, token: string): void {
-    this.cookieService.send(res, 'accessToken', token, true, COOKIE_JWT_AGE);
+    this.cookieService.send(res, 'accessToken', token, COOKIE_JWT_AGE);
   }
 
   public verify(accessToken: string): Promise<JwtPayload> {
