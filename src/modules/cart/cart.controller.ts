@@ -1,28 +1,25 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  Req,
-  UseGuards,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
+    UseGuards
 } from '@nestjs/common';
 import { BaseController } from 'src/common/base.controller';
-import { CartService } from './cart.service';
-import { AddProductToCartDto } from './dtos/add-product.cart.dto';
-import { Cart } from './entity/cart.entity';
-import { UpdateProductQuantityToCartDto } from './dtos/update-quantity.cart.dto';
-import { RemoveProducToCartDto } from './dtos/remove-product.cart.dto';
-import { ApiResponse } from '../../common/interfaces/api.response.interface';
-import { Request } from 'express';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { User } from 'src/common/decorators/user.decorator';
 import { ROLE } from '../../common/constants/contants';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
 import { RoleGuard } from '../../common/guards/role.guard';
-import { User } from 'src/common/decorators/user.decorator';
+import { IApiResponse } from '../../common/interfaces/api.response.interface';
+import { CartService } from './cart.service';
+import { AddProductToCartDto } from './dtos/add-product.cart.dto';
+import { UpdateProductQuantityToCartDto } from './dtos/update-quantity.cart.dto';
+import { Cart } from './entity/cart.entity';
 
 @Controller('cart')
 @UseGuards(JwtAuthGuard, RoleGuard)
@@ -36,7 +33,7 @@ export class CartController extends BaseController {
   async addProductToCart(
     @User() userId: string,
     @Body() addProductToCartDto: AddProductToCartDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const cart = await this.cartService.addProductToCart(
         userId,
@@ -62,7 +59,7 @@ export class CartController extends BaseController {
   async updateProductQuantityToCart(
     @User() userId: string,
     @Body() updateProductQuantityToCartDto: UpdateProductQuantityToCartDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const updateCart = await this.cartService.updateProductQuantity(
         userId,
@@ -83,7 +80,7 @@ export class CartController extends BaseController {
   async removeProducToCart(
     @User() userId: string,
     @Param('productCode') productCode: string,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const cart = await this.cartService.removeProductToCart(
         userId,

@@ -1,68 +1,30 @@
-import {
-  ConflictException,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
-import { UsersService } from '../../users/users.service';
-import { OtpService } from '../../../common/providers/otp.service';
+import { Injectable } from '@nestjs/common';
 import { EmailService } from '../../../common/providers/email.service';
+import { UsersService } from '../../users/users.service';
 
 @Injectable()
-export class AccountActivationService {
-constructor(
-  private readonly otpService: OtpService,
-  private readonly emailService: EmailService,
-  private readonly usersService: UsersService,
-) {}
+export class ActivationService {
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly usersService: UsersService,
+  ) {}
 
-/**
- * Envia un correo con el codigo de activacion de la cuenta
- * @param email Correo del usuario
- */
-async send(email: string): Promise<void> {
-  const user = await this.usersService.findUser({
-    where: {
-      email: email,
-    },
-  });
-
-  if (!user) {
-    throw new InternalServerErrorException('El usuario no existe');
+  /**
+   * Sends an email containing account activation information to the user.
+   * @param email The email address of the user
+   * @returns A promise that resolves when the email is sent successfully
+   */
+  async send(email: string, token: string, expiresAt: Date): Promise<void> {
+    return await this.emailService.sendActivationLink(email, token, expiresAt);
   }
 
-  const { otp, otpExpiration } = await this.otpService.generate(
-    user,
-    'SIGNUP',
-  );
-
-  await this.emailService.sendCodeAccountActivation(
-    email,
-    otp,
-    otpExpiration,
-  );
-}
-
-async activate(otp: string): Promise<void> {
-  const userOtp = await this.otpService.findOtp(otp);
-
-  console.log(userOtp);
-
-  if (!userOtp) {
-    throw new InternalServerErrorException('El usuario no existe');
-  }
-
-  const isValid = this.otpService.verify(userOtp.otp);
-
-  if (!isValid) {
-    throw new ConflictException(
-      'El codigo de activacion es incorrecto o ha expirado',
-    );
-  } else {
-    await this.usersService.updateUser(userOtp.userId.userId, {
-      isVerified: true,
+  /**
+   * Activates the user account through the user's unique identification
+   * @param userId The user's unique identification
+   */
+  async activate(userId: string): Promise<void> {
+    this.usersService.updateUser(userId, {
+      isActivated: true,
     });
-
-    await this.otpService.deleteOtp(otp);
   }
-}
 }

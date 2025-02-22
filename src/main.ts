@@ -23,11 +23,6 @@ async function bootstrap() {
 
   app.use(requestIp.mw());
 
-  // app.enableCors({
-  //   origin: 'http://localhost:4200',
-  //   credentials: true,
-  // });
-
   await app.listen(
     configService.get<number>('PORT'),
     configService.get<string>('HOSTNAME'),

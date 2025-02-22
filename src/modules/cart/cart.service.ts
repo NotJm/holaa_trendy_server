@@ -6,7 +6,6 @@ import { ProductService } from '../products/product.service';
 import { User } from '../users/entity/users.entity';
 import { UsersService } from '../users/users.service';
 import { AddProductToCartDto } from './dtos/add-product.cart.dto';
-import { RemoveProducToCartDto } from './dtos/remove-product.cart.dto';
 import { UpdateProductQuantityToCartDto } from './dtos/update-quantity.cart.dto';
 import { CartItem } from './entity/cart-item.entity';
 import { Cart } from './entity/cart.entity';
@@ -28,7 +27,7 @@ export class CartService extends BaseService<Cart> {
     return this.findOne({
       relations: ['cartItems', 'cartItems.product'],
       where: {
-        user: { userId: user.userId },
+        user: { id: user.id },
         isActive: true,
       },
     });

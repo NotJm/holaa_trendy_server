@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus } from "@nestjs/common";
-import { ApiResponse } from "./interfaces/api.response.interface";
+import { IApiResponse } from "./interfaces/api.response.interface";
 
 export abstract class BaseController {
 
-  protected handleError(error: unknown): ApiResponse {
+  protected handleError(error: unknown): IApiResponse {
 
     if (error instanceof HttpException) {
       return {

@@ -19,7 +19,7 @@ export class TokenService {
   ) {}
 
   public generate(user: User): string {
-    const payload = { id: user.userId, role: user.role };
+    const payload = { id: user.id, role: user.role };
     return this.jwtService.sign(payload, this.jwtOptions);
   }
 

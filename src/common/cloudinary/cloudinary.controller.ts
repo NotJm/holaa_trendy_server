@@ -1,8 +1,8 @@
 import { BadRequestException, Controller, HttpStatus, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { BaseController } from '../base.controller';
-import { CloudinaryService } from './cloudinary.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiResponse } from '../interfaces/api.response.interface';
+import { BaseController } from '../base.controller';
+import { IApiResponse } from '../interfaces/api.response.interface';
+import { CloudinaryService } from './cloudinary.service';
 
 @Controller('upload')
 export class CloudinaryController extends BaseController {
@@ -12,7 +12,7 @@ export class CloudinaryController extends BaseController {
 
   @Post('image')
   @UseInterceptors(FileInterceptor('image'))
-  async uploadImage(@UploadedFile() file: Express.Multer.File): Promise<ApiResponse> {
+  async uploadImage(@UploadedFile() file: Express.Multer.File): Promise<IApiResponse> {
     if (!file) {
       throw new BadRequestException('Archivo no subido');
     }

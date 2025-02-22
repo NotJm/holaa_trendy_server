@@ -1,16 +1,16 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { BaseService } from '../../../common/base.service';
-import { RefreshToken } from '../entity/refresh-token.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
-import { CookieService } from '../../../common/providers/cookie.service';
-import {
-  COOKIE_REFRESH_JWT_AGE,
-  REFRESH_JWT_AGE,
-} from '../../../common/constants/contants';
-import { User } from '../../../modules/users/entity/users.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Response } from 'express';
+import { LessThan, Repository } from 'typeorm';
+import { BaseService } from '../../../common/base.service';
+import {
+    COOKIE_REFRESH_JWT_AGE,
+    REFRESH_JWT_AGE,
+} from '../../../common/constants/contants';
+import { CookieService } from '../../../common/providers/cookie.service';
+import { User } from '../../../modules/users/entity/users.entity';
+import { RefreshToken } from '../entity/refresh-token.entity';
 
 @Injectable()
 export class RefreshTokenService extends BaseService<RefreshToken> {
@@ -37,14 +37,14 @@ export class RefreshTokenService extends BaseService<RefreshToken> {
   private findRefreshTokenByUserId(userId: string): Promise<RefreshToken> {
     return this.findOne({
       where: { user: {
-        userId: userId
+        id: userId
       } },
       relations: ['user'],
     });
   }
 
   public generate(user: User): string {
-    const payload = { id: user.userId, role: user.role };
+    const payload = { id: user.id, role: user.role };
     return this.jwtService.sign(payload, this.jwtOptions);
   }
 
@@ -101,7 +101,7 @@ export class RefreshTokenService extends BaseService<RefreshToken> {
   }
 
   async revokeAllUserRefreshToken(user: User): Promise<void> {
-    const refresToken = await this.findRefreshTokenByUserId(user.userId);
+    const refresToken = await this.findRefreshTokenByUserId(user.id);
     await this.update(refresToken.id, {
       user: user,
       revoked: true,

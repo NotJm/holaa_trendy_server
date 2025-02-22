@@ -13,7 +13,7 @@ import {
   LOCK_TIME_MINUTES,
   MAX_ATTEMPTS,
 } from '../../common/constants/contants';
-import { ApiResponse } from '../../common/interfaces/api.response.interface';
+import { IApiResponse } from '../../common/interfaces/api.response.interface';
 import { CookieService } from '../../common/providers/cookie.service';
 import { PwnedService } from '../../common/providers/pwned.service';
 import { TokenService } from '../../common/providers/token.service';
@@ -50,7 +50,7 @@ export class UsersService extends BaseService<User> {
   async findUserById(id: string): Promise<User> {
     return await this.findOne({
       where: {
-        userId: id
+        id: id
       }
     });
   }
@@ -98,6 +98,8 @@ export class UsersService extends BaseService<User> {
     }
   }
 
+
+
   /**
    * Metodo que permite eliminar un usuario
    * @param userId ID del usuario
@@ -137,7 +139,7 @@ export class UsersService extends BaseService<User> {
   async registerAddress(
     req: Request,
     registerAddressDto: RegisterAddressDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     const accessToken = this.cookieService.get(req, 'accessToken');
 
     const { id } = await this.tokenService.verify(accessToken);
@@ -164,7 +166,7 @@ export class UsersService extends BaseService<User> {
       await this.incidentService.countIncidentsForUser(user);
 
     if (incidentCount >= MAX_ATTEMPTS) {
-      this.blockUser(user.userId);
+      this.blockUser(user.id);
     }
   }
 
@@ -197,7 +199,7 @@ export class UsersService extends BaseService<User> {
   async userIsVerified(userId: string): Promise<void> {
     const user = await this.findUserById(userId);
 
-    if (!user.isVerified) {
+    if (!user.isActivated) {
       throw new ConflictException(
         'Por favor, active su cuenta para habilitar el acceso a los servicios.',
       );

@@ -1,25 +1,25 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  Query
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
+    Query
 } from '@nestjs/common';
+import { BaseController } from '../../common/base.controller';
+import { IApiResponse } from '../../common/interfaces/api.response.interface';
 import {
-  CreateManyProductsDto,
-  CreateProductDto,
+    CreateManyProductsDto,
+    CreateProductDto,
 } from './dtos/create.product.dto';
 import {
-  UpdateManyProductsDto,
-  UpdateProductDto,
+    UpdateManyProductsDto,
+    UpdateProductDto,
 } from './dtos/update.product.dto';
 import { ProductService } from './product.service';
-import { BaseController } from '../../common/base.controller';
-import { ApiResponse } from '../../common/interfaces/api.response.interface';
 
 @Controller('products')
 export class ProductController extends BaseController {
@@ -37,7 +37,7 @@ export class ProductController extends BaseController {
   @Post('create')
   async createProduct(
     @Body() createProductDto: CreateProductDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const createProduct =
         await this.productService.createOne(createProductDto);
@@ -62,7 +62,7 @@ export class ProductController extends BaseController {
   @Post('create-many')
   async createManyProducts(
     @Body() createProductsDto: CreateManyProductsDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const createProducts =
         await this.productService.createMany(createProductsDto);
@@ -147,7 +147,7 @@ export class ProductController extends BaseController {
   @Put('update')
   async updateProduct(
     @Body() updateProductDto: UpdateProductDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const updateProduct =
         await this.productService.updateOne(updateProductDto);
@@ -172,7 +172,7 @@ export class ProductController extends BaseController {
   @Put('update-many')
   async updateManyProducts(
     @Body() updateManyProductsDto: UpdateManyProductsDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const updateProducts = await this.productService.updateMany(
         updateManyProductsDto,
@@ -196,7 +196,7 @@ export class ProductController extends BaseController {
   // @UseGuards(JwtAuthGuard, RoleGuard)
   // @Roles(ROLE.EMPLOYEE)
   @Delete('delete/:code')
-  async deleteProduct(@Param('code') code: string): Promise<ApiResponse> {
+  async deleteProduct(@Param('code') code: string): Promise<IApiResponse> {
     try {
       const deleteProduct = await this.productService.deleteOne(code);
 
@@ -219,7 +219,7 @@ export class ProductController extends BaseController {
   @Delete('delete-many')
   async deleteManyProducts(
     @Body('codes') codes: string[],
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const deleteProducts = await this.productService.deleteMany(codes);
 

@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
 } from '@nestjs/common';
 import { BaseController } from '../../common/base.controller';
-import { ApiResponse } from '../../common/interfaces/api.response.interface';
+import { IApiResponse } from '../../common/interfaces/api.response.interface';
 import { CreateManySizesDto, CreateSizeDto } from './dtos/create.size.dto';
 import { UpdateManySizesDto, UpdateSizeDto } from './dtos/update.size.dto';
 import { Size } from './entity/sizes.entity';
@@ -27,7 +27,7 @@ export class SizesController extends BaseController {
    * @returns
    */
   @Post('create')
-  async createSize(@Body() createSizeDto: CreateSizeDto): Promise<ApiResponse> {
+  async createSize(@Body() createSizeDto: CreateSizeDto): Promise<IApiResponse> {
     try {
       const createSize = await this.sizesService.createOne(createSizeDto);
 
@@ -49,7 +49,7 @@ export class SizesController extends BaseController {
   @Post('create-many')
   async createManySizes(
     @Body() createManySizesDto: CreateManySizesDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const createSizes =
         await this.sizesService.createManySizes(createManySizesDto);
@@ -79,7 +79,7 @@ export class SizesController extends BaseController {
    * @returns Regresa la talla ya actualizada
    */
   @Put('update')
-  async updateSize(@Body() updateSizeDto: UpdateSizeDto): Promise<ApiResponse> {
+  async updateSize(@Body() updateSizeDto: UpdateSizeDto): Promise<IApiResponse> {
     try {
       const updateSize = await this.sizesService.updateOne(updateSizeDto);
 
@@ -101,7 +101,7 @@ export class SizesController extends BaseController {
   @Put('update-many')
   async updateManySizes(
     @Body() updateManySizesDto: UpdateManySizesDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const updateSizes =
         await this.sizesService.updateMany(updateManySizesDto);
@@ -122,7 +122,7 @@ export class SizesController extends BaseController {
    * @returns
    */
   @Delete('delete/:id')
-  async deleteSize(@Param('id') id: string): Promise<ApiResponse> {
+  async deleteSize(@Param('id') id: string): Promise<IApiResponse> {
     try {
       const deleteSize = await this.sizesService.deleteOne(id);
 
@@ -141,7 +141,7 @@ export class SizesController extends BaseController {
    * @param ids IDs de las tallas
    */
   @Delete('delete-many')
-  async deleteManySizes(@Body('ids') ids: string[]): Promise<ApiResponse> {
+  async deleteManySizes(@Body('ids') ids: string[]): Promise<IApiResponse> {
     try {
       const deleteSizes = await this.sizesService.deleteMany(ids);
 

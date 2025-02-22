@@ -19,10 +19,10 @@ import { IncidentService } from '../users/incident.service';
 import { UsersService } from '../users/users.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { AccountActivationService } from './providers/account-activation.service';
+import { RefreshToken } from './entity/refresh-token.entity';
+import { ActivationService } from './providers/account-activation.service';
 import { Argon2Service } from './providers/argon2.service';
 import { RefreshTokenService } from './providers/refresh-token.service';
-import { RefreshToken } from './entity/refresh-token.entity';
 
 @Module({
   imports: [
@@ -44,7 +44,7 @@ import { RefreshToken } from './entity/refresh-token.entity';
     EmailService,
     TokenService,
     Argon2Service,
-    AccountActivationService,
+    ActivationService,
     MFAService,
     OtpService,
     IncidentService,

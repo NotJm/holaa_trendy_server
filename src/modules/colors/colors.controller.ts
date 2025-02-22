@@ -1,15 +1,15 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
 } from '@nestjs/common';
 import { BaseController } from 'src/common/base.controller';
-import { ApiResponse } from '../../common/interfaces/api.response.interface';
+import { IApiResponse } from '../../common/interfaces/api.response.interface';
 import { ColorsService } from './colors.service';
 import { CreateColorDto, CreateManyColorsDto } from './dtos/create.color.dto';
 import { UpdateColorDto, UpdateManyColorsDto } from './dtos/update.color.dto';
@@ -40,7 +40,7 @@ export class ColorsController extends BaseController {
   @Post('create')
   async createColor(
     @Body() createColorDto: CreateColorDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const createColor = await this.colorsService.createOne(createColorDto);
 
@@ -62,7 +62,7 @@ export class ColorsController extends BaseController {
   @Post('create-many')
   async createManyColors(
     @Body() createManyColorsDto: CreateManyColorsDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const createColors =
         await this.colorsService.createMany(createManyColorsDto);
@@ -85,7 +85,7 @@ export class ColorsController extends BaseController {
   @Put('update')
   async updateColor(
     @Body() updateColorDto: UpdateColorDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const updateColor = await this.colorsService.updateOne(updateColorDto);
 
@@ -102,7 +102,7 @@ export class ColorsController extends BaseController {
   @Put('update-many')
   async updateManyColors(
     @Body() updateManyColorsDto: UpdateManyColorsDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const updateColors =
         await this.colorsService.updateMany(updateManyColorsDto);
@@ -118,7 +118,7 @@ export class ColorsController extends BaseController {
   }
 
   @Delete('delete/:id')
-  async deleteColor(@Param('id') id: string): Promise<ApiResponse> {
+  async deleteColor(@Param('id') id: string): Promise<IApiResponse> {
     try {
       const deleteColor = await this.colorsService.deleteOne(id);
 
@@ -133,7 +133,7 @@ export class ColorsController extends BaseController {
   }
 
   @Delete('delete-many')
-  async deleteManyColors(@Body('ids') ids: string[]): Promise<ApiResponse> {
+  async deleteManyColors(@Body('ids') ids: string[]): Promise<IApiResponse> {
     try {
       const deleteColors = await this.colorsService.deleteMany(ids);
 

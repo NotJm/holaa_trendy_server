@@ -4,26 +4,26 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Req,
   Res,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import {
+  IApiResponse,
+} from 'src/common/interfaces/api.response.interface';
+import { BaseController } from '../../common/base.controller';
+import { ROLE } from '../../common/constants/contants';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
+import { RoleGuard } from '../../common/guards/role.guard';
 import { AuthService } from './auth.service';
-import { AccountActivationDto } from './dtos/activation.dto';
 import { LoginDto } from './dtos/login.dto';
 import { RequestForgotPasswordDto } from './dtos/request-forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SignUpDto } from './dtos/signup.dto';
-import { AuthInterceptor } from '../../common/interceptor/auth.interceptor';
-import { RoleGuard } from '../../common/guards/role.guard';
-import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { ROLE } from '../../common/constants/contants';
-import { BaseController } from '../../common/base.controller';
-import { ApiResponse } from 'src/common/interfaces/api.response.interface';
 
 @Controller('auth')
 export class AuthController extends BaseController {
@@ -37,17 +37,17 @@ export class AuthController extends BaseController {
    * @returns Respues al cliente
    */
   @Post('signup')
-  async signUp(@Body() signUpDto: SignUpDto): Promise<ApiResponse> {
+  async signUp(@Body() signUpDto: SignUpDto): Promise<IApiResponse> {
     try {
-      const response = await this.authService.signUp(signUpDto);
+      await this.authService.signUp(signUpDto);
 
       return {
         status: HttpStatus.OK,
-        message: 'Successfully',
-        data: response,
+        message: 'User register successfully',
       };
+      
     } catch (error) {
-      this.handleError(error);
+      return this.handleError(error);
     }
   }
 
@@ -98,7 +98,6 @@ export class AuthController extends BaseController {
    * @returns
    */
   @Get('logout')
-  @UseInterceptors(AuthInterceptor)
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(ROLE.USER, ROLE.ADMIN)
   async logout(@Res() res: Response) {
@@ -106,15 +105,27 @@ export class AuthController extends BaseController {
   }
 
   /**
-   * Metodo para activar la cuenta de un usuario
+   * Endpoint that handles loginc for user account activation
+   * @param userId The user's unique indetification
+   * @returns A promise that resolves when user account is successfully activated
    */
-  @Post('activate')
-  async activate(@Body() accountActivationDto: AccountActivationDto) {
-    return await this.authService.activate(accountActivationDto);
+  @Get('activate/:token')
+  async activate(@Param('token') token: string): Promise<IApiResponse> {
+    try {
+      await this.authService.activate(token);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Your account has been activated successfully',
+      };
+
+    } catch (error) {
+      return this.handleError(error);
+    }
   }
 
   @Post('check-session')
-  async checkSession(@Req() req: Request): Promise<ApiResponse> {
+  async checkSession(@Req() req: Request): Promise<IApiResponse> {
     try {
       const check = await this.authService.checkSession(req);
 
@@ -140,7 +151,7 @@ export class AuthController extends BaseController {
   async refreshToken(
     @Req() req: Request,
     @Res() res: Response,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const response = await this.authService.refreshToken(req, res);
       return {

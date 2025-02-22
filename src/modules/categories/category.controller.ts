@@ -1,26 +1,24 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  NotFoundException,
-  Param,
-  Post,
-  Put,
-  UseGuards,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpStatus,
+    Param,
+    Post,
+    Put
 } from '@nestjs/common';
+import { BaseController } from 'src/common/base.controller';
+import { IApiResponse } from '../../common/interfaces/api.response.interface';
 import { CategoryService } from './category.service';
 import {
-  CreateCategoryDto,
-  CreateManyCategoriesDto,
+    CreateCategoryDto,
+    CreateManyCategoriesDto,
 } from './dtos/create.category.dto';
 import {
-  UpdateCategoryDto,
-  UpdateManyCategoriesDto,
+    UpdateCategoryDto,
+    UpdateManyCategoriesDto,
 } from './dtos/update.category.dto';
-import { BaseController } from 'src/common/base.controller';
-import { ApiResponse } from '../../common/interfaces/api.response.interface';
 
 @Controller('category')
 export class CategoryController extends BaseController {
@@ -38,7 +36,7 @@ export class CategoryController extends BaseController {
   @Post('create')
   async createCategory(
     @Body() createProductTypeDto: CreateCategoryDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const createCategory =
         await this.categoriesService.createOne(createProductTypeDto);
@@ -63,7 +61,7 @@ export class CategoryController extends BaseController {
   @Post('create-many')
   async createManyCategories(
     @Body() createManyCategoriesDto: CreateManyCategoriesDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const createCategories = await this.categoriesService.createMany(
         createManyCategoriesDto,
@@ -99,7 +97,7 @@ export class CategoryController extends BaseController {
   @Put('update')
   async updateCategory(
     @Body() updateCategorieDto: UpdateCategoryDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const updateCategory =
         await this.categoriesService.updateOne(updateCategorieDto);
@@ -124,7 +122,7 @@ export class CategoryController extends BaseController {
   @Put('update-many')
   async updateManyCategories(
     @Body() updateManyCategoriesDto: UpdateManyCategoriesDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const updateCategories = await this.categoriesService.updateMany(
         updateManyCategoriesDto,
@@ -148,7 +146,7 @@ export class CategoryController extends BaseController {
   // @UseGuards(JwtAuthGuard, RoleGuard)
   // @Roles(ROLE.EMPLOYEE)
   @Delete('delete/:id')
-  async deleteCategory(@Param('id') code: string): Promise<ApiResponse> {
+  async deleteCategory(@Param('id') code: string): Promise<IApiResponse> {
     try {
       const deleteCategory = await this.categoriesService.deleteOne(code);
 
@@ -170,7 +168,7 @@ export class CategoryController extends BaseController {
   @Delete('delete-many')
   async deleteManyCategories(
     @Body('ids') ids: string[],
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     try {
       const deleteCategories = await this.categoriesService.deleteMany(ids);
 
