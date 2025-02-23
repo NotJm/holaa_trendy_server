@@ -11,9 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import {
-  IApiResponse,
-} from 'src/common/interfaces/api.response.interface';
+import { IApiResponse } from 'src/common/interfaces/api.response.interface';
 import { BaseController } from '../../common/base.controller';
 import { ROLE } from '../../common/constants/contants';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -24,7 +22,9 @@ import { LoginDto } from './dtos/login.dto';
 import { RequestForgotPasswordDto } from './dtos/request-forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SignUpDto } from './dtos/signup.dto';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
+@UseGuards(ThrottlerGuard)
 @Controller('auth')
 export class AuthController extends BaseController {
   constructor(private readonly authService: AuthService) {
@@ -45,7 +45,6 @@ export class AuthController extends BaseController {
         status: HttpStatus.OK,
         message: 'User register successfully',
       };
-      
     } catch (error) {
       return this.handleError(error);
     }
@@ -62,8 +61,21 @@ export class AuthController extends BaseController {
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res,
     @Req() req: Request,
-  ) {
-    return await this.authService.login(loginDto, res, req);
+  ): Promise<IApiResponse> {
+    try {
+      await this.authService.login(loginDto, res, req);
+      return {
+        status: HttpStatus.OK,
+        message: `User logged in successfully`,
+        data: {
+          MFA: 'pending',
+          fromTo: 'LOGIN',
+        },
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+    
   }
 
   /**
@@ -118,7 +130,6 @@ export class AuthController extends BaseController {
         status: HttpStatus.OK,
         message: 'Your account has been activated successfully',
       };
-
     } catch (error) {
       return this.handleError(error);
     }

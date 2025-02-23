@@ -21,6 +21,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RefreshToken } from './entity/refresh-token.entity';
 import { ActivationService } from './providers/account-activation.service';
+import { AESService } from './providers/aes.service';
 import { Argon2Service } from './providers/argon2.service';
 import { RefreshTokenService } from './providers/refresh-token.service';
 
@@ -30,7 +31,7 @@ import { RefreshTokenService } from './providers/refresh-token.service';
     TypeOrmModule.forFeature([User, UserOtp, Incidents, RefreshToken]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => jwtConfig(configService),
+      useFactory: jwtConfig,
       inject: [ConfigService],
     }),
   ],
@@ -48,7 +49,8 @@ import { RefreshTokenService } from './providers/refresh-token.service';
     MFAService,
     OtpService,
     IncidentService,
-    RefreshTokenService
+    RefreshTokenService,
+    AESService
   ],
   exports: [AuthService],
 })

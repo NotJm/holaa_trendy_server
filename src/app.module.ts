@@ -23,6 +23,8 @@ import { MFAModule } from './modules/mfa/mfa.module';
 import { ProductModule } from './modules/products/product.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { throttlerConfig } from './common/config/throttler.config';
 
 @Module({
   imports: [
@@ -47,6 +49,7 @@ import { UsersModule } from './modules/users/users.module';
       useFactory: (configService: ConfigService) => ormConfig(configService),
       inject: [ConfigService],
     }),
+    // ThrottlerModule.forRoot(throttlerConfig())
   ],
   controllers: [WishlistController, AppController],
   providers: [

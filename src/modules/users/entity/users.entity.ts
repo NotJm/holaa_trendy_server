@@ -38,6 +38,13 @@ export class User {
   })
   role?: ROLE;
 
+  @Column({
+    type: 'varchar',
+    nullable: false,
+    unique: true,
+  })
+  secret: string;
+
   @Column({ name: 'is_activated', type: 'boolean', nullable: false, default: false })
   isActivated?: boolean;
 

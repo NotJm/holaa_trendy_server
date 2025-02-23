@@ -142,13 +142,13 @@ export class UsersService extends BaseService<User> {
   ): Promise<IApiResponse> {
     const accessToken = this.cookieService.get(req, 'accessToken');
 
-    const { id } = await this.tokenService.verify(accessToken);
+    // const { id } = await this.tokenService.verify(accessToken);
 
-    await this.updateUser(id, {
-      addressId: {
-        ...registerAddressDto,
-      },
-    });
+    // await this.updateUser(id, {
+    //   addressId: {
+    //     ...registerAddressDto,
+    //   },
+    // });
 
     return {
       status: HttpStatus.OK,
@@ -196,7 +196,7 @@ export class UsersService extends BaseService<User> {
     });
   }
 
-  async userIsVerified(userId: string): Promise<void> {
+  async userIsActivate(userId: string): Promise<void> {
     const user = await this.findUserById(userId);
 
     if (!user.isActivated) {

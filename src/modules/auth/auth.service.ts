@@ -1,15 +1,16 @@
 import {
   ConflictException,
-  ForbiddenException,
   HttpStatus,
   Injectable,
-  UnauthorizedException
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { IApiResponse } from 'src/common/interfaces/api.response.interface';
 import { CookieService } from '../../common/providers/cookie.service';
 import { TokenService } from '../../common/providers/token.service';
 import { generateExpirationDate } from '../../common/utils/generate-expiration-date';
+import { generateRandomSecret } from '../../common/utils/generate-random-secret';
 import { MFAService } from '../mfa/mfa.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dtos/login.dto';
@@ -17,6 +18,7 @@ import { RequestForgotPasswordDto } from './dtos/request-forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SignUpDto } from './dtos/signup.dto';
 import { ActivationService } from './providers/account-activation.service';
+import { AESService } from './providers/aes.service';
 import { Argon2Service } from './providers/argon2.service';
 import { RefreshTokenService } from './providers/refresh-token.service';
 
@@ -26,6 +28,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly tokenService: TokenService,
     private readonly argon2Service: Argon2Service,
+    private readonly aesService: AESService,
     private readonly activationService: ActivationService,
     private readonly mfaService: MFAService,
     private readonly cookieService: CookieService,
@@ -60,16 +63,23 @@ export class AuthService {
     // Hashing the password with the Argon2 algorithm
     const hashedPassword = await this.argon2Service.hash(password);
 
+    // Generates a random secret
+    const jwtSecret = generateRandomSecret();
+
+    // Encrypt the random secret for the user
+    const secret = this.aesService.encrypt(jwtSecret);
+
     // Creates a new user in the data base
     const newUser = await this.usersService.createUser({
       username: username,
       password: hashedPassword,
       email: email,
       phone: phone,
+      secret: secret,
     });
 
     // Create a new token for account activation to the user
-    const token = this.tokenService.generate(newUser);
+    const token = this.tokenService.generate(newUser, jwtSecret);
 
     // Generates the expiration date to validate the token
     const expiresAt = generateExpirationDate(15);
@@ -78,58 +88,50 @@ export class AuthService {
     return await this.activationService.send(email, token, expiresAt);
   }
 
-  // TODO Implementar bloqueo temporal de usuario
+  // TODO Implements temporary user blocking
+
   /**
-   * Metodo para autenticar un cliente
-   * @param loginDto Contiene informacion sobre el cliente
-   * @param res Respuesta que se envia al cliente
-   * @returns Respuesta al cliente (Cookie jwt)
+   * Handles the logic for user authentication.
+   * @param loginDto The DTO containing the user's credentials (username and password).
+   * @param res The response object to send back to the client.
+   * @returns The response to the client, including a JWT cookie for authentication.
    */
-  async login(
-    loginDto: LoginDto,
-    res: Response,
-    req: Request,
-  ): Promise<{ status: number; message: string; MFA: string; fromTo: string }> {
-    // Obtener credenciales del usuario
+  async login(loginDto: LoginDto, res: Response, req: Request): Promise<void> {
+    // Retrieves the user's credentials
     const { username, password } = loginDto;
 
-    // Buscamos el usuarios y lo obtenemos
+    // Searches the user and retrieve it
     const user = await this.usersService.findUser({
       where: {
         username: username,
       },
     });
 
-    // Si el usuario no existe, Enviamos un excepcion NotFoundException
+    // If the user doesn't exist, throw a exception
     if (!user) {
       throw new ConflictException(
         `El usuario "${username}" no se encuentra registrado, Por favor registrese`,
       );
     }
 
-    // Verificamos si el usuario esta verificado
-    await this.usersService.userIsVerified(user.id);
+    // Validates whether the user account is activated
+    await this.usersService.userIsActivate(user.id);
 
-    // Verificamos si el usuario es valido para iniciar sesion
-    if (!user.isActivated) {
-      throw new ForbiddenException(
-        'Por favor, active su cuenta para habilitar el acceso a los servicios.',
-      );
-    }
-
-    // Comprobamos si las contraseña concuerdan con las del usuari
+    // Validate whether the passwords match
     const isPasswordMatching = await this.argon2Service.compare(
       user.password,
       password,
     );
 
-    // Si las contraseñas no coinciden
+    // If the password doesn't match, throw an exception
     if (!isPasswordMatching) {
       throw new ConflictException('Nombre de usuario o contraseña incorrecta');
     }
 
+    const jwtSecret = this.aesService.decrypt(user.secret);
+
     // Creamos y enviamos un token de autenticacion al usuario
-    const token = this.tokenService.generate(user);
+    const token = this.tokenService.generate(user, jwtSecret);
 
     // Enviamos el token con el cliente
     this.tokenService.send(res, token);
@@ -147,12 +149,6 @@ export class AuthService {
     // await this.mfaService.send(user.email, "LOGIN");
 
     // Regresamos respuesta al usuario
-    return {
-      status: HttpStatus.OK,
-      message: `Bienvenido ${user.username}, necesitamos que verfique que es usted, se ha enviado un codigo a su correo electronico asociado`,
-      MFA: 'pending',
-      fromTo: 'LOGIN',
-    };
   }
 
   /**
@@ -208,6 +204,14 @@ export class AuthService {
       password: hashedNewPassword,
     });
 
+    const newJwtSecret = generateRandomSecret();
+
+    const newSecret = this.aesService.encrypt(newJwtSecret);
+
+    this.usersService.updateUser(user.id, {
+      secret: newSecret
+    });
+
     return {
       status: HttpStatus.OK,
       message: 'Se ha restablecido la contraseña exitosamente',
@@ -220,8 +224,30 @@ export class AuthService {
    * @returns A promise that resolves when user account is successfully activated
    */
   async activate(token: string): Promise<void> {
-    const jwtPayLoad = await this.tokenService.verify(token);
-    
+    const decodeToken = await this.tokenService.decode(token);
+
+    const user = await this.usersService.findUserById(decodeToken.id);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const jwtSecret = this.aesService.decrypt(user.secret);
+
+    const jwtPayLoad = await this.tokenService.verify(token, jwtSecret);
+
+    if (jwtPayLoad.id !== decodeToken.id) {
+      throw new UnauthorizedException('Invalid token payload');
+    }
+
+    const newJwtSecret = generateRandomSecret();
+
+    const newSecret = await this.aesService.encrypt(newJwtSecret);
+
+    await this.usersService.updateUser(jwtPayLoad.id, {
+      secret: newSecret,
+    });
+
     await this.activationService.activate(jwtPayLoad.id);
   }
 
@@ -233,7 +259,13 @@ export class AuthService {
     }
 
     try {
-      const jwtPayload = this.tokenService.verify(accessToken);
+      const userId = await this.tokenService.decode(accessToken);
+
+      const user = await this.usersService.findUserById('userId');
+
+      const secret = this.aesService.decrypt(user.secret);
+
+      const jwtPayload = this.tokenService.verify(accessToken, '');
       if (!jwtPayload) {
         throw new UnauthorizedException('Token inválido o expirado');
       }
@@ -256,7 +288,9 @@ export class AuthService {
     const user = await this.refreshTokenService.verify(refreshAccessToken);
     await this.refreshTokenService.revokeRefreshToken(refreshAccessToken);
 
-    const newAccessToken = this.tokenService.generate(user);
+    const secret = this.aesService.decrypt(user.secret);
+
+    const newAccessToken = this.tokenService.generate(user, secret);
     const newRefreshAccessToken = await this.refreshTokenService.createOne(
       user,
       req.ip,
