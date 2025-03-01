@@ -12,10 +12,23 @@ import { Product } from './entity/products.entity';
 import { ProductController } from './product.controller';
 import { ProductService } from './product.service';
 import { SubCategoryService } from '../sub-categories/sub-category.service';
+import { NewArrivals } from './entity/new-arrivals.entity';
+import { BestOffers } from './entity/best-offers.entity';
+import { BestSellers } from './entity/best-sellers.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, Category, SubCategory, Size, Color, ProductImages]),
+    TypeOrmModule.forFeature([
+      Product,
+      Category,
+      SubCategory,
+      Size,
+      Color,
+      ProductImages,
+      NewArrivals,
+      BestOffers,
+      BestSellers
+    ]),
   ],
   controllers: [ProductController],
   providers: [

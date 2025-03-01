@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsPhoneNumber, Matches, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsPhoneNumber,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 /**
  * @property {string} username - Nombre de usuario
@@ -24,8 +30,8 @@ export class SignUpDto {
   @IsEmail({}, { message: 'Por favor, ingrese un correo valido' })
   readonly email: string;
 
-  @IsPhoneNumber('MX', { message: 'Se requiere un numero de la region MX(+52)' })
-  readonly phone: string
-
-
+  @IsPhoneNumber('MX', {
+    message: 'Se requiere un numero de la region MX(+52)',
+  })
+  readonly phone: string;
 }

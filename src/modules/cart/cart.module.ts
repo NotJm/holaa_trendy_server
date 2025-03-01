@@ -24,6 +24,9 @@ import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { CartItem } from './entity/cart-item.entity';
 import { Cart } from './entity/cart.entity';
+import { NewArrivals } from '../products/entity/new-arrivals.entity';
+import { BestOffers } from '../products/entity/best-offers.entity';
+import { BestSellers } from '../products/entity/best-sellers.entity';
 
 @Module({
   imports: [
@@ -38,7 +41,10 @@ import { Cart } from './entity/cart.entity';
       Size,
       Incidents,
       ProductImages,
-      CartItem
+      CartItem,
+      NewArrivals,
+      BestOffers,
+      BestSellers
     ]),
   ],
   controllers: [CartController],

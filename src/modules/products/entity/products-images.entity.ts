@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Product } from "./products.entity";
 import { Exclude } from "class-transformer";
 
@@ -10,7 +10,8 @@ export class ProductImages {
   @Column()
   url: string;
 
-  @ManyToOne(() => Product, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Product, {  onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'product_code', referencedColumnName: 'code' })
   @Exclude()
   product: Product;
 }

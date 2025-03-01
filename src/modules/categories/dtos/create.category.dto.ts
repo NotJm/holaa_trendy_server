@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { ArrayMinSize, IsArray, IsNotEmpty, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsArray, IsNotEmpty, IsUrl, ValidateNested } from "class-validator";
 
 export class CreateCategoryDto {
     @IsNotEmpty({ message: 'El nombre de la categoria es requerido' })
@@ -7,6 +7,10 @@ export class CreateCategoryDto {
 
     @IsNotEmpty({ message: 'La descripcion de la categoria es requerida'})
     description: string
+
+    @IsNotEmpty({ message: 'La imagen de la categoria es requerida' })
+    @IsUrl({}, { message: 'La imagen de la categoria deberia ser una URL valida'})
+    imgUri: string;
 
 }
 

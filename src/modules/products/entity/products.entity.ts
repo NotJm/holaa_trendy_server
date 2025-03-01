@@ -1,6 +1,4 @@
 import {
-  BeforeInsert,
-  BeforeUpdate,
   Check,
   Column,
   CreateDateColumn,
@@ -22,7 +20,9 @@ import { SubCategory } from '../../sub-categories/entity/sub-categories.entity';
 import { ProductImages } from './products-images.entity';
 
 @Entity('products')
-@Check('"price"::numeric > 0.0 AND "stock" > 0 AND "discount"::numeric >= 0 AND "discount"::numeric <= 100')
+@Check(
+  '"price"::numeric > 0.0 AND "stock" > 0 AND "sold_quantity" >= 0 AND "discount"::numeric >= 0 AND "discount"::numeric <= 100' ,
+)
 export class Product {
   @PrimaryColumn('varchar')
   code: string;
@@ -43,8 +43,17 @@ export class Product {
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   discount: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({
+    name: 'final_price',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
   finalPrice?: number;
+
+  @Column({ name: 'sold_quantity', type: 'int', default: 0 })
+  soldQuantity: number;
 
   @Column({ type: 'int', default: 0 })
   stock: number;
@@ -97,6 +106,7 @@ export class Product {
   cartItems?: CartItem[];
 
   @CreateDateColumn({
+    name: 'created_at',
     nullable: false,
     type: 'timestamptz',
     default: () => 'CURRENT_TIMESTAMP',
@@ -104,15 +114,10 @@ export class Product {
   createdAt?: Date;
 
   @UpdateDateColumn({
+    name: 'updated_at',
     nullable: false,
     type: 'timestamptz',
     default: () => 'CURRENT_TIMESTAMP',
   })
   updatedAt?: Date;
-
-  @BeforeInsert()
-  @BeforeUpdate()
-  calculateFinalPrice() {
-    this.finalPrice = this.price * (1 - this.discount / 100);
-  }
 }

@@ -1,25 +1,30 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpStatus,
-    Param,
-    Post,
-    Put,
-    Query
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { BaseController } from '../../common/base.controller';
 import { IApiResponse } from '../../common/interfaces/api.response.interface';
 import {
-    CreateManyProductsDto,
-    CreateProductDto,
+  CreateManyProductsDto,
+  CreateProductDto,
 } from './dtos/create.product.dto';
 import {
-    UpdateManyProductsDto,
-    UpdateProductDto,
+  UpdateManyProductsDto,
+  UpdateProductDto,
 } from './dtos/update.product.dto';
 import { ProductService } from './product.service';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { ROLE } from '../../common/constants/contants';
+import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
+import { RoleGuard } from '../../common/guards/role.guard';
 
 @Controller('products')
 export class ProductController extends BaseController {
@@ -32,8 +37,8 @@ export class ProductController extends BaseController {
    * @param createProductDto DTO con estructura necesaria para crear producto
    * @returns
    */
-  // @UseGuards(JwtAuthGuard, RoleGuard)
-  // @Roles(ROLE.EMPLOYEE)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Post('create')
   async createProduct(
     @Body() createProductDto: CreateProductDto,
@@ -57,8 +62,8 @@ export class ProductController extends BaseController {
    * @param createProductsDto
    * @returns
    */
-  // @UseGuards(JwtAuthGuard, RoleGuard)
-  // @Roles(ROLE.EMPLOYEE)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Post('create-many')
   async createManyProducts(
     @Body() createProductsDto: CreateManyProductsDto,
@@ -82,8 +87,26 @@ export class ProductController extends BaseController {
    * @returns Todos los productos
    */
   @Get()
-  async getProducts() {
-    return await this.productService.getProducts();
+  async getProducts(): Promise<IApiResponse> {
+    try {
+      const product = await this.productService.getProducts();
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully retrieved products',
+        data: product,
+      }
+
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @Get('view/:view')
+  async getProductView(
+    @Param('view') view: 'new-arrivals' | 'best-offers' | 'best-sellers',
+  ) {
+    return await this.productService.getProductsView(view);
   }
 
   /**
@@ -91,8 +114,19 @@ export class ProductController extends BaseController {
    * @returns Todos los productos
    */
   @Get('by-category/:category')
-  async getProductsByCategory(@Param('category') category: string) {
-    return await this.productService.getProductsByCategory(category);
+  async getProductsByCategory(@Param('category') category: string): Promise<IApiResponse> {
+    try {
+      const products = await this.productService.getProductsByCategory(category);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully retrieved products',
+        data: products,
+      }
+
+    } catch (error) {
+      return this.handleError(error);
+    }
   }
 
   /**
@@ -126,14 +160,27 @@ export class ProductController extends BaseController {
    * @param keyword
    * @returns
    */
+  // @UseGuards(ApikeyGuard)
   @Get('search')
   async getProductsByKeyword(@Query('keyword') keyword: string) {
     return this.productService.getProductsByKeyword(keyword);
   }
 
+  // @UseGuards(ApikeyGuard)
   @Get('by-code/:code')
-  async getProductByCode(@Query('code') code: string) {
-    return this.productService.findProductByCode(code);
+  async getProductByCode(@Param('code') code: string): Promise<IApiResponse> {
+    try {
+      const product = await this.productService.getProductByCode(code);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully retrieved product',
+        data: product,
+      }
+
+    } catch (error) {
+      return this.handleError(error);
+    }
   }
 
   /**
@@ -142,8 +189,8 @@ export class ProductController extends BaseController {
    * @param updateProductDto DTO para poder actualizar un producto
    * @returns Regresa el producto ya actualizado
    */
-  // @UseGuards(JwtAuthGuard, RoleGuard)
-  // @Roles(ROLE.EMPLOYEE)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Put('update')
   async updateProduct(
     @Body() updateProductDto: UpdateProductDto,
@@ -167,8 +214,8 @@ export class ProductController extends BaseController {
    * @param updateManyProductsDto Estructura para actualizar varios productos
    * @returns
    */
-  // @UseGuards(JwtAuthGuard, RoleGuard)
-  // @Roles(ROLE.EMPLOYEE)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Put('update-many')
   async updateManyProducts(
     @Body() updateManyProductsDto: UpdateManyProductsDto,
@@ -193,8 +240,8 @@ export class ProductController extends BaseController {
    * @param code ID del producto
    * @returns
    */
-  // @UseGuards(JwtAuthGuard, RoleGuard)
-  // @Roles(ROLE.EMPLOYEE)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Delete('delete/:code')
   async deleteProduct(@Param('code') code: string): Promise<IApiResponse> {
     try {
@@ -214,8 +261,8 @@ export class ProductController extends BaseController {
    * Endpoint para eliminar varios productos
    * @param codes Codigos de productos
    */
-  // @UseGuards(JwtAuthGuard, RoleGuard)
-  // @Roles(ROLE.EMPLOYEE)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
   @Delete('delete-many')
   async deleteManyProducts(
     @Body('codes') codes: string[],

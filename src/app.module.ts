@@ -49,7 +49,7 @@ import { throttlerConfig } from './common/config/throttler.config';
       useFactory: (configService: ConfigService) => ormConfig(configService),
       inject: [ConfigService],
     }),
-    // ThrottlerModule.forRoot(throttlerConfig())
+    ThrottlerModule.forRoot(throttlerConfig())
   ],
   controllers: [WishlistController, AppController],
   providers: [

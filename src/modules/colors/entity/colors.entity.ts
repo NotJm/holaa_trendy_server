@@ -7,7 +7,7 @@ export class Color {
     @Column({ type: 'varchar', length: 30 })
     name: string;
 
-    @Column({ type: 'varchar', length: 7 })
+    @Column({ name: 'hex_code', type: 'varchar', length: 7 })
     hexCode: string
 
     @CreateDateColumn()

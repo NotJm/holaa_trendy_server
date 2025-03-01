@@ -27,7 +27,7 @@ export class RefreshTokenService extends BaseService<RefreshToken> {
     expiresIn: REFRESH_JWT_AGE,
   };
 
-  private findRefreshTokenByToken(token: string): Promise<RefreshToken> {
+  public findRefreshTokenByToken(token: string): Promise<RefreshToken> {
     return this.findOne({
       where: { token },
       relations: ['user'],

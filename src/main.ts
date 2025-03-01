@@ -4,7 +4,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import xss from 'xss-clean';
-import csurf from 'csurf';
 import requestIp from 'request-ip'
 import cookieParser from 'cookie-parser';
 
@@ -22,6 +21,8 @@ async function bootstrap() {
   app.use(helmet());
 
   app.use(requestIp.mw());
+
+  
 
   await app.listen(
     configService.get<number>('PORT'),

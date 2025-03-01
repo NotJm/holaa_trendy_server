@@ -22,6 +22,9 @@ export class Category {
   @Column({ type: 'varchar', nullable: false })
   description: string;
 
+  @Column({ name: 'img_uri', type: 'varchar', nullable: false, default: '' })
+  imageUri: string
+
   @ManyToMany(() => SubCategory, (subCategory) => subCategory.categories, {
     onDelete: 'SET NULL',
     onUpdate: 'CASCADE',

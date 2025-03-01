@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { IApiResponse } from 'src/common/interfaces/api.response.interface';
+import { AESService } from '../../common/providers/aes.service';
+import { Argon2Service } from '../../common/providers/argon2.service';
 import { CookieService } from '../../common/providers/cookie.service';
 import { TokenService } from '../../common/providers/token.service';
 import { generateExpirationDate } from '../../common/utils/generate-expiration-date';
@@ -18,8 +20,6 @@ import { RequestForgotPasswordDto } from './dtos/request-forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SignUpDto } from './dtos/signup.dto';
 import { ActivationService } from './providers/account-activation.service';
-import { AESService } from './providers/aes.service';
-import { Argon2Service } from './providers/argon2.service';
 import { RefreshTokenService } from './providers/refresh-token.service';
 
 @Injectable()
@@ -96,7 +96,7 @@ export class AuthService {
    * @param res The response object to send back to the client.
    * @returns The response to the client, including a JWT cookie for authentication.
    */
-  async login(loginDto: LoginDto, res: Response, req: Request): Promise<void> {
+  async logIn(loginDto: LoginDto, res: Response, req: Request): Promise<void> {
     // Retrieves the user's credentials
     const { username, password } = loginDto;
 
@@ -130,25 +130,24 @@ export class AuthService {
 
     const jwtSecret = this.aesService.decrypt(user.secret);
 
-    // Creamos y enviamos un token de autenticacion al usuario
+    // Creates y sends a authentication token for the usuario
     const token = this.tokenService.generate(user, jwtSecret);
 
-    // Enviamos el token con el cliente
+    // Sends a authentication token
     this.tokenService.send(res, token);
 
-    // Creamos el token de refresco de autenticacion al usuario
+    // Sends a refresh authentication token for the user
     const refreshToken = await this.refreshTokenService.createOne(
       user,
       req.ip,
       req.get('user-agent') || '',
     );
 
-    // Enviamos el token con el cliente
+    // Sends a refresh authentication token
     this.refreshTokenService.send(res, refreshToken);
 
+    // Sends a OTP code to the user's email account
     // await this.mfaService.send(user.email, "LOGIN");
-
-    // Regresamos respuesta al usuario
   }
 
   /**
@@ -259,13 +258,13 @@ export class AuthService {
     }
 
     try {
-      const userId = await this.tokenService.decode(accessToken);
+      const decodeToken = await this.tokenService.decode(accessToken);
 
-      const user = await this.usersService.findUserById('userId');
+      const user = await this.usersService.findUserById(decodeToken.id);
 
       const secret = this.aesService.decrypt(user.secret);
 
-      const jwtPayload = this.tokenService.verify(accessToken, '');
+      const jwtPayload = this.tokenService.verify(accessToken, secret);
       if (!jwtPayload) {
         throw new UnauthorizedException('Token inválido o expirado');
       }

@@ -15,6 +15,7 @@ import {
   UpdateManyCategoriesDto,
 } from './dtos/update.category.dto';
 import { Category } from './entity/category.entity';
+import { CategoryResponseDto, toCategoryResponseDto } from './dtos/category.response.dto';
 
 @Injectable()
 export class CategoryService extends BaseService<Category> {
@@ -51,6 +52,13 @@ export class CategoryService extends BaseService<Category> {
         id: id,
       }
     })
+  }
+  
+  async findAllCategories(): Promise<CategoryResponseDto[]> {
+    const categories = await this.find({ relations: ['subCategories'] });
+
+    return  categories.map((category) => toCategoryResponseDto(category));
+  
   }
 
   /**
@@ -130,8 +138,8 @@ export class CategoryService extends BaseService<Category> {
    * Metodo para obtener todas las categorias con sus sub categorias
    * @returns Arreglo de categorias
    */
-  async getCategories(): Promise<Category[]> {
-    return await this.find({ relations: ['subCategories'] });
+  async getCategories(): Promise<CategoryResponseDto[]> {
+    return await this.findAllCategories();
   }
 
   /**

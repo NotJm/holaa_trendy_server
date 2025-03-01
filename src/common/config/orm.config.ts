@@ -25,6 +25,9 @@ import { PurchaseItem } from '../../modules/purchase/entity/purchase-item.entity
 import { Supplier } from '../../modules/suppliers/entity/suppliers.entity';
 import { SupplierEvaluation } from '../../modules/suppliers/entity/suppliers-evaluations.entity';
 import { SupplierProduct } from '../../modules/suppliers/entity/suppliers-products.entity';
+import { NewArrivals } from 'src/modules/products/entity/new-arrivals.entity';
+import { BestOffers } from 'src/modules/products/entity/best-offers.entity';
+import { BestSellers } from 'src/modules/products/entity/best-sellers.entity';
 
 export const ormConfig = (
   configService: ConfigService,
@@ -61,9 +64,12 @@ export const ormConfig = (
     PurchaseItem,
     Supplier,
     SupplierEvaluation,
-    SupplierProduct
+    SupplierProduct,
+    NewArrivals,
+    BestOffers,
+    BestSellers
   ],
-  synchronize: true,
+  synchronize: false,
   // logging: true,
   
 });

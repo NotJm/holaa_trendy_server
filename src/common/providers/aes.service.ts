@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
-import { IV_LENGTH } from '../../../common/constants/contants';
+import { IV_LENGTH } from '../constants/contants';
 
 @Injectable()
 export class AESService {

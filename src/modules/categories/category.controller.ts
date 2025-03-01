@@ -82,8 +82,19 @@ export class CategoryController extends BaseController {
    * @returns Todas las categorias con sub categorias cada una
    */
   @Get()
-  async getCategories() {
-    return await this.categoriesService.getCategories();
+  async getCategories(): Promise<IApiResponse> {
+    try {
+      const categories = await this.categoriesService.getCategories();
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully retrieved categories',
+        data: categories,
+      }
+
+    } catch (error) {
+      return this.handleError(error)
+    }
   }
 
   /**

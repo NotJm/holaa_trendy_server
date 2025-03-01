@@ -22,9 +22,7 @@ import { LoginDto } from './dtos/login.dto';
 import { RequestForgotPasswordDto } from './dtos/request-forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SignUpDto } from './dtos/signup.dto';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
-@UseGuards(ThrottlerGuard)
 @Controller('auth')
 export class AuthController extends BaseController {
   constructor(private readonly authService: AuthService) {
@@ -63,19 +61,21 @@ export class AuthController extends BaseController {
     @Req() req: Request,
   ): Promise<IApiResponse> {
     try {
-      await this.authService.login(loginDto, res, req);
+      await this.authService.logIn(loginDto, res, req);
+
       return {
         status: HttpStatus.OK,
-        message: `User logged in successfully`,
+        message:
+          'Necesitamos que verifique su identidad, enviamos un codigo a su correo electronico asociado',
         data: {
           MFA: 'pending',
           fromTo: 'LOGIN',
         },
       };
+      
     } catch (error) {
       return this.handleError(error);
     }
-    
   }
 
   /**
