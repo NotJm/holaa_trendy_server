@@ -1,12 +1,18 @@
 import * as winston from 'winston';
 import * as path from 'path';
+import DailyRotateFile from 'winston-daily-rotate-file';
+import fs from 'fs';
 
-const logFilePath = path.join(__dirname, '..', 'logs', 'app.log');
+const logsDir = path.join(__dirname, '..', 'logs');
+
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir, { recursive: true })
+}
 
 export const winstonConfig = {
   level: 'info', 
   format: winston.format.combine(
-    winston.format.timestamp(), 
+    winston.format.timestamp({ format: 'DD/MM/YYYY HH:mm:ss' }), 
     winston.format.json(), 
   ),
   transports: [
@@ -18,9 +24,14 @@ export const winstonConfig = {
       ),
     }),
    
-    new winston.transports.File({
-      filename: logFilePath, 
-      level: 'info', 
+    new DailyRotateFile({
+      dirname: logsDir,
+      filename: `%DATE% - Server.log`, 
+      datePattern: 'DD-MM-YYYY HH-mm', 
+      zippedArchive: false,
+      maxSize: '20m', 
+      maxFiles: '30d', 
+      level: 'info',
     }),
   ],
 };
