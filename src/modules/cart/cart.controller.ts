@@ -1,13 +1,13 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpStatus,
-    Param,
-    Post,
-    Put,
-    UseGuards
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  UseGuards
 } from '@nestjs/common';
 import { BaseController } from 'src/common/base.controller';
 import { User } from 'src/common/decorators/user.decorator';
@@ -35,7 +35,7 @@ export class CartController extends BaseController {
     @Body() addProductToCartDto: AddProductToCartDto,
   ): Promise<IApiResponse> {
     try {
-      const cart = await this.cartService.addProductToCart(
+      const cart = await this.cartService.addProduct(
         userId,
         addProductToCartDto
       );

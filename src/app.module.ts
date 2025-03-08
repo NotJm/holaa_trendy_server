@@ -30,7 +30,6 @@ import { throttlerConfig } from './common/config/throttler.config';
   imports: [
     WishlistModule,
     PurchaseModule,
-    WishlistModule,
     CloudinaryModule,
     CartModule,
     SizesModule,
@@ -51,7 +50,7 @@ import { throttlerConfig } from './common/config/throttler.config';
     }),
     ThrottlerModule.forRoot(throttlerConfig())
   ],
-  controllers: [WishlistController, AppController],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_FILTER,

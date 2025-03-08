@@ -50,14 +50,16 @@ export class UsersService extends BaseService<User> {
   async findUserById(id: string): Promise<User> {
     return await this.findOne({
       where: {
-        id: id
-      }
+        id: id,
+      },
     });
   }
 
   async findUserByEmail(email: string): Promise<User> {
-    return await this.findOne({ where: { email: email } })
+    return await this.findOne({ where: { email: email } });
   }
+
+
 
   /**
    * Metodo que permite encontrar a todos los usuarios
@@ -98,8 +100,6 @@ export class UsersService extends BaseService<User> {
     }
   }
 
-
-
   /**
    * Metodo que permite eliminar un usuario
    * @param userId ID del usuario
@@ -127,8 +127,6 @@ export class UsersService extends BaseService<User> {
       );
     }
   }
-
-
 
   /**
    * Metodo para registrar o actualizar la direccion de un usuario

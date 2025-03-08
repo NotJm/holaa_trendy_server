@@ -63,11 +63,6 @@ export class AuthService {
     // Hashing the password with the Argon2 algorithm
     const hashedPassword = await this.argon2Service.hash(password);
 
-    // Generates a random secret
-    const jwtSecret = generateRandomSecret();
-
-    // Encrypt the random secret for the user
-    const secret = this.aesService.encrypt(jwtSecret);
 
     // Creates a new user in the data base
     const newUser = await this.usersService.createUser({
@@ -75,11 +70,10 @@ export class AuthService {
       password: hashedPassword,
       email: email,
       phone: phone,
-      secret: secret,
     });
 
     // Create a new token for account activation to the user
-    const token = this.tokenService.generate(newUser, jwtSecret);
+    const token = this.tokenService.generate(newUser);
 
     // Generates the expiration date to validate the token
     const expiresAt = generateExpirationDate(15);
@@ -110,7 +104,7 @@ export class AuthService {
     // If the user doesn't exist, throw a exception
     if (!user) {
       throw new ConflictException(
-        `El usuario "${username}" no se encuentra registrado, Por favor registrese`,
+        `Parece que no encontramos una cuenta con el usuario '${username}'. ¡Anímate a registrarte y únete a nosotros!`,
       );
     }
 
@@ -128,10 +122,8 @@ export class AuthService {
       throw new ConflictException('Nombre de usuario o contraseña incorrecta');
     }
 
-    const jwtSecret = this.aesService.decrypt(user.secret);
-
     // Creates y sends a authentication token for the usuario
-    const token = this.tokenService.generate(user, jwtSecret);
+    const token = this.tokenService.generate(user);
 
     // Sends a authentication token
     this.tokenService.send(res, token);
@@ -203,13 +195,6 @@ export class AuthService {
       password: hashedNewPassword,
     });
 
-    const newJwtSecret = generateRandomSecret();
-
-    const newSecret = this.aesService.encrypt(newJwtSecret);
-
-    this.usersService.updateUser(user.id, {
-      secret: newSecret
-    });
 
     return {
       status: HttpStatus.OK,
@@ -231,21 +216,11 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-    const jwtSecret = this.aesService.decrypt(user.secret);
-
-    const jwtPayLoad = await this.tokenService.verify(token, jwtSecret);
+    const jwtPayLoad = await this.tokenService.verify(token);
 
     if (jwtPayLoad.id !== decodeToken.id) {
       throw new UnauthorizedException('Invalid token payload');
     }
-
-    const newJwtSecret = generateRandomSecret();
-
-    const newSecret = await this.aesService.encrypt(newJwtSecret);
-
-    await this.usersService.updateUser(jwtPayLoad.id, {
-      secret: newSecret,
-    });
 
     await this.activationService.activate(jwtPayLoad.id);
   }
@@ -262,9 +237,8 @@ export class AuthService {
 
       const user = await this.usersService.findUserById(decodeToken.id);
 
-      const secret = this.aesService.decrypt(user.secret);
+      const jwtPayload = this.tokenService.verify(accessToken);
 
-      const jwtPayload = this.tokenService.verify(accessToken, secret);
       if (!jwtPayload) {
         throw new UnauthorizedException('Token inválido o expirado');
       }
@@ -287,9 +261,7 @@ export class AuthService {
     const user = await this.refreshTokenService.verify(refreshAccessToken);
     await this.refreshTokenService.revokeRefreshToken(refreshAccessToken);
 
-    const secret = this.aesService.decrypt(user.secret);
-
-    const newAccessToken = this.tokenService.generate(user, secret);
+    const newAccessToken = this.tokenService.generate(user);
     const newRefreshAccessToken = await this.refreshTokenService.createOne(
       user,
       req.ip,

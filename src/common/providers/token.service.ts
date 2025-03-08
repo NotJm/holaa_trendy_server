@@ -18,18 +18,18 @@ export class TokenService {
     private readonly cookieService: CookieService,
   ) {}
 
-  public generate(user: User, secret: string): string {
+  public generate(user: User): string {
     const payload = { id: user.id, role: user.role };
-    return this.jwtService.sign(payload, { secret: secret, ...this.jwtOptions});
+    return this.jwtService.sign(payload, this.jwtOptions);
   }
 
   public send(res: Response, token: string): void {
     this.cookieService.send(res, 'accessToken', token, COOKIE_JWT_AGE);
   }
 
-  public verify(token: string, secret: string): Promise<JwtPayload> {
+  public verify(token: string): Promise<JwtPayload> {
     try {
-      return this.jwtService.verify(token, { secret: secret });
+      return this.jwtService.verify(token);
     } catch (err) {
       throw new UnauthorizedException(`Invalid Token, reason ${err.message}`)
     }

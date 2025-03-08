@@ -28,6 +28,7 @@ import { SupplierProduct } from '../../modules/suppliers/entity/suppliers-produc
 import { NewArrivals } from 'src/modules/products/entity/new-arrivals.entity';
 import { BestOffers } from 'src/modules/products/entity/best-offers.entity';
 import { BestSellers } from 'src/modules/products/entity/best-sellers.entity';
+import { WishListItem } from '../../modules/wishlist/entity/wishlist-item.entity';
 
 export const ormConfig = (
   configService: ConfigService,
@@ -57,6 +58,7 @@ export const ormConfig = (
     ShippingHistory,
     PurchaseHistory,
     Wishlist,
+    WishListItem,
     Sale,
     SaleHistory,
     SaleItem,
@@ -69,7 +71,5 @@ export const ormConfig = (
     BestOffers,
     BestSellers
   ],
-  synchronize: false,
-  // logging: true,
-  
+  synchronize: true,  
 });

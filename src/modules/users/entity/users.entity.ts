@@ -38,13 +38,6 @@ export class User {
   })
   role?: ROLE;
 
-  @Column({
-    type: 'varchar',
-    nullable: false,
-    unique: true,
-  })
-  secret: string;
-
   @Column({ name: 'is_activated', type: 'boolean', nullable: false, default: false })
   isActivated?: boolean;
 
@@ -54,7 +47,7 @@ export class User {
   @Column({ name: 'block_expires_at', type: 'time with time zone', nullable: true, default: null })
   blockExpiresAt?: Date;
 
-  @OneToMany(() => Wishlist, (wishlist) => wishlist.user)
+  @OneToOne(() => Wishlist, (wishlist) => wishlist.user)
   wishlist?: Wishlist[];
 
   @OneToMany(() => RefreshToken, (refreshToken) => refreshToken.user)

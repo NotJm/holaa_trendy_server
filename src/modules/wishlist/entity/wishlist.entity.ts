@@ -1,24 +1,34 @@
-import { Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Unique } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToOne,
+  OneToMany,
+} from 'typeorm';
 import { Product } from '../../products/entity/products.entity';
 import { User } from '../../../modules/users/entity/users.entity';
+import { WishListItem } from './wishlist-item.entity';
 
 @Entity('wishlist')
-@Unique(['user', 'product'])
 export class Wishlist {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id?: string;
 
-  @ManyToOne(() => User, user => user.wishlist, { nullable: false })
-  @JoinColumn({ name: 'user_id' })
+  @OneToOne(() => User, (user) => user.wishlist)
+  @JoinColumn()
   user: User;
 
-  @ManyToOne(() => Product, { nullable: false })
-  @JoinColumn({ name: 'product_code', referencedColumnName: 'code' })
-  product: Product;
+  @OneToMany(() => WishListItem, (wishListItem) => wishListItem.wishlist, {
+    cascade: true,
+  })
+  wishListItems?: WishListItem[];
 
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  createdAt?: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updatedAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  updatedAt?: Date;
 }

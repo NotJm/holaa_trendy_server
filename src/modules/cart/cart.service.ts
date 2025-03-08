@@ -60,7 +60,7 @@ export class CartService extends BaseService<Cart> {
     return this.findCartByIsActive(user);
   }
 
-  public async addProductToCart(
+  public async addProduct(
     userId: string,
     addProductToCartDto: AddProductToCartDto,
   ): Promise<Cart> {
