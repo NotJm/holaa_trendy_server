@@ -25,7 +25,7 @@ async function bootstrap() {
   );
 
   console.log(
-    `Listen in http://${configService.get<string>('HOSTNAME')}:${configService.get<number>('PORT')}`,
+    `Listen in http://${configService.get<string>('HOSTNAME')}:${process.env.PORT}`,
   );
 }
 
