@@ -5,8 +5,8 @@ import { Response } from 'express';
 import { LessThan, Repository } from 'typeorm';
 import { BaseService } from '../../../common/base.service';
 import {
-    COOKIE_REFRESH_JWT_AGE,
-    REFRESH_JWT_AGE,
+  COOKIE_REFRESH_JWT_AGE,
+  REFRESH_JWT_AGE,
 } from '../../../common/constants/contants';
 import { CookieService } from '../../../common/providers/cookie.service';
 import { User } from '../../../modules/users/entity/users.entity';
@@ -36,9 +36,11 @@ export class RefreshTokenService extends BaseService<RefreshToken> {
 
   private findRefreshTokenByUserId(userId: string): Promise<RefreshToken> {
     return this.findOne({
-      where: { user: {
-        id: userId
-      } },
+      where: {
+        user: {
+          id: userId,
+        },
+      },
       relations: ['user'],
     });
   }
@@ -57,11 +59,12 @@ export class RefreshTokenService extends BaseService<RefreshToken> {
     );
   }
 
-  public async createOne(
+  public async generateAndSendToken(
     user: User,
     ip: string,
     userAgent: string,
-  ): Promise<string> {
+    res: Response
+  ): Promise<void> {
     const token = this.generate(user);
     const expiresAt = new Date(Date.now() + COOKIE_REFRESH_JWT_AGE * 1000);
 
@@ -69,16 +72,15 @@ export class RefreshTokenService extends BaseService<RefreshToken> {
       user: user,
       token: token,
       expiresAt: expiresAt,
-      ipAddress: ip,
-      deviceInfo: userAgent,
+      ip: ip,
+      userAgent: userAgent,
     });
 
-    return token;
+    return this.send(res, token);
 
   }
 
   async verify(token: string): Promise<User> {
-    const payload = this.jwtService.verify(token);
     const refreshToken = await this.findRefreshTokenByToken(token);
 
     if (
@@ -86,7 +88,7 @@ export class RefreshTokenService extends BaseService<RefreshToken> {
       refreshToken.revoked ||
       refreshToken.expiresAt < new Date()
     ) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Token invalido o expirado');
     }
 
     return refreshToken.user;
@@ -105,14 +107,13 @@ export class RefreshTokenService extends BaseService<RefreshToken> {
     await this.update(refresToken.id, {
       user: user,
       revoked: true,
-    })
+    });
   }
 
   async deleteExpiredTokens(): Promise<void> {
     const now = new Date();
     await this.refreshTokenRepository.delete({
       expiresAt: LessThan(now),
-    })
+    });
   }
-
 }

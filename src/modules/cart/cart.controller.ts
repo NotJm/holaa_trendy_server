@@ -3,11 +3,12 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   HttpStatus,
   Param,
   Post,
   Put,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
 import { BaseController } from 'src/common/base.controller';
 import { User } from 'src/common/decorators/user.decorator';
@@ -19,7 +20,6 @@ import { IApiResponse } from '../../common/interfaces/api.response.interface';
 import { CartService } from './cart.service';
 import { AddProductToCartDto } from './dtos/add-product.cart.dto';
 import { UpdateProductQuantityToCartDto } from './dtos/update-quantity.cart.dto';
-import { Cart } from './entity/cart.entity';
 
 @Controller('cart')
 @UseGuards(JwtAuthGuard, RoleGuard)
@@ -37,7 +37,7 @@ export class CartController extends BaseController {
     try {
       const cart = await this.cartService.addProduct(
         userId,
-        addProductToCartDto
+        addProductToCartDto,
       );
 
       return {
@@ -51,8 +51,18 @@ export class CartController extends BaseController {
   }
 
   @Get()
-  async getCart(@User() userId: string): Promise<Cart> {
-    return await this.cartService.getCart(userId);
+  async getCart(@User() userId: string): Promise<IApiResponse> {
+    try {
+      const cart = await this.cartService.getCart(userId);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Carrito obtenido exitosamente',
+        data: cart,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
   }
 
   @Put('update/quantity')

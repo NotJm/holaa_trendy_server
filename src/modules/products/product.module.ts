@@ -15,6 +15,8 @@ import { SubCategoryService } from '../sub-categories/sub-category.service';
 import { NewArrivals } from './entity/new-arrivals.entity';
 import { BestOffers } from './entity/best-offers.entity';
 import { BestSellers } from './entity/best-sellers.entity';
+import { CategoryStockInitial } from '../categories/entity/category_stock_initial.entity';
+import { CategorySaleTrend } from '../categories/entity/category_sale_trend.entity';
 
 @Module({
   imports: [
@@ -27,7 +29,9 @@ import { BestSellers } from './entity/best-sellers.entity';
       ProductImages,
       NewArrivals,
       BestOffers,
-      BestSellers
+      BestSellers,
+      CategoryStockInitial,
+      CategorySaleTrend,
     ]),
   ],
   controllers: [ProductController],

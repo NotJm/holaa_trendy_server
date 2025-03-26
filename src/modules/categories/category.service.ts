@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/base.service';
 import { In, Repository } from 'typeorm';
+import { CategoryResponseDto, toCategoryResponseDto } from './dtos/category.response.dto';
 import {
   CreateCategoryDto as CreateCategorieDto,
   CreateManyCategoriesDto,
@@ -15,13 +16,18 @@ import {
   UpdateManyCategoriesDto,
 } from './dtos/update.category.dto';
 import { Category } from './entity/category.entity';
-import { CategoryResponseDto, toCategoryResponseDto } from './dtos/category.response.dto';
+import { CategoryStockInitial } from './entity/category_stock_initial.entity';
+import { CategorySaleTrend } from './entity/category_sale_trend.entity';
 
 @Injectable()
 export class CategoryService extends BaseService<Category> {
   constructor(
     @InjectRepository(Category)
     private readonly categoriesRepository: Repository<Category>,
+    @InjectRepository(CategoryStockInitial)
+    private readonly categoryStockInitialRepository: Repository<CategoryStockInitial>,
+    @InjectRepository(CategorySaleTrend)
+    private readonly categorySaleTrendRepository: Repository<CategorySaleTrend>
   ) {
     super(categoriesRepository);
   }
@@ -140,6 +146,33 @@ export class CategoryService extends BaseService<Category> {
    */
   async getCategories(): Promise<CategoryResponseDto[]> {
     return await this.findAllCategories();
+  }
+
+  async getStockInitial(): Promise<number> {
+    const categoriesStockInitial = await this.categoryStockInitialRepository.find();
+
+    const stockInitalTotal = categoriesStockInitial.reduce((acc, curr) => acc + curr.initialStock, 0);
+
+    return stockInitalTotal;
+  }
+
+  async getStockInitialByCategory(category: string): Promise<number> {
+    const categoryStockInitial = await this.categoryStockInitialRepository.findOne({
+      where: { categoryId: category },
+    });
+
+    return categoryStockInitial.initialStock;
+  }
+
+
+  async getCategoryTrend(): Promise<string> {
+    const categorySaleTrend = await this.categorySaleTrendRepository.findOne({
+      order: {
+        totalSales: 'DESC',
+      },
+    });
+
+    return categorySaleTrend.categoryName;
   }
 
   /**

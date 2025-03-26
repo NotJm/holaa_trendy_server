@@ -2,8 +2,9 @@ import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { IpInfoService } from '../../common/microservice/ipinfo.service';
+import { PwnedService } from '../../common/microservice/pwned.service';
 import { CookieService } from '../../common/providers/cookie.service';
-import { PwnedService } from '../../common/providers/pwned.service';
 import { TokenService } from '../../common/providers/token.service';
 import { CategoryService } from '../categories/category.service';
 import { Category } from '../categories/entity/category.entity';
@@ -27,7 +28,11 @@ import { WishListItem } from './entity/wishlist-item.entity';
 import { Wishlist } from './entity/wishlist.entity';
 import { WishlistController } from './wishlist.controller';
 import { WishlistService } from './wishlist.service';
-import { IpInfoService } from '../../common/providers/ipinfo.service';
+import { Argon2Service } from '../../common/providers/argon2.service';
+import { RedisService } from '../../common/microservice/redis.service';
+import { CategoryStockInitial } from '../categories/entity/category_stock_initial.entity';
+import { CategorySaleTrend } from '../categories/entity/category_sale_trend.entity';
+import { Address } from '../users/entity/user-address.entity';
 
 @Module({
   imports: [
@@ -46,6 +51,9 @@ import { IpInfoService } from '../../common/providers/ipinfo.service';
       SubCategory,
       Color,
       Size,
+      CategoryStockInitial,
+      CategorySaleTrend,
+      Address
     ]),
   ],
   controllers: [WishlistController],
@@ -63,6 +71,8 @@ import { IpInfoService } from '../../common/providers/ipinfo.service';
     TokenService,
     IpInfoService,
     JwtService,
+    Argon2Service,
+    RedisService
   ],
   exports: [WishlistService],
 })

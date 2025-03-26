@@ -10,11 +10,12 @@ import {
 
 @Catch(HttpException)
 export class HttpExceptionsFilter implements ExceptionFilter {
-  @Inject(LoggerApp) private readonly loggerApp: LoggerApp
+  @Inject(LoggerApp) private readonly loggerApp: LoggerApp;
 
   catch(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
+    const request = ctx.getRequest();
     const errorMessage = exception.getResponse();
 
     const status =
@@ -27,10 +28,16 @@ export class HttpExceptionsFilter implements ExceptionFilter {
         ? errorMessage['message']
         : 'Error inesperado';
 
-    response.status(status).json({
+    const errorData = {
       statusCode: status,
       error: 'Error al momento de procesar la solicitud',
       message: message,
-    });
+    };
+
+    this.loggerApp.error(
+      `HTTP Error (${status}): ${JSON.stringify(errorData)} - PATH: ${request.url}`,
+    );
+
+    response.status(status).json(errorData);
   }
 }

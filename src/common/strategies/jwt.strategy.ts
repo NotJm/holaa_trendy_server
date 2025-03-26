@@ -15,7 +15,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       // Extrae el token de la caberecera Bearer
       jwtFromRequest: (req: Request) => {
-        return this.cookieService.get(req, 'accessToken');
+        return this.cookieService.get(req, 'trendy_session');
       },
       // Ignora el tiempo de expiracion
       ignoreExpiration: true,

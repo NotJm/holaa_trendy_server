@@ -1,10 +1,10 @@
 import {
-  Column,
-  Entity,
-  JoinColumn,
-  OneToMany,
-  OneToOne,
-  PrimaryGeneratedColumn,
+    Column,
+    Entity,
+    JoinColumn,
+    OneToMany,
+    OneToOne,
+    PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ACCOUNT_STATE, ROLE } from '../../../common/constants/contants';
 import { RefreshToken } from '../../auth/entity/refresh-token.entity';
@@ -27,7 +27,7 @@ export class User {
   @Column({ type: 'varchar', nullable: false, unique: true })
   email: string;
 
-  @Column({ type: 'varchar', nullable: false, length: 13, default: '' })
+  @Column({ type: 'varchar', unique: true, nullable: false, length: 13, default: '' })
   phone: string;
 
   @Column({
@@ -60,9 +60,9 @@ export class User {
   @OneToMany(() => RefreshToken, (refreshToken) => refreshToken.user)
   refreshTokens?: RefreshToken[];
 
-  @OneToOne(() => Address)
+  @OneToOne(() => Address, (address) => address.user)
   @JoinColumn({ name: 'address_id' })
-  addressId?: Address;
+  address?: Address;
 
   @OneToMany(() => Incident, (incident) => incident.user, { nullable: true })
   incidents?: Incident[];

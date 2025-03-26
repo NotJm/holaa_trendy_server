@@ -6,6 +6,7 @@ export abstract class BaseController {
   @Inject(LoggerApp) protected readonly loggerApp: LoggerApp
 
   protected handleError(error: unknown): IApiResponse {
+    
     if (error instanceof Error && !(error instanceof HttpException)) {
       this.loggerApp.error(
         `Error del servidor: ${error.message || 'Error desconocido'}`,

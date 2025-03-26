@@ -1,26 +1,21 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Sale } from './sale.entity';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Product } from '../../products/entity/products.entity';
+import { Sale } from './sale.entity';
 
 @Entity('sale_items')
 export class SaleItem {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id?: string;
 
-  @ManyToOne(() => Sale, sale => sale.items, { nullable: false })
-  @JoinColumn()
+  @ManyToOne(() => Sale, sale => sale.saleItems, { nullable: false })
+  @JoinColumn({ name: 'sale_id' })
   sale: Sale;
 
   @ManyToOne(() => Product, { nullable: false })
-  @JoinColumn()
+  @JoinColumn({ name: 'product_id' })
   product: Product;
 
   @Column({ type: 'int', nullable: false })
-  quantity: number;
+  quantity: number; 
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
-  unitPrice: number;
-
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: false })
-  subtotal: number;
 }

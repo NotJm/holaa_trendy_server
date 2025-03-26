@@ -46,4 +46,11 @@ export class CookieService {
     return req.cookies[name];
   }
 
+  getJwtCookies(req: Request): { accessToken: string, refreshAccessToken: string } {
+    return {
+      accessToken: req.cookies['accessToken'],
+      refreshAccessToken: req.cookies['refreshAccessToken']
+    };
+  }
+
 }

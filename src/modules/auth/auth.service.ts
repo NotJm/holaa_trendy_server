@@ -1,47 +1,53 @@
 import {
   ConflictException,
-  HttpStatus,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { JWT_AGE_IN_MINUTES } from 'src/common/constants/contants';
-import { IApiResponse } from 'src/common/interfaces/api.response.interface';
-import { formattedDate } from 'src/common/utils/formatted-date';
+import {
+  COOKIE_BY_ROLE,
+  JWT_BY_ROLE,
+  JWT_DEFAULT_AGE_AS_NUMBER,
+  REFRESH_THRESHOLD,
+  ROLE,
+} from '../../common/constants/contants';
 import { LoggerApp } from '../../common/logger/logger.service';
-import { Argon2Service } from '../../common/providers/argon2.service';
-import { CookieService } from '../../common/providers/cookie.service';
+import { RedisService } from '../../common/microservice/redis.service';
 import { TokenService } from '../../common/providers/token.service';
 import { generateExpirationDate } from '../../common/utils/generate-expiration-date';
-import { MFAService } from '../mfa/mfa.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dtos/login.dto';
-import { RequestForgotPasswordDto } from './dtos/request-forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SignUpDto } from './dtos/signup.dto';
-import { ActivationService } from './providers/account-activation.service';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { AccountActivationService } from './providers/account-activation.service';
+import { EmailVerificationService } from './providers/email-verification.service';
 import { RefreshTokenService } from './providers/refresh-token.service';
+import { SessionService } from './providers/session.service';
+import { SMSVerificationService } from './providers/sms-verification.service';
 
 @Injectable()
 export class AuthService {
   constructor(
+    private readonly loggerApp: LoggerApp,
     private readonly usersService: UsersService,
     private readonly tokenService: TokenService,
-    private readonly argon2Service: Argon2Service,
-    private readonly activationService: ActivationService,
-    private readonly mfaService: MFAService,
-    private readonly cookieService: CookieService,
+    private readonly redisService: RedisService,
+    private readonly sessionService: SessionService,
     private readonly refreshTokenService: RefreshTokenService,
-    private readonly loggerApp: LoggerApp,
+    private readonly accountActivationService: AccountActivationService,
+    private readonly smsVerificationService: SMSVerificationService,
+    private readonly emailVerificationService: EmailVerificationService,
   ) {}
 
-  async ensurePasswordMatches(
-    hashPassword: string,
-    password: string,
-  ): Promise<boolean> {
-    // Validate whether the passwords match
-    return await this.argon2Service.compare(hashPassword, password);
+  private hasSessionExceededThreshold(
+    expirationInMiliseconds: number,
+  ): boolean {
+    const currentTime = Date.now();
+
+    const sessionDuration = expirationInMiliseconds - currentTime;
+
+    return sessionDuration < REFRESH_THRESHOLD;
   }
 
   /**
@@ -50,20 +56,24 @@ export class AuthService {
    * @param signUpDto DTO contains user registration details
    * @returns A promise thant resolve when the user is created sucessfully
    */
-  async signUp(signUpDto: SignUpDto): Promise<void> {
-    // Retrieves the necessary user data from the provide DTO.
+  async signUp(signUpDto: SignUpDto, res: Response): Promise<void> {
     const { username, password, email, phone } = signUpDto;
 
-    // Ensures that no exists a user with same username or email
-    await this.usersService.isUserExists(username, password);
+    if (await this.usersService.isUserExists(username, email, phone)) {
+      this.loggerApp.warn(
+        `Intento de registro fallido: la cuenta del usuario ya existe`,
+        'AuthService',
+      );
 
-    // Ensures that the password isn't committed
+      throw new ConflictException(
+        'Este correo ya está asociado a una cuenta. ¿Olvidaste tu contraseña?',
+      );
+    }
+
     await this.usersService.isPasswordCommitted(password);
 
-    // Hashing the password with the Argon2 algorithm
-    const hashedPassword = await this.argon2Service.hash(password);
+    const hashedPassword = await this.usersService.hashPassword(password);
 
-    // Creates a new user in the data base
     const newUser = await this.usersService.createUser({
       username: username,
       password: hashedPassword,
@@ -71,14 +81,27 @@ export class AuthService {
       phone: phone,
     });
 
-    // Create a new token for account activation to the user
-    const token = this.tokenService.generate(newUser);
+    const token = this.tokenService.generate({ userId: newUser.id });
 
-    // Generates the expiration date to validate the token
-    const expiresAt = generateExpirationDate(JWT_AGE_IN_MINUTES);
+    await this.redisService.set(`verify:${token}`, { userId: newUser.id }, 600);
 
-    // Sends an account activation email to the user
-    return await this.activationService.send(email, token, expiresAt);
+    const expiresAt = generateExpirationDate(JWT_DEFAULT_AGE_AS_NUMBER);
+
+    return await this.accountActivationService.send(
+      username,
+      email,
+      token,
+      expiresAt,
+    );
+  }
+
+  /**
+   * Handles the logic for user account activation
+   * @param userId Unique Identification of the user
+   * @returns A promise that resolves when user account is successfully activated
+   */
+  async activateAccount(token: string): Promise<void> {
+    return await this.accountActivationService.activate(token);
   }
 
   /**
@@ -87,97 +110,99 @@ export class AuthService {
    * @param res The response object to send back to the client.
    * @returns The response to the client, including a JWT cookie for authentication.
    */
-  async logIn(loginDto: LoginDto, res: Response, req: Request): Promise<void> {
+  async logIn(
+    loginDto: LoginDto,
+    res: Response,
+    req: Request,
+  ): Promise<string> {
     const { username, password } = loginDto;
 
     const { ip, userAgent } = this.usersService.recoverUserIpAndUserAgent(req);
 
     const user = await this.usersService.findUserByUsername(username);
 
-    if (!user) {
-      this.loggerApp.warn(
-        'Intento de inciar sesion: el usuario intento inciar sesion con unas credenciales incorrectas',
-        'AuthService',
-      );
-      throw new ConflictException('El usuario no existe');
-    }
-
     await this.usersService.isUserLocked(user);
 
-    const isPasswordMatching = await this.ensurePasswordMatches(
-      user.password,
+    const isPasswordMatching = await this.usersService.verifyPassword(
       password,
+      user.password,
     );
 
-    // If the password doesn't match, throw an exception
     if (!isPasswordMatching) {
       await this.usersService.registerIncident(user, ip, userAgent);
 
-      const hasExceeded = await this.usersService.checkAttemptsExceeded(user);
+      await this.usersService.checkAttemptsExceeded(user);
+    }
 
-      if (!hasExceeded) {
-        this.loggerApp.warn(
-          'Intento de inicio de sesion: El usuario no introducio la contraseña correcta',
-          'AuthService',
-        );
+    await this.usersService.isUserAccountActived(user);
 
-        throw new ConflictException(
-          'Nombre de usuario o contraseña incorrecta',
-        );
-      }
+    const token = this.tokenService.generate({ userId: user.id });
 
-      await this.usersService.blockUser(user);
+    const expiresAt = generateExpirationDate(JWT_DEFAULT_AGE_AS_NUMBER);
 
+    await this.emailVerificationService.send(
+      user.username,
+      user.email,
+      expiresAt,
+      token,
+    );
+
+    return user.role;
+  }
+
+  async startSession(token: string, res: Response): Promise<void> {
+    return await this.sessionService.start(token, res);
+  }
+
+  /**
+   * Handles the logic for logging out a user
+   * @param res Response to the client
+   * @param req Request from the client
+   * @returns Response to the client
+   */
+  async logout(res: Response, req: Request): Promise<void> {
+    const { accessToken, refreshToken } = this.tokenService.get(req);
+
+    if (!accessToken || !refreshToken) {
       this.loggerApp.warn(
-        'Cuenta bloqueada: La cuenta del usuario ha sido bloqueada temporalmente por alcanzar el limite de intentos',
+        'Intento de cerrar la sesion del usuario: El usuario no esta autenticado',
         'AuthService',
       );
 
-      throw new ConflictException(
-        `Usuario con cuenta bloqueada, se desbloqueara ${formattedDate(user.blockExpiresAt)}`,
-      );
+      throw new UnauthorizedException('Su token es invalido o expiro');
     }
+    await this.redisService.del(`refresh:${refreshToken}`);
 
-    await this.usersService.isUserAccoundActived(user);
-
-    this.tokenService.generateAndSendToken(user, res);
-
-    const refreshToken = await this.refreshTokenService.createOne(user, ip, userAgent );
-
-    this.refreshTokenService.send(res, refreshToken);
-
-    // await this.mfaService.send(user.email, "LOGIN");
+    this.tokenService.delete(res, 'trendy_session');
+    this.tokenService.delete(res, 'trendy_refresh_session');
   }
 
-  /**
-   * Metodo para cerrar la sesion de un usuario
-   * @param res
-   * @returns
-   */
-  async logout(res: Response): Promise<void> {
-    this.cookieService.delete(res, 'accessToken');
-    this.cookieService.delete(res, 'refreshAccessToken');
+  async sendSms(phone: string): Promise<void> {
+    return await this.smsVerificationService.send(phone);
   }
 
-  /**
-   * Metodo que permite iniciar el proceso de recuperacion de contraseña
-   * @param requestForgotPasswordDto
-   * @returns
-   */
-  async requestForgotPassword(
-    requestForgotPasswordDto: RequestForgotPasswordDto,
-  ): Promise<{ status: number; message: string; MFA: string; fromTo: string }> {
-    const { email } = requestForgotPasswordDto;
+  async verifySms(phone: string, code: string, res: Response): Promise<void> {
+    return await this.smsVerificationService.verify(phone, code, res);
+  }
 
-    await this.mfaService.send(email, 'FORGOT_PASSWORD');
+  async sendRecoveryLink(email: string, res: Response): Promise<void> {
+    const user = await this.usersService.findUserByEmail(email);
 
-    return {
-      status: HttpStatus.OK,
-      message:
-        'Se ha iniciado el proceso de recuperacion de contraseña. Por favor revise su correo hemos enviado un codigo OTP',
-      MFA: 'pending',
-      fromTo: 'FORGOT_PASSWORD',
-    };
+    const sessionId = await this.sessionService.generateTemporarySession(
+      user.id,
+    );
+
+    this.sessionService.send(sessionId, res);
+
+    const expiresAt = generateExpirationDate(JWT_DEFAULT_AGE_AS_NUMBER);
+
+    return await this.emailVerificationService.send(
+      user.username,
+      email,
+      expiresAt,
+      undefined,
+      false,
+    );
   }
 
   /**
@@ -187,94 +212,90 @@ export class AuthService {
    */
   async resetPassword(
     resetPasswordDto: ResetPasswordDto,
-  ): Promise<IApiResponse> {
-    const { email, newPassword } = resetPasswordDto;
+    req: Request,
+    res: Response,
+  ): Promise<void> {
+    const { newPassword } = resetPasswordDto;
 
-    const user = await this.usersService.findUserByEmail(email);
+    const sessionId = this.sessionService.verify(req);
 
-    if (!user) {
-      throw new ConflictException('El usuario no existe');
-    }
+    const userId = await this.sessionService.get(sessionId);
 
-    const hashedNewPassword = await this.argon2Service.hash(newPassword);
-
-    await this.usersService.updateOne(user.id, {
-      password: hashedNewPassword,
-    });
-
-    return {
-      status: HttpStatus.OK,
-      message: 'Se ha restablecido la contraseña exitosamente',
-    };
-  }
-
-  /**
-   * Handles the logic for user account activation
-   * @param userId Unique Identification of the user
-   * @returns A promise that resolves when user account is successfully activated
-   */
-  async activate(token: string): Promise<void> {
-    const decodeToken = await this.tokenService.decode(token);
-
-    const user = await this.usersService.findUserById(decodeToken.id);
+    const user = await this.usersService.findUserById(userId);
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      this.loggerApp.warn(
+        'Intento de restablecer contraseña: El usuario no existe',
+        'AuthService',
+      );
+
+      throw new ConflictException(
+        'No encontramos un usuario con esa informacion',
+      );
     }
 
-    const jwtPayLoad = await this.tokenService.verify(token);
+    const hashedNewPassword = await this.usersService.hashPassword(newPassword);
 
-    if (jwtPayLoad.id !== decodeToken.id) {
-      throw new UnauthorizedException('Invalid token payload');
-    }
+    await this.usersService.updatePassword(user.id, hashedNewPassword);
 
-    await this.activationService.activate(jwtPayLoad.id);
+    return await this.sessionService.del(sessionId, res);
   }
 
-  async checkSession(req: Request): Promise<boolean> {
-    const accessToken = this.cookieService.get(req, 'accessToken');
+  async checkSession(
+    req: Request,
+    res: Response,
+  ): Promise<{ active: boolean; role: ROLE }> {
+    const { accessToken, refreshToken } = this.tokenService.get(req);
 
-    if (!accessToken) {
-      throw new UnauthorizedException('Token de acceso no encontrado');
-    }
+    const userData = await this.tokenService.verify<JwtPayload>(accessToken);
 
-    try {
-      const decodeToken = await this.tokenService.decode(accessToken);
+    const user = await this.usersService.findUserById(userData.id);
 
-      const user = await this.usersService.findUserById(decodeToken.id);
-
-      const jwtPayload = this.tokenService.verify(accessToken);
-
-      if (!jwtPayload) {
-        throw new UnauthorizedException('Token inválido o expirado');
-      }
-      return true;
-    } catch (error) {
-      throw new UnauthorizedException('Token inválido o expirado');
-    }
+    return { active: true, role: user.role };
   }
 
   async refreshToken(req: Request, res: Response): Promise<boolean> {
-    const refreshAccessToken = this.cookieService.get(
-      req,
-      'refreshAccessToken',
-    );
+    const { accessToken, refreshToken } = this.tokenService.get(req);
 
-    if (!refreshAccessToken) {
-      throw new UnauthorizedException('Token para refrescar no encontrado');
+    if (!refreshToken) {
+      this.loggerApp.warn(
+        'Intento de actualizar el refres tokende: El refresh token no existe',
+        'AuthService',
+      );
+
+      throw new UnauthorizedException('Su token es invalido o expiro');
     }
 
-    const user = await this.refreshTokenService.verify(refreshAccessToken);
-    await this.refreshTokenService.revokeRefreshToken(refreshAccessToken);
-
-    const newAccessToken = this.tokenService.generate(user);
-    const newRefreshAccessToken = await this.refreshTokenService.createOne(
-      user,
-      req.ip,
-      req.get('user-agent') || '',
+    const refreshTokenData = await this.redisService.get<{ userId: string }>(
+      `refresh:${refreshToken}`,
     );
-    this.tokenService.send(res, newAccessToken);
-    this.refreshTokenService.send(res, newRefreshAccessToken);
+
+    if (!refreshTokenData) {
+      this.loggerApp.warn(
+        'Intento de actualizar el token de acceso: Los datos no existen',
+        'AuthService',
+      );
+
+      throw new UnauthorizedException('Su token es invalido o expiro');
+    }
+
+    const { userId } = refreshTokenData;
+
+    const user = await this.usersService.findUserById(userId);
+
+    const jwtAge = JWT_BY_ROLE[user.role];
+
+    const newJwt = this.tokenService.generate(
+      { id: user.id, role: user.role },
+      jwtAge,
+    );
+
+    this.tokenService.send(
+      newJwt,
+      res,
+      'trendy_session',
+      COOKIE_BY_ROLE[user.role],
+    );
 
     return true;
   }

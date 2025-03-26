@@ -48,15 +48,15 @@ export function toProductResponseDto(product: Product): ProductResponseDto {
     code: product.code,
     name: product.name,
     imgUri: product.imgUri,
-    images: product.images.map(image => image.url),
+    images: product.images?.map(image => image.url) || [], // Evita error si images es undefined
     description: product.description,
     price: product.price, 
     discount: product.discount, 
     finalPrice: product.finalPrice, 
     stock: product.stock,
-    categoryName: product.category.name, 
-    subCategoryName: product.subCategories.map(subCat => subCat.name), 
-    sizesNames: product.sizes.map(size => size.size),
-    colorsNames: product.colors.map(color => color.hexCode), 
+    categoryName: product.category?.name || null, // Evita error si category es undefined
+    subCategoryName: product.subCategories?.map(subCat => subCat.name) || [], // Evita error si subCategories es undefined
+    sizesNames: product.sizes?.map(size => size.size) || [], // Evita error si sizes es undefined
+    colorsNames: product.colors?.map(color => color.hexCode) || [], // Evita error si colors es undefined
   });
 }

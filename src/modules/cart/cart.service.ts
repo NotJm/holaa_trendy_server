@@ -9,6 +9,7 @@ import { AddProductToCartDto } from './dtos/add-product.cart.dto';
 import { UpdateProductQuantityToCartDto } from './dtos/update-quantity.cart.dto';
 import { CartItem } from './entity/cart-item.entity';
 import { Cart } from './entity/cart.entity';
+import { LoggerApp } from '../../common/logger/logger.service';
 
 @Injectable()
 export class CartService extends BaseService<Cart> {
@@ -19,15 +20,16 @@ export class CartService extends BaseService<Cart> {
     private readonly cartItemRepository: Repository<CartItem>,
     private readonly usersService: UsersService,
     private readonly productService: ProductService,
+    private readonly loggerApp: LoggerApp,
   ) {
     super(cartRepository);
   }
 
   private async findCartByIsActive(user: User): Promise<Cart> {
-    return this.findOne({
+    return await this.findOne({
       relations: ['cartItems', 'cartItems.product'],
       where: {
-        user: { id: user.id },
+        user: user,
         isActive: true,
       },
     });
@@ -53,11 +55,23 @@ export class CartService extends BaseService<Cart> {
   public async getCart(userId: string): Promise<Cart> {
     const user = await this.usersService.findUserById(userId);
 
+
+
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    return this.findCartByIsActive(user);
+    const cart = await this.findCartByIsActive(user);
+
+
+
+    if (!cart) {
+      throw new NotFoundException('Carrito no encontrado');
+    }
+
+
+
+    return cart;
   }
 
   public async addProduct(
@@ -67,10 +81,6 @@ export class CartService extends BaseService<Cart> {
     const { productCode, quantity } = addProductToCartDto;
 
     const user = await this.usersService.findUserById(userId);
-
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
 
     const product = await this.productService.findProductByCode(productCode);
 
@@ -99,12 +109,13 @@ export class CartService extends BaseService<Cart> {
         quantity,
       });
 
+
       cart.cartItems.push(cartItem);
     }
 
     await this.cartItemRepository.save(cartItem);
 
-    return this.cartRepository.save(cart);
+    return await this.cartRepository.save(cart);
   }
 
   public async updateProductQuantity(
@@ -179,5 +190,25 @@ export class CartService extends BaseService<Cart> {
     }
 
     return this.cartRepository.save(cart);
+  }
+
+  public async clearCart(userId: string): Promise<Cart> {
+    const user = await this.usersService.findUserById(userId);
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    const cart = await this.getOrCreateCart(user);
+
+    if (!cart) {
+      throw new NotFoundException('Carrito no encontrado');
+    }
+
+    await this.cartItemRepository.delete({ cart: cart });
+    
+    cart.cartItems = [];
+
+    return await this.cartRepository.save(cart);
   }
 }

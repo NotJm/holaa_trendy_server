@@ -45,7 +45,7 @@ export class DataBaseExceptionsFilter implements ExceptionFilter {
       `TypeOrm Error: ${errorMessage['message']}`,
       exception.stack,
       'DataBaseExceptionsFilter',
-    );
+    );  
 
     response.status(status).json({
       error: {

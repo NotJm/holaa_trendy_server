@@ -316,7 +316,7 @@ export class ProductService extends BaseService<Product> {
     size?: string,
     minPrice?: number,
     maxPrice?: number,
-  ): Promise<Product[]> {
+  ): Promise<ProductResponseDto[]> {
     const whereConditions: any = {};
 
     whereConditions.category = { name: category };
@@ -338,10 +338,13 @@ export class ProductService extends BaseService<Product> {
       }
     }
 
-    return await this.find({
+    const productsFiltered = await this.find({
       relations: ['category', 'subCategories', 'sizes'],
       where: whereConditions,
     });
+
+
+    return productsFiltered.map((product) => toProductResponseDto(product));
   }
 
   /**

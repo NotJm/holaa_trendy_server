@@ -8,14 +8,14 @@ import {
 import { Repository } from 'typeorm';
 import { BaseService } from '../../common/base.service';
 import {
+  DAY_IN_MILLISECONDS,
   INCIDENTS_TYPE,
   INCIDENT_STATE,
   MAX_ATTEMPTS_STRONG,
 } from '../../common/constants/contants';
-import { IpInfoService } from '../../common/providers/ipinfo.service';
+import { IpInfoService } from '../../common/microservice/ipinfo.service';
 import { User } from '../users/entity/users.entity';
 import { Incident } from './entity/user-incident.entity';
-import { DAY_IN_MILLISECONDS } from '../../common/constants/contants';
 
 @Injectable()
 export class IncidentService extends BaseService<Incident> {

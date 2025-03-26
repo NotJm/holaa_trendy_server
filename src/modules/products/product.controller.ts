@@ -62,8 +62,6 @@ export class ProductController extends BaseController {
    * @param createProductsDto
    * @returns
    */
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles(ROLE.EMPLOYEE)
   @Post('create-many')
   async createManyProducts(
     @Body() createProductsDto: CreateManyProductsDto,
@@ -214,8 +212,6 @@ export class ProductController extends BaseController {
    * @param updateManyProductsDto Estructura para actualizar varios productos
    * @returns
    */
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles(ROLE.EMPLOYEE)
   @Put('update-many')
   async updateManyProducts(
     @Body() updateManyProductsDto: UpdateManyProductsDto,

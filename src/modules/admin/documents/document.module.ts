@@ -1,21 +1,14 @@
-import { MongooseModule } from '@nestjs/mongoose';
-import { DocumentController } from './document.controller';
-import { DrService as DocumentService } from './document.service';
 import { Module } from '@nestjs/common';
-import { DocumentRegulatory, DrSchema } from './schemas/document.schema';
 import { JwtService } from '@nestjs/jwt';
-import { AuditModule } from '../audit/audit.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { DocumentController } from './document.controller';
+import { RegulatoryDocumentService as DocumentService } from './document.service';
+import { RegulatoryDocument } from './entity/regulatory-document.entity';
 
 
 @Module({
   imports: [
-    AuditModule,
-    MongooseModule.forFeature([
-        {
-            name: DocumentRegulatory.name,
-            schema: DrSchema
-        }
-    ])
+    TypeOrmModule.forFeature([RegulatoryDocument])
   ],
   controllers: [DocumentController],
   providers: [DocumentService, JwtService],

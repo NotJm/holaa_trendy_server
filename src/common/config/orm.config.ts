@@ -8,6 +8,8 @@ import { RefreshToken } from '../../modules/auth/entity/refresh-token.entity';
 import { CartItem } from '../../modules/cart/entity/cart-item.entity';
 import { Cart } from '../../modules/cart/entity/cart.entity';
 import { Category } from '../../modules/categories/entity/category.entity';
+import { CategorySaleTrend } from '../../modules/categories/entity/category_sale_trend.entity';
+import { CategoryStockInitial } from '../../modules/categories/entity/category_stock_initial.entity';
 import { Color } from '../../modules/colors/entity/colors.entity';
 import { ProductImages } from '../../modules/products/entity/products-images.entity';
 import { Product } from '../../modules/products/entity/products.entity';
@@ -17,6 +19,7 @@ import { Purchase } from '../../modules/purchase/entity/purchase.entity';
 import { SaleHistory } from '../../modules/sales/entity/sale-history.entity';
 import { SaleItem } from '../../modules/sales/entity/sale-item.entity';
 import { Sale } from '../../modules/sales/entity/sale.entity';
+import { StockDepletionTime } from '../../modules/sales/entity/stock-depletion-time.entity';
 import { ShippingHistory } from '../../modules/shipping/entity/shipping-history.entity';
 import { Shipping } from '../../modules/shipping/entity/shipping.entity';
 import { Size } from '../../modules/sizes/entity/sizes.entity';
@@ -69,7 +72,11 @@ export const ormConfig = (
     SupplierProduct,
     NewArrivals,
     BestOffers,
-    BestSellers
+    BestSellers,
+    CategoryStockInitial,
+    CategorySaleTrend,
+    StockDepletionTime
   ],
-  synchronize: true,  
+  synchronize: true, 
+  
 });

@@ -2,8 +2,9 @@ import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { IpInfoService } from '../../common/microservice/ipinfo.service';
+import { PwnedService } from '../../common/microservice/pwned.service';
 import { CookieService } from '../../common/providers/cookie.service';
-import { PwnedService } from '../../common/providers/pwned.service';
 import { TokenService } from '../../common/providers/token.service';
 import { CategoryService } from '../categories/category.service';
 import { Category } from '../categories/entity/category.entity';
@@ -27,7 +28,11 @@ import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { CartItem } from './entity/cart-item.entity';
 import { Cart } from './entity/cart.entity';
-import { IpInfoService } from '../../common/providers/ipinfo.service';
+import { Argon2Service } from '../../common/providers/argon2.service';
+import { RedisService } from '../../common/microservice/redis.service';
+import { CategorySaleTrend } from '../categories/entity/category_sale_trend.entity';
+import { CategoryStockInitial } from '../categories/entity/category_stock_initial.entity';
+import { Address } from '../users/entity/user-address.entity';
 
 @Module({
   imports: [
@@ -45,7 +50,10 @@ import { IpInfoService } from '../../common/providers/ipinfo.service';
       CartItem,
       NewArrivals,
       BestOffers,
-      BestSellers
+      BestSellers,
+      CategoryStockInitial,
+      CategorySaleTrend,
+      Address
     ]),
   ],
   controllers: [CartController],
@@ -62,7 +70,9 @@ import { IpInfoService } from '../../common/providers/ipinfo.service';
     CookieService,
     TokenService,
     JwtService,
-    IpInfoService
+    IpInfoService,
+    Argon2Service,
+    RedisService
   ],
   exports: [CartService],
 })

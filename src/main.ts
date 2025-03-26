@@ -2,11 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import helmet from 'helmet';
-import xss from 'xss-clean';
-import requestIp from 'request-ip'
+import compression from 'compression'
 import cookieParser from 'cookie-parser';
-import { HttpExceptionsFilter } from './exceptions/http.exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,13 +14,10 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
-  app.use(xss());
+  app.use(compression());
 
-  app.use(helmet());
+  // TODO Implementar proteccion contra ataques XSS, CSRF, IP SPOOFING, DDOS, etc
 
-  app.use(requestIp.mw());
-
-  
 
   await app.listen(
     configService.get<number>('PORT'),
