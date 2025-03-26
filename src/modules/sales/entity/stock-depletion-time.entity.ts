@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn, ViewEntity } from 'TypeORM';
+import { Column, Entity, PrimaryGeneratedColumn, ViewEntity } from 'typeorm';
 
 
 @ViewEntity('stock_depletion_time', { synchronize: false })
