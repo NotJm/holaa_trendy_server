@@ -6,13 +6,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { JWT_AGE_IN_MINUTES } from 'src/common/constants/contants';
 import { IApiResponse } from 'src/common/interfaces/api.response.interface';
-import { AESService } from '../../common/providers/aes.service';
+import { formattedDate } from 'src/common/utils/formatted-date';
+import { LoggerApp } from '../../common/logger/logger.service';
 import { Argon2Service } from '../../common/providers/argon2.service';
 import { CookieService } from '../../common/providers/cookie.service';
 import { TokenService } from '../../common/providers/token.service';
 import { generateExpirationDate } from '../../common/utils/generate-expiration-date';
-import { generateRandomSecret } from '../../common/utils/generate-random-secret';
 import { MFAService } from '../mfa/mfa.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dtos/login.dto';
@@ -28,12 +29,20 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly tokenService: TokenService,
     private readonly argon2Service: Argon2Service,
-    private readonly aesService: AESService,
     private readonly activationService: ActivationService,
     private readonly mfaService: MFAService,
     private readonly cookieService: CookieService,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly loggerApp: LoggerApp,
   ) {}
+
+  async ensurePasswordMatches(
+    hashPassword: string,
+    password: string,
+  ): Promise<boolean> {
+    // Validate whether the passwords match
+    return await this.argon2Service.compare(hashPassword, password);
+  }
 
   /**
    * Handle the logic for user registration.
@@ -46,23 +55,13 @@ export class AuthService {
     const { username, password, email, phone } = signUpDto;
 
     // Ensures that no exists a user with same username or email
-    const user = await this.usersService.findUser({
-      where: [{ username: username }, { email: email }],
-    });
-
-    // If a user with same username or email exists, then throw exception
-    if (user) {
-      throw new ConflictException(
-        `${username} the account is already register`,
-      );
-    }
+    await this.usersService.isUserExists(username, password);
 
     // Ensures that the password isn't committed
-    await this.usersService.isPasswordPwned(password);
+    await this.usersService.isPasswordCommitted(password);
 
     // Hashing the password with the Argon2 algorithm
     const hashedPassword = await this.argon2Service.hash(password);
-
 
     // Creates a new user in the data base
     const newUser = await this.usersService.createUser({
@@ -76,13 +75,11 @@ export class AuthService {
     const token = this.tokenService.generate(newUser);
 
     // Generates the expiration date to validate the token
-    const expiresAt = generateExpirationDate(15);
+    const expiresAt = generateExpirationDate(JWT_AGE_IN_MINUTES);
 
     // Sends an account activation email to the user
     return await this.activationService.send(email, token, expiresAt);
   }
-
-  // TODO Implements temporary user blocking
 
   /**
    * Handles the logic for user authentication.
@@ -91,54 +88,64 @@ export class AuthService {
    * @returns The response to the client, including a JWT cookie for authentication.
    */
   async logIn(loginDto: LoginDto, res: Response, req: Request): Promise<void> {
-    // Retrieves the user's credentials
     const { username, password } = loginDto;
 
-    // Searches the user and retrieve it
-    const user = await this.usersService.findUser({
-      where: {
-        username: username,
-      },
-    });
+    const { ip, userAgent } = this.usersService.recoverUserIpAndUserAgent(req);
 
-    // If the user doesn't exist, throw a exception
+    const user = await this.usersService.findUserByUsername(username);
+
     if (!user) {
-      throw new ConflictException(
-        `Parece que no encontramos una cuenta con el usuario '${username}'. ¡Anímate a registrarte y únete a nosotros!`,
+      this.loggerApp.warn(
+        'Intento de inciar sesion: el usuario intento inciar sesion con unas credenciales incorrectas',
+        'AuthService',
       );
+      throw new ConflictException('El usuario no existe');
     }
 
-    // Validates whether the user account is activated
-    await this.usersService.userIsActivate(user.id);
+    await this.usersService.isUserLocked(user);
 
-    // Validate whether the passwords match
-    const isPasswordMatching = await this.argon2Service.compare(
+    const isPasswordMatching = await this.ensurePasswordMatches(
       user.password,
       password,
     );
 
     // If the password doesn't match, throw an exception
     if (!isPasswordMatching) {
-      throw new ConflictException('Nombre de usuario o contraseña incorrecta');
+      await this.usersService.registerIncident(user, ip, userAgent);
+
+      const hasExceeded = await this.usersService.checkAttemptsExceeded(user);
+
+      if (!hasExceeded) {
+        this.loggerApp.warn(
+          'Intento de inicio de sesion: El usuario no introducio la contraseña correcta',
+          'AuthService',
+        );
+
+        throw new ConflictException(
+          'Nombre de usuario o contraseña incorrecta',
+        );
+      }
+
+      await this.usersService.blockUser(user);
+
+      this.loggerApp.warn(
+        'Cuenta bloqueada: La cuenta del usuario ha sido bloqueada temporalmente por alcanzar el limite de intentos',
+        'AuthService',
+      );
+
+      throw new ConflictException(
+        `Usuario con cuenta bloqueada, se desbloqueara ${formattedDate(user.blockExpiresAt)}`,
+      );
     }
 
-    // Creates y sends a authentication token for the usuario
-    const token = this.tokenService.generate(user);
+    await this.usersService.isUserAccoundActived(user);
 
-    // Sends a authentication token
-    this.tokenService.send(res, token);
+    this.tokenService.generateAndSendToken(user, res);
 
-    // Sends a refresh authentication token for the user
-    const refreshToken = await this.refreshTokenService.createOne(
-      user,
-      req.ip,
-      req.get('user-agent') || '',
-    );
+    const refreshToken = await this.refreshTokenService.createOne(user, ip, userAgent );
 
-    // Sends a refresh authentication token
     this.refreshTokenService.send(res, refreshToken);
 
-    // Sends a OTP code to the user's email account
     // await this.mfaService.send(user.email, "LOGIN");
   }
 
@@ -191,10 +198,9 @@ export class AuthService {
 
     const hashedNewPassword = await this.argon2Service.hash(newPassword);
 
-    await this.usersService.updateUser(user.id, {
+    await this.usersService.updateOne(user.id, {
       password: hashedNewPassword,
     });
-
 
     return {
       status: HttpStatus.OK,

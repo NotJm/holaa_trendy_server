@@ -20,9 +20,7 @@ export class MFAService {
     email: string,
     useCase: 'LOGIN' | 'SIGNUP' | 'FORGOT_PASSWORD',
   ): Promise<void> {
-    const user = await this.userService.findUser({
-      where: { email: email },
-    });
+    const user = await this.userService.findUserByEmail(email);
 
     if (!user) {
       throw new InternalServerErrorException('El codigo OTP es invalido o ha expirado');

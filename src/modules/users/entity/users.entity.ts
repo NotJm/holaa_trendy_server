@@ -6,12 +6,12 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { ROLE } from '../../../common/constants/contants';
+import { ACCOUNT_STATE, ROLE } from '../../../common/constants/contants';
 import { RefreshToken } from '../../auth/entity/refresh-token.entity';
 import { Cart } from '../../cart/entity/cart.entity';
 import { Wishlist } from '../../wishlist/entity/wishlist.entity';
-import { Incidents } from './incidents.entity';
 import { Address } from './user-address.entity';
+import { Incident } from './user-incident.entity';
 
 @Entity('users')
 export class User {
@@ -38,13 +38,20 @@ export class User {
   })
   role?: ROLE;
 
-  @Column({ name: 'is_activated', type: 'boolean', nullable: false, default: false })
-  isActivated?: boolean;
+  @Column({
+    name: 'account_state',
+    type: 'enum',
+    enum: Object.values(ACCOUNT_STATE),
+    default: ACCOUNT_STATE.DESACTIVED,
+  })
+  accountState?: ACCOUNT_STATE;
 
-  @Column({ name: 'is_blocked', type: 'boolean', nullable: false, default: false })
-  isBlocked?: boolean;
-
-  @Column({ name: 'block_expires_at', type: 'time with time zone', nullable: true, default: null })
+  @Column({
+    name: 'block_expires_at',
+    type: 'timestamp with time zone',
+    nullable: true,
+    default: null,
+  })
   blockExpiresAt?: Date;
 
   @OneToOne(() => Wishlist, (wishlist) => wishlist.user)
@@ -57,8 +64,8 @@ export class User {
   @JoinColumn({ name: 'address_id' })
   addressId?: Address;
 
-  @OneToMany(() => Incidents, (incident) => incident.user, { nullable: true })
-  incidents?: Incidents[];
+  @OneToMany(() => Incident, (incident) => incident.user, { nullable: true })
+  incidents?: Incident[];
 
   @OneToOne(() => Cart, (cart) => cart.user)
   @JoinColumn()

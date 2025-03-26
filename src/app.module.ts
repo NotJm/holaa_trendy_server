@@ -8,8 +8,9 @@ import { AppService } from './app.service';
 import { CloudinaryModule } from './common/cloudinary/cloudinary.module';
 import { ormConfig } from './common/config/orm.config';
 import { throttlerConfig } from './common/config/throttler.config';
-import { AllDataBaseExceptionsFilter } from './exceptions/database.exception.filter';
-import { AllHttpExceptionsFilter } from './exceptions/http.exception.filter';
+import { LoggerModule } from './common/logger/logger.module';
+import { DataBaseExceptionsFilter } from './exceptions/database.exception.filter';
+import { HttpExceptionsFilter } from './exceptions/http.exception.filter';
 import { CorsMiddleware } from './middleware/cors.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { CartModule } from './modules/cart/cart.module';
@@ -23,7 +24,6 @@ import { SizesModule } from './modules/sizes/sizes.module';
 import { SubCategoriyModule } from './modules/sub-categories/sub-category.module';
 import { UsersModule } from './modules/users/users.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
-import { LoggerModule } from './common/logger/logger.module';
 
 @Module({
   imports: [
@@ -40,7 +40,6 @@ import { LoggerModule } from './common/logger/logger.module';
     ProductModule,
     AuthModule,
     UsersModule,
-    MFAModule,
     LoggerModule,
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
@@ -54,11 +53,11 @@ import { LoggerModule } from './common/logger/logger.module';
   providers: [
     {
       provide: APP_FILTER,
-      useClass: AllDataBaseExceptionsFilter,
+      useClass: DataBaseExceptionsFilter,
     },
     {
       provide: APP_FILTER,
-      useClass: AllHttpExceptionsFilter,
+      useClass: HttpExceptionsFilter,
     },
     AppService,
   ],

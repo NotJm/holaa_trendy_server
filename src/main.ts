@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import xss from 'xss-clean';
 import requestIp from 'request-ip'
 import cookieParser from 'cookie-parser';
+import { HttpExceptionsFilter } from './exceptions/http.exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

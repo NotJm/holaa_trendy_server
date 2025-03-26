@@ -3,8 +3,7 @@ import { ClassConstructor, plainToInstance } from 'class-transformer';
 import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
 
 export abstract class BaseService<T> {
-
-  protected repository: Repository<T>
+  protected repository: Repository<T>;
 
   constructor(repository: Repository<T>) {
     this.repository = repository;
@@ -13,13 +12,13 @@ export abstract class BaseService<T> {
   protected async findAll(): Promise<T[]> {
     return this.repository.find();
   }
-  
+
   protected async find(filter: FindManyOptions<T>): Promise<T[]> {
     return this.repository.find(filter);
   }
 
   protected async findOne(filter: FindOneOptions<T>): Promise<T> {
-    return this.repository.findOne(filter)
+    return this.repository.findOne(filter);
   }
 
   protected async findById(id: string): Promise<T> {
@@ -27,14 +26,17 @@ export abstract class BaseService<T> {
   }
 
   protected async create(data: Partial<T>): Promise<T> {
-    const clearData = plainToInstance(this.repository.target as ClassConstructor<T>, data);
+    try {
+      const clearData = plainToInstance(
+        this.repository.target as ClassConstructor<T>,
+        data,
+      );
 
-    const entity = this.repository.create(clearData);
+      const entity = this.repository.create(clearData);
 
-    if (entity) {
       return this.repository.save(entity);
-    } else {
-      throw new InternalServerErrorException('Error al momento de crear usuario')
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -42,7 +44,9 @@ export abstract class BaseService<T> {
     const entity = await this.findById(id);
 
     if (!entity) {
-      throw new InternalServerErrorException(`Entidad con la ID ${id} no encontrada`);
+      throw new InternalServerErrorException(
+        `Entidad con la ID ${id} no encontrada`,
+      );
     }
 
     Object.assign(entity, data);
@@ -55,23 +59,23 @@ export abstract class BaseService<T> {
     const entity = await this.findById(id);
 
     if (!entity) {
-      throw new InternalServerErrorException(`Entidad con la ID ${id} no encontrada`);
+      throw new InternalServerErrorException(
+        `Entidad con la ID ${id} no encontrada`,
+      );
     }
 
     return await this.repository.remove(entity);
-
   }
 
   protected async delete(filter: FindOneOptions): Promise<void> {
     const entity = await this.findOne(filter);
 
     if (!entity) {
-      throw new InternalServerErrorException(`No se pudo eliminar la entidad especificada`);
+      throw new InternalServerErrorException(
+        `No se pudo eliminar la entidad especificada`,
+      );
     }
 
     await this.repository.remove(entity);
   }
-
-
-
-} 
+}

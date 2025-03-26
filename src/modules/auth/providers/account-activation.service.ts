@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EmailService } from '../../../common/providers/email.service';
 import { UsersService } from '../../users/users.service';
+import { ACCOUNT_STATE } from 'src/common/constants/contants';
 
 @Injectable()
 export class ActivationService {
@@ -23,8 +24,6 @@ export class ActivationService {
    * @param userId The user's unique identification
    */
   async activate(userId: string): Promise<void> {
-    this.usersService.updateUser(userId, {
-      isActivated: true,
-    });
+    this.usersService.markUserAsActive(userId);
   }
 }

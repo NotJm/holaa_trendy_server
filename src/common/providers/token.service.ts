@@ -8,7 +8,6 @@ import { User } from '../../modules/users/entity/users.entity';
 
 @Injectable()
 export class TokenService {
-
   private readonly jwtOptions: JwtSignOptions = {
     expiresIn: JWT_AGE,
   };
@@ -17,6 +16,12 @@ export class TokenService {
     private readonly jwtService: JwtService,
     private readonly cookieService: CookieService,
   ) {}
+
+  public generateAndSendToken(user: User, res: Response): void {
+    const token = this.generate(user);
+
+    return this.send(res, token);
+  }
 
   public generate(user: User): string {
     const payload = { id: user.id, role: user.role };
@@ -31,7 +36,7 @@ export class TokenService {
     try {
       return this.jwtService.verify(token);
     } catch (err) {
-      throw new UnauthorizedException(`Invalid Token, reason ${err.message}`)
+      throw new UnauthorizedException(`Invalid Token, reason ${err.message}`);
     }
   }
 
@@ -39,10 +44,9 @@ export class TokenService {
     const decode = this.jwtService.decode<JwtPayload>(token);
 
     if (!decode) {
-      throw new UnauthorizedException("Invalid Token");
+      throw new UnauthorizedException('Invalid Token');
     }
 
     return decode;
-
   }
 }
