@@ -1,1 +1,11 @@
-[phases.build] nodejs_version = "20"
+[phases.setup]
+nixPkgs = ["nodejs-20_x", "openssl"]  # Instala Node.js 20 y OpenSSL
+
+[phases.install]
+cmds = ["pnpm install"]
+
+[phases.build]
+cmds = ["pnpm run build"]
+
+[start]
+cmd = "pnpm run start:prod"
