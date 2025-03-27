@@ -5,7 +5,7 @@ export const generateLink = (
   path: string,
   params?: Record<string, string | number>
 ): string => {
-  const baseUrl = `${configService.get<string>('HOSTNAME')}`;
+  const baseUrl = `${configService.get<string>('FRONTEND_URI')}`;
 
   if (params) {
     Object.keys(params).forEach(key => {
