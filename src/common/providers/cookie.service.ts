@@ -12,7 +12,7 @@ export class CookieService {
     sameSite: 'none',
     secure: true,
     path: '/',
-    maxAge: COOKIE_DEFAULT_AGE,
+    maxAge: 1 * 60 * 60 * 1000,
   };  
 
   /**
