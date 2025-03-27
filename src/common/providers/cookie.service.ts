@@ -9,10 +9,9 @@ export class CookieService {
    */
   private cookieOptions: CookieOptions = {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: false,
+    sameSite: 'none',
+    secure: true,
     path: '/',
-    domain: 'localhost',
     maxAge: COOKIE_DEFAULT_AGE,
   };  
 
