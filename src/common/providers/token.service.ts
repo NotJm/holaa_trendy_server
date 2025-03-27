@@ -69,7 +69,7 @@ export class TokenService {
   }
 
   public delete(res: Response, tokenName: string): void {
-    res.clearCookie(tokenName);
+    this.cookieService.delete(res, tokenName);
   }
 
   public get(req: Request): { accessToken: string; refreshToken: string } {

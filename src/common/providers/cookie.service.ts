@@ -32,7 +32,7 @@ export class CookieService {
    * @param name Nombre de la cookie
    */
   delete(res: Response, name: string) {
-    res.clearCookie(name);
+    res.clearCookie(name, this.cookieOptions);
   }
 
   /**
