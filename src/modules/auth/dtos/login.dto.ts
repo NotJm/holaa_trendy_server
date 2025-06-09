@@ -1,6 +1,7 @@
 import { IsNotEmpty } from "class-validator";
 
 /**
+ * Contiene las credenciales del cliente
  * @property {string} username - Nombre de usuario
  * @property {string} password - Contraseña del usuario
  */

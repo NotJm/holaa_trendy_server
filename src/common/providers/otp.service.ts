@@ -5,9 +5,11 @@ import { OTP_LIFE_TIME } from '../constants/contants';
 
 @Injectable()
 export class OtpService {
-  private readonly OTP_SECRET = this.configService.get<string>('OTP_SECRET');
+  private readonly OTP_SECRET: string; 
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {
+    this.OTP_SECRET = this.configService.get<string>('OTP_SECRET'); 
+  }
 
   private generate(): string {
     return speakeasy.totp({

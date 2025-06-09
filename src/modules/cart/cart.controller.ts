@@ -1,22 +1,21 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Header,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  UseGuards,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
+    UseGuards
 } from '@nestjs/common';
 import { BaseController } from 'src/common/base.controller';
-import { User } from 'src/common/decorators/user.decorator';
+import { UserId } from 'src/common/decorators/user.decorator';
 import { ROLE } from '../../common/constants/contants';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
 import { RoleGuard } from '../../common/guards/role.guard';
-import { IApiResponse } from '../../common/interfaces/api.response.interface';
+import { IApiResponse } from '../../common/interfaces/api-response.interface';
 import { CartService } from './cart.service';
 import { AddProductToCartDto } from './dtos/add-product.cart.dto';
 import { UpdateProductQuantityToCartDto } from './dtos/update-quantity.cart.dto';
@@ -31,7 +30,7 @@ export class CartController extends BaseController {
 
   @Post('add')
   async addProductToCart(
-    @User() userId: string,
+    @UserId() userId: string,
     @Body() addProductToCartDto: AddProductToCartDto,
   ): Promise<IApiResponse> {
     try {
@@ -51,7 +50,7 @@ export class CartController extends BaseController {
   }
 
   @Get()
-  async getCart(@User() userId: string): Promise<IApiResponse> {
+  async getCart(@UserId() userId: string): Promise<IApiResponse> {
     try {
       const cart = await this.cartService.getCart(userId);
 
@@ -67,7 +66,7 @@ export class CartController extends BaseController {
 
   @Put('update/quantity')
   async updateProductQuantityToCart(
-    @User() userId: string,
+    @UserId() userId: string,
     @Body() updateProductQuantityToCartDto: UpdateProductQuantityToCartDto,
   ): Promise<IApiResponse> {
     try {
@@ -88,7 +87,7 @@ export class CartController extends BaseController {
 
   @Delete('remove/:productCode')
   async removeProducToCart(
-    @User() userId: string,
+    @UserId() userId: string,
     @Param('productCode') productCode: string,
   ): Promise<IApiResponse> {
     try {

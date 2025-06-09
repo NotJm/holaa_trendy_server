@@ -1,7 +1,7 @@
 import { BadRequestException, Controller, HttpStatus, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BaseController } from '../base.controller';
-import { IApiResponse } from '../interfaces/api.response.interface';
+import { IApiResponse } from '../interfaces/api-response.interface';
 import { CloudinaryService } from './cloudinary.service';
 
 @Controller('upload')

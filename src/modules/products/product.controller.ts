@@ -1,30 +1,31 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  Query,
-  UseGuards,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
+    Query,
+    UseGuards
 } from '@nestjs/common';
+import { AuditLog } from 'src/common/decorators/audit-log.decorator';
 import { BaseController } from '../../common/base.controller';
-import { IApiResponse } from '../../common/interfaces/api.response.interface';
-import {
-  CreateManyProductsDto,
-  CreateProductDto,
-} from './dtos/create.product.dto';
-import {
-  UpdateManyProductsDto,
-  UpdateProductDto,
-} from './dtos/update.product.dto';
-import { ProductService } from './product.service';
+import { ACTIONS_TYPE, ROLE } from '../../common/constants/contants';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { ROLE } from '../../common/constants/contants';
 import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
 import { RoleGuard } from '../../common/guards/role.guard';
+import { IApiResponse } from '../../common/interfaces/api-response.interface';
+import {
+    CreateManyProductsDto,
+    CreateProductDto,
+} from './dtos/create.product.dto';
+import {
+    UpdateManyProductsDto,
+    UpdateProductDto,
+} from './dtos/update.product.dto';
+import { ProductService } from './product.service';
 
 @Controller('products')
 export class ProductController extends BaseController {
@@ -39,6 +40,11 @@ export class ProductController extends BaseController {
    */
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(ROLE.EMPLOYEE)
+  @AuditLog({
+    action: ACTIONS_TYPE.CREATE,
+    module: 'products',
+    getEntityId: (res) => res.id,
+  })
   @Post('create')
   async createProduct(
     @Body() createProductDto: CreateProductDto,
@@ -62,6 +68,13 @@ export class ProductController extends BaseController {
    * @param createProductsDto
    * @returns
    */
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE)
+  @AuditLog({
+    action: ACTIONS_TYPE.CREATE,
+    module: 'products',
+    getEntityId: (res) => res.id,
+  })
   @Post('create-many')
   async createManyProducts(
     @Body() createProductsDto: CreateManyProductsDto,
@@ -189,6 +202,11 @@ export class ProductController extends BaseController {
    */
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(ROLE.EMPLOYEE)
+  @AuditLog({
+    action: ACTIONS_TYPE.UPDATE,
+    module: 'products',
+    getEntityId: (res) => res.id 
+  })
   @Put('update')
   async updateProduct(
     @Body() updateProductDto: UpdateProductDto,
@@ -213,6 +231,11 @@ export class ProductController extends BaseController {
    * @returns
    */
   @Put('update-many')
+  @AuditLog({
+    action: ACTIONS_TYPE.UPDATE,
+    module: 'products',
+    getEntityId: (res) => res.id,
+  })
   async updateManyProducts(
     @Body() updateManyProductsDto: UpdateManyProductsDto,
   ): Promise<IApiResponse> {
@@ -238,6 +261,11 @@ export class ProductController extends BaseController {
    */
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(ROLE.EMPLOYEE)
+  @AuditLog({
+    action: ACTIONS_TYPE.DELETE,
+    module: 'products',
+    getEntityId: (res) => res.id,
+  })
   @Delete('delete/:code')
   async deleteProduct(@Param('code') code: string): Promise<IApiResponse> {
     try {
@@ -259,6 +287,11 @@ export class ProductController extends BaseController {
    */
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(ROLE.EMPLOYEE)
+  @AuditLog({
+    action: ACTIONS_TYPE.DELETE,
+    module: 'products',
+    getEntityId: (res) => res.id,
+  })
   @Delete('delete-many')
   async deleteManyProducts(
     @Body('codes') codes: string[],

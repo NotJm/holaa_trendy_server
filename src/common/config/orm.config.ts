@@ -4,7 +4,6 @@ import { BestOffers } from 'src/modules/products/entity/best-offers.entity';
 import { BestSellers } from 'src/modules/products/entity/best-sellers.entity';
 import { NewArrivals } from 'src/modules/products/entity/new-arrivals.entity';
 import { User } from 'src/modules/users/entity/users.entity';
-import { RefreshToken } from '../../modules/auth/entity/refresh-token.entity';
 import { CartItem } from '../../modules/cart/entity/cart-item.entity';
 import { Cart } from '../../modules/cart/entity/cart.entity';
 import { Category } from '../../modules/categories/entity/category.entity';
@@ -29,9 +28,10 @@ import { SupplierProduct } from '../../modules/suppliers/entity/suppliers-produc
 import { Supplier } from '../../modules/suppliers/entity/suppliers.entity';
 import { Address } from '../../modules/users/entity/user-address.entity';
 import { Incident } from '../../modules/users/entity/user-incident.entity';
-import { UserOtp } from '../../modules/users/entity/user-otp.entity';
 import { WishListItem } from '../../modules/wishlist/entity/wishlist-item.entity';
 import { Wishlist } from '../../modules/wishlist/entity/wishlist.entity';
+import { Audit } from '../../modules/audit/entity/audit.entity';
+import { RefreshToken } from 'src/modules/auth/entity/refresh-token.entity';
 
 export const ormConfig = (
   configService: ConfigService,
@@ -46,8 +46,6 @@ export const ormConfig = (
   entities: [
     User,
     Address,
-    UserOtp,
-    RefreshToken,
     Incident,
     Product,
     Category,
@@ -75,8 +73,9 @@ export const ormConfig = (
     BestSellers,
     CategoryStockInitial,
     CategorySaleTrend,
-    StockDepletionTime
+    StockDepletionTime,
+    Audit,
+    RefreshToken,
   ],
-  synchronize: true, 
-  
+  synchronize: true,
 });

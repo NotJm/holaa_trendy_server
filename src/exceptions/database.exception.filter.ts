@@ -9,6 +9,7 @@ import {
   EntityNotFoundError,
   EntityPropertyNotFoundError,
   QueryFailedError,
+  TypeORMError,
 } from 'typeorm';
 import { LoggerApp } from '../common/logger/logger.service';
 
@@ -17,6 +18,7 @@ import { LoggerApp } from '../common/logger/logger.service';
   EntityNotFoundError,
   EntityPropertyNotFoundError,
   EntityPropertyNotFoundError,
+  TypeORMError,
 )
 export class DataBaseExceptionsFilter implements ExceptionFilter {
   constructor(private readonly loggerApp: LoggerApp) {}
@@ -45,7 +47,7 @@ export class DataBaseExceptionsFilter implements ExceptionFilter {
       `TypeOrm Error: ${errorMessage['message']}`,
       exception.stack,
       'DataBaseExceptionsFilter',
-    );  
+    );
 
     response.status(status).json({
       error: {

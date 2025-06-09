@@ -1,21 +1,19 @@
 import {
-  Body,
-  Controller,
-  Get,
-  HttpStatus,
-  Post,
-  UseGuards,
+    Controller,
+    Get,
+    HttpStatus,
+    Post,
+    UseGuards
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
-import { RoleGuard } from '../../common/guards/role.guard';
-import { User } from '../../common/decorators/user.decorator';
+import { CategoryId } from 'src/common/decorators/category.decorator';
+import { IApiResponse } from 'src/common/interfaces/api-response.interface';
 import { BaseController } from '../../common/base.controller';
-import { IApiResponse } from 'src/common/interfaces/api.response.interface';
-import { SaleService } from './sale.service';
 import { ROLE } from '../../common/constants/contants';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { CategoryId } from 'src/common/decorators/category.decorator';
-import { SaleByCategoryResponseDto } from './dtos/sale-by-category.response.dto';
+import { UserId } from '../../common/decorators/user.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
+import { RoleGuard } from '../../common/guards/role.guard';
+import { SaleService } from './sale.service';
 
 @Controller('sales')
 @UseGuards(JwtAuthGuard, RoleGuard)
@@ -26,7 +24,7 @@ export class SaleController extends BaseController {
 
   @Post('add')
   @Roles(ROLE.USER)
-  async add(@User() userId: string): Promise<IApiResponse> {
+  async add(@UserId() userId: string): Promise<IApiResponse> {
     try {
       const cart = await this.saleService.add(userId);
 

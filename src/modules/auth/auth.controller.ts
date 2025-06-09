@@ -10,7 +10,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { IApiResponse } from 'src/common/interfaces/api.response.interface';
+import { IApiRequest } from 'src/common/interfaces/api-request.interface';
+import { IApiResponse } from 'src/common/interfaces/api-response.interface';
 import { BaseController } from '../../common/base.controller';
 import { ROLE } from '../../common/constants/contants';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -35,12 +36,9 @@ export class AuthController extends BaseController {
    * @returns Response to the client
    */
   @Post('signup')
-  async signUp(
-    @Body() signUpDto: SignUpDto,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<IApiResponse> {
+  async signUp(@Body() signUpDto: SignUpDto): Promise<IApiResponse> {
     try {
-      await this.authService.signUp(signUpDto, res);
+      await this.authService.signUp(signUpDto);
 
       return {
         status: HttpStatus.OK,
@@ -72,7 +70,7 @@ export class AuthController extends BaseController {
   }
 
   /**
-   * Handles the logic for user login
+   * Endpoint that handles logic for user login account
    * @summary This method is used to login a user in the system
    * @param loginDto Contains information to login a user
    * @param res Response to the client
@@ -82,16 +80,16 @@ export class AuthController extends BaseController {
   @Post('login')
   async logIn(
     @Body() loginDto: LoginDto,
-    @Res({ passthrough: true }) res,
-    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: IApiRequest,
   ): Promise<IApiResponse> {
     try {
       await this.authService.logIn(loginDto, res, req);
 
       return {
         status: HttpStatus.OK,
-        message:
-          'Para continuar, por favor verifica tu identidad con el link de verificacion que te enviamos a tu correo electronico.',
+        message: `¡Bienvenido, ${loginDto.username}!
+        Estamos felices de verte de nuevo en HOLAA Trendy. ¡Disfruta de tus compras!`,
       };
     } catch (error) {
       return this.handleError(error);
@@ -99,7 +97,7 @@ export class AuthController extends BaseController {
   }
 
   /**
-   * Handles the logic for sending a verification code to the user's phone number
+   * Endpoint that handles the logic for sending a verification code to the user's phone number
    * @param to The user's phone number
    * @param res Response to the client
    * @returns A promise that resolves when the verification code it send
@@ -110,7 +108,7 @@ export class AuthController extends BaseController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<IApiResponse> {
     try {
-      await this.authService.sendSms(sendSmsDto.phone);
+      await this.authService.sendSMS(sendSmsDto.phone);
 
       return {
         status: HttpStatus.OK,
@@ -135,7 +133,11 @@ export class AuthController extends BaseController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<IApiResponse> {
     try {
-      await this.authService.verifySms(verifySmsDto.phone, verifySmsDto.code, res);
+      await this.authService.verifySMS(
+        verifySmsDto.phone,
+        verifySmsDto.code,
+        res,
+      );
 
       return {
         status: HttpStatus.OK,
@@ -173,7 +175,7 @@ export class AuthController extends BaseController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(ROLE.USER, ROLE.ADMIN, ROLE.EMPLOYEE, ROLE.SUPPORT)
   async logout(
-    @Req() req: Request,
+    @Req() req: IApiRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
     return await this.authService.logout(res, req);
@@ -228,44 +230,40 @@ export class AuthController extends BaseController {
     }
   }
 
+  /**
+   * Handles the logic for checking the user's session 
+   * @param req A request object
+   * @returns A promise that resolves IApiResponse containing the response data
+   */
   @Post('check/session')
-  async checkSession(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<IApiResponse> {
+  async checkSession(@Req() req: IApiRequest): Promise<IApiResponse> {
     try {
-      const { active, role } = await this.authService.checkSession(req, res);
+      const { active, role } = await this.authService.checkSession(req);
 
       return {
         status: HttpStatus.OK,
         data: {
-          authenticate: active,
+          authenticated: active,
           role: role,
         },
       };
     } catch (error) {
-      return {
-        status: HttpStatus.UNAUTHORIZED,
-        data: {
-          authenticate: false,
-          role: null,
-        },
-      };
+      this.handleError(error);
     }
   }
 
   @Post('refresh/session')
   async refreshToken(
-    @Req() req: Request,
+    @Req() req: IApiRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<IApiResponse> {
     try {
-      const revoked = await this.authService.refreshToken(req, res);
+      await this.authService.refreshToken(req, res);
 
       return {
         status: HttpStatus.OK,
         data: {
-          revoke: revoked,
+          revoked: true,
         },
       };
     } catch (error) {

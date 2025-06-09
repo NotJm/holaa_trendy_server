@@ -25,8 +25,8 @@ export class Address {
   colony: string;
 
   @Column({ nullable: false, default: '' })
- description: string;
+  description: string;
 
- @OneToOne(() => User, (user) => user.address)
- user: User;
+  @OneToOne(() => User, (user) => user.address)
+  user: User;
 }

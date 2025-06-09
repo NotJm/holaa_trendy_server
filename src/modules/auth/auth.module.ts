@@ -3,41 +3,29 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CookieService } from 'src/common/providers/cookie.service';
-import { EmailService } from 'src/common/providers/email.service';
-
-import { JwtActivationStrategy } from 'src/common/strategies/jwt.activation.strategy';
 import { jwtConfig } from '../../common/config/jwt.config';
-import { IpInfoService } from '../../common/microservice/ipinfo.service';
-import { PwnedService } from '../../common/microservice/pwned.service';
-import { AESService } from '../../common/providers/aes.service';
-import { Argon2Service } from '../../common/providers/argon2.service';
+import { TwilioService } from '../../common/microservice/twilio.service';
+import { CookieService } from '../../common/providers/cookie.service';
+import { EmailService } from '../../common/providers/email.service';
 import { HbsService } from '../../common/providers/hbs.service';
-import { OtpService } from '../../common/providers/otp.service';
-import { TokenService } from '../../common/providers/token.service';
 import { JwtStrategy } from '../../common/strategies/jwt.strategy';
+import { Address } from '../users/entity/user-address.entity';
 import { Incident } from '../users/entity/user-incident.entity';
-import { UserOtp } from '../users/entity/user-otp.entity';
 import { User } from '../users/entity/users.entity';
-import { IncidentService } from '../users/incident.service';
-import { UsersService } from '../users/users.service';
+import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { RefreshToken } from './entity/refresh-token.entity';
 import { AccountActivationService } from './providers/account-activation.service';
 import { RefreshTokenService } from './providers/refresh-token.service';
-import { SMSVerificationService } from './providers/sms-verification.service';
-import { TwilioService } from '../../common/microservice/twilio.service';
-import { EmailVerificationService } from './providers/email-verification.service';
-import { JwtVerificationStrategy } from 'src/common/strategies/jwt.verfication.strategy';
 import { SessionService } from './providers/session.service';
-import { RedisService } from '../../common/microservice/redis.service';
-import { Address } from '../users/entity/user-address.entity';
+import { TokenService } from './providers/token.service';
+import { VerificationService } from './providers/verification.service';
 
 @Module({
   imports: [
+    UsersModule,
     HttpModule,
-    TypeOrmModule.forFeature([User, UserOtp, Incident, RefreshToken, Address]),
+    TypeOrmModule.forFeature([User, Incident, Address, RefreshTokenService]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => jwtConfig(configService),
@@ -48,26 +36,15 @@ import { Address } from '../users/entity/user-address.entity';
   providers: [
     AuthService,
     JwtStrategy,
-    JwtActivationStrategy,
-    JwtVerificationStrategy,
-    UsersService,
-    PwnedService,
-    CookieService,
     EmailService,
     TokenService,
-    Argon2Service,
-    AESService,
-    AccountActivationService,
-    SMSVerificationService,
-    OtpService,
-    IncidentService,
     RefreshTokenService,
-    IpInfoService,
+    CookieService,
+    AccountActivationService,
     HbsService,
     TwilioService,
-    EmailVerificationService,
     SessionService,
-    RedisService
+    VerificationService,
   ],
   exports: [AuthService],
 })

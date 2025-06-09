@@ -1,37 +1,29 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { IpInfoService } from '../../common/microservice/ipinfo.service';
-import { PwnedService } from '../../common/microservice/pwned.service';
-import { RedisService } from '../../common/microservice/redis.service';
-import { Argon2Service } from '../../common/providers/argon2.service';
-import { CookieService } from '../../common/providers/cookie.service';
-import { TokenService } from '../../common/providers/token.service';
-import { CartService } from '../cart/cart.service';
+import { AuthModule } from '../auth/auth.module';
+import { CartModule } from '../cart/cart.module';
 import { CartItem } from '../cart/entity/cart-item.entity';
 import { Cart } from '../cart/entity/cart.entity';
-import { CategoryService } from '../categories/category.service';
 import { Category } from '../categories/entity/category.entity';
 import { CategorySaleTrend } from '../categories/entity/category_sale_trend.entity';
 import { CategoryStockInitial } from '../categories/entity/category_stock_initial.entity';
-import { ColorsService } from '../colors/colors.service';
+import { ColorsModule } from '../colors/colors.module';
 import { Color } from '../colors/entity/colors.entity';
 import { BestOffers } from '../products/entity/best-offers.entity';
 import { BestSellers } from '../products/entity/best-sellers.entity';
 import { NewArrivals } from '../products/entity/new-arrivals.entity';
 import { ProductImages } from '../products/entity/products-images.entity';
 import { Product } from '../products/entity/products.entity';
-import { ProductService } from '../products/product.service';
+import { ProductModule } from '../products/product.module';
 import { Size } from '../sizes/entity/sizes.entity';
-import { SizesService } from '../sizes/sizes.service';
+import { SizesModule } from '../sizes/sizes.module';
 import { SubCategory } from '../sub-categories/entity/sub-categories.entity';
-import { SubCategoryService } from '../sub-categories/sub-category.service';
+import { SubCategoryModule } from '../sub-categories/sub-category.module';
 import { Address } from '../users/entity/user-address.entity';
 import { Incident } from '../users/entity/user-incident.entity';
 import { User } from '../users/entity/users.entity';
-import { IncidentService } from '../users/incident.service';
-import { UsersService } from '../users/users.service';
+import { UsersModule } from '../users/users.module';
 import { SaleItem } from './entity/sale-item.entity';
 import { Sale } from './entity/sale.entity';
 import { StockDepletionTime } from './entity/stock-depletion-time.entity';
@@ -41,6 +33,13 @@ import { SaleService } from './sale.service';
 @Module({
   imports: [
     HttpModule,
+    AuthModule,
+    UsersModule,
+    CartModule,
+    ProductModule,
+    SubCategoryModule,
+    ColorsModule,
+    SizesModule,
     TypeOrmModule.forFeature([
       Sale,
       SaleItem,
@@ -60,27 +59,11 @@ import { SaleService } from './sale.service';
       CategoryStockInitial,
       CategorySaleTrend,
       Address,
-      StockDepletionTime
+      StockDepletionTime,
     ]),
   ],
   controllers: [SaleController],
-  providers: [
-    SaleService,
-    CartService,
-    CategoryService,
-    SubCategoryService,
-    ColorsService,
-    SizesService,
-    UsersService,
-    ProductService,
-    PwnedService,
-    IncidentService,
-    CookieService,
-    TokenService,
-    JwtService,
-    IpInfoService,
-    Argon2Service,
-    RedisService,
-  ],
+  providers: [SaleService],
+  exports: [SaleService],
 })
 export class SaleModule {}

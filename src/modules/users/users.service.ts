@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  HttpStatus,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -18,28 +17,27 @@ import {
   INCIDENTS_TYPE,
   MAX_ATTEMPTS_IP_BAN,
 } from '../../common/constants/contants';
-import { IApiResponse } from '../../common/interfaces/api.response.interface';
 import { LoggerApp } from '../../common/logger/logger.service';
 import { PwnedService } from '../../common/microservice/pwned.service';
-import { CookieService } from '../../common/providers/cookie.service';
 import {
   ProfileResponseDto,
   toProfileResponseDto,
 } from './dtos/profile.response.dto';
 import { RegisterAddressDto } from './dtos/register-address.dto';
+import { toUserResponseDto, UserResponseDto } from './dtos/user.response.dto';
+import { Address } from './entity/user-address.entity';
 import { User } from './entity/users.entity';
 import { IncidentService } from './incident.service';
-import { Address } from './entity/user-address.entity';
 
 @Injectable()
 export class UsersService extends BaseService<User> {
   constructor(
-    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Address)
     private readonly addressRepository: Repository<Address>,
     private readonly pwnedService: PwnedService,
     private readonly incidentService: IncidentService,
-    private readonly cookieService: CookieService,
     private readonly argon2Service: Argon2Service,
     private readonly loggerApp: LoggerApp,
   ) {
@@ -203,31 +201,19 @@ export class UsersService extends BaseService<User> {
     return await this.argon2Service.hash(password);
   }
 
-  async verifyPassword(
+  async isPasswordMatch(
     password: string,
     hashPassword: string,
   ): Promise<boolean> {
     return await this.argon2Service.compare(hashPassword, password);
   }
 
-  async getUserData(
+  async getUserById(
     userId: string,
-  ): Promise<{ username: string; email: string; avatar: string }> {
+  ): Promise<UserResponseDto> {
     const user = await this.findUserById(userId);
 
-    if (!user) {
-      this.loggerApp.warn(
-        'Intento de obtener el avatar de un usuario que no existe',
-        'UserService',
-      );
-      throw new NotFoundException('Usuario no encontrado');
-    }
-
-    return {
-      username: user.username,
-      email: user.email,
-      avatar: `https://ui-avatars.com/api/?name=${user.username}`,
-    };
+    return toUserResponseDto(user);
   }
 
   async getProfile(userId: string): Promise<ProfileResponseDto> {

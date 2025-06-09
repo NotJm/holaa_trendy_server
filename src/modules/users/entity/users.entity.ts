@@ -7,11 +7,12 @@ import {
     PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ACCOUNT_STATE, ROLE } from '../../../common/constants/contants';
-import { RefreshToken } from '../../auth/entity/refresh-token.entity';
 import { Cart } from '../../cart/entity/cart.entity';
 import { Wishlist } from '../../wishlist/entity/wishlist.entity';
 import { Address } from './user-address.entity';
 import { Incident } from './user-incident.entity';
+import { Audit } from '../../audit/entity/audit.entity'
+import { RefreshToken } from 'src/modules/auth/entity/refresh-token.entity';
 
 @Entity('users')
 export class User {
@@ -54,11 +55,11 @@ export class User {
   })
   blockExpiresAt?: Date;
 
-  @OneToOne(() => Wishlist, (wishlist) => wishlist.user)
-  wishlist?: Wishlist[];
-
   @OneToMany(() => RefreshToken, (refreshToken) => refreshToken.user)
   refreshTokens?: RefreshToken[];
+
+  @OneToOne(() => Wishlist, (wishlist) => wishlist.user)
+  wishlist?: Wishlist[];
 
   @OneToOne(() => Address, (address) => address.user)
   @JoinColumn({ name: 'address_id' })

@@ -9,7 +9,7 @@ import {
     Put,
 } from '@nestjs/common';
 import { BaseController } from '../../common/base.controller';
-import { IApiResponse } from '../../common/interfaces/api.response.interface';
+import { IApiResponse } from '../../common/interfaces/api-response.interface';
 import {
     CreateManySubCategoriesDto,
     CreateSubCategoryDto,

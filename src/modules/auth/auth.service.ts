@@ -1,72 +1,46 @@
-import {
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { Request, Response } from 'express';
-import {
-  COOKIE_BY_ROLE,
-  JWT_BY_ROLE,
-  JWT_DEFAULT_AGE_AS_NUMBER,
-  REFRESH_THRESHOLD,
-  ROLE,
-} from '../../common/constants/contants';
+import { IApiRequest } from 'src/common/interfaces/api-request.interface';
+import { ROLE } from '../../common/constants/contants';
 import { LoggerApp } from '../../common/logger/logger.service';
-import { RedisService } from '../../common/microservice/redis.service';
-import { TokenService } from '../../common/providers/token.service';
-import { generateExpirationDate } from '../../common/utils/generate-expiration-date';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dtos/login.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SignUpDto } from './dtos/signup.dto';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { AccountActivationService } from './providers/account-activation.service';
-import { EmailVerificationService } from './providers/email-verification.service';
 import { RefreshTokenService } from './providers/refresh-token.service';
 import { SessionService } from './providers/session.service';
-import { SMSVerificationService } from './providers/sms-verification.service';
+import { VerificationService } from './providers/verification.service';
+import { ISession } from './interfaces/session.interface';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly loggerApp: LoggerApp,
     private readonly usersService: UsersService,
-    private readonly tokenService: TokenService,
-    private readonly redisService: RedisService,
     private readonly sessionService: SessionService,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly verificationService: VerificationService,
     private readonly accountActivationService: AccountActivationService,
-    private readonly smsVerificationService: SMSVerificationService,
-    private readonly emailVerificationService: EmailVerificationService,
   ) {}
-
-  private hasSessionExceededThreshold(
-    expirationInMiliseconds: number,
-  ): boolean {
-    const currentTime = Date.now();
-
-    const sessionDuration = expirationInMiliseconds - currentTime;
-
-    return sessionDuration < REFRESH_THRESHOLD;
-  }
 
   /**
    * Handle the logic for user registration.
-   * Validates input data, hashes the password, and create a new user in the database
+   * @summary Validates input data, hashes the password, and create a new user in the database
    * @param signUpDto DTO contains user registration details
    * @returns A promise thant resolve when the user is created sucessfully
    */
-  async signUp(signUpDto: SignUpDto, res: Response): Promise<void> {
+  async signUp(signUpDto: SignUpDto): Promise<void> {
     const { username, password, email, phone } = signUpDto;
 
     if (await this.usersService.isUserExists(username, email, phone)) {
       this.loggerApp.warn(
-        `Intento de registro fallido: la cuenta del usuario ya existe`,
+        `Intento de registro de usuario: El usuario esta asociado a una cuenta`,
         'AuthService',
       );
 
       throw new ConflictException(
-        'Este correo ya está asociado a una cuenta. ¿Olvidaste tu contraseña?',
+        'El nombre de usuario esta asociado a una cuenta. ¿Olvido su contraseña?',
       );
     }
 
@@ -81,11 +55,9 @@ export class AuthService {
       phone: phone,
     });
 
-    const token = this.tokenService.generate({ userId: newUser.id });
-
-    await this.redisService.set(`verify:${token}`, { userId: newUser.id }, 600);
-
-    const expiresAt = generateExpirationDate(JWT_DEFAULT_AGE_AS_NUMBER);
+    const { token, expiresAt } = await this.accountActivationService.generate(
+      newUser.id,
+    );
 
     return await this.accountActivationService.send(
       username,
@@ -96,25 +68,18 @@ export class AuthService {
   }
 
   /**
-   * Handles the logic for user account activation
-   * @param userId Unique Identification of the user
-   * @returns A promise that resolves when user account is successfully activated
-   */
-  async activateAccount(token: string): Promise<void> {
-    return await this.accountActivationService.activate(token);
-  }
-
-  /**
-   * Handles the logic for user authentication.
-   * @param loginDto The DTO containing the user's credentials (username and password).
-   * @param res The response object to send back to the client.
-   * @returns The response to the client, including a JWT cookie for authentication.
+   * Handles the logic for the user's authentication
+   * @param loginDto A DTO that containing the user's credentials
+   * @param res A response object 
+   * @param useVerficiationSession A flag for controller if the user should verify him session after of login
+   * @returns A promise that resolves when the users successfully login 
    */
   async logIn(
     loginDto: LoginDto,
     res: Response,
-    req: Request,
-  ): Promise<string> {
+    req: IApiRequest,
+    useVerficiationSession: boolean = false,
+  ): Promise<void> {
     const { username, password } = loginDto;
 
     const { ip, userAgent } = this.usersService.recoverUserIpAndUserAgent(req);
@@ -123,7 +88,7 @@ export class AuthService {
 
     await this.usersService.isUserLocked(user);
 
-    const isPasswordMatching = await this.usersService.verifyPassword(
+    const isPasswordMatching = await this.usersService.isPasswordMatch(
       password,
       user.password,
     );
@@ -136,79 +101,48 @@ export class AuthService {
 
     await this.usersService.isUserAccountActived(user);
 
-    const token = this.tokenService.generate({ userId: user.id });
+  
+    if (!useVerficiationSession) {
+      return await this.sessionService.startSession(user, res);
+    }
 
-    const expiresAt = generateExpirationDate(JWT_DEFAULT_AGE_AS_NUMBER);
-
-    await this.emailVerificationService.send(
-      user.username,
-      user.email,
-      expiresAt,
-      token,
-    );
-
-    return user.role;
+    return await this.verificationService.byVerificationLink(user);
   }
 
-  async startSession(token: string, res: Response): Promise<void> {
-    return await this.sessionService.start(token, res);
+  /**
+   * Handles the logic for starting a session
+   * @summary This method is used to start a session for a user
+   * @param token - An unique token to identify the session
+   * @param res - The response object to send back to the client
+   * @returns A promise that resolves when the session is started
+   * @throws UnauthorizedException if the token is invalid or expired
+   */
+  async startSession(
+    token: string,
+    res: Response,
+    useVerficiationAccount: boolean = false,
+  ): Promise<void> {
+    if (!useVerficiationAccount) return;
+
+    return await this.sessionService.startSession(null, res, token, true);
   }
 
   /**
    * Handles the logic for logging out a user
+   * @summary This method is user to log out a user
    * @param res Response to the client
    * @param req Request from the client
-   * @returns Response to the client
+   * @returns A promise that resolves when the user is logged out
+   * @throws UnauthorizedException if the refresh token is invalid or expired
    */
-  async logout(res: Response, req: Request): Promise<void> {
-    const { accessToken, refreshToken } = this.tokenService.get(req);
-
-    if (!accessToken || !refreshToken) {
-      this.loggerApp.warn(
-        'Intento de cerrar la sesion del usuario: El usuario no esta autenticado',
-        'AuthService',
-      );
-
-      throw new UnauthorizedException('Su token es invalido o expiro');
-    }
-    await this.redisService.del(`refresh:${refreshToken}`);
-
-    this.tokenService.delete(res, 'trendy_session');
-    this.tokenService.delete(res, 'trendy_refresh_session');
-  }
-
-  async sendSms(phone: string): Promise<void> {
-    return await this.smsVerificationService.send(phone);
-  }
-
-  async verifySms(phone: string, code: string, res: Response): Promise<void> {
-    return await this.smsVerificationService.verify(phone, code, res);
-  }
-
-  async sendRecoveryLink(email: string, res: Response): Promise<void> {
-    const user = await this.usersService.findUserByEmail(email);
-
-    const sessionId = await this.sessionService.generateTemporarySession(
-      user.id,
-    );
-
-    this.sessionService.send(sessionId, res);
-
-    const expiresAt = generateExpirationDate(JWT_DEFAULT_AGE_AS_NUMBER);
-
-    return await this.emailVerificationService.send(
-      user.username,
-      email,
-      expiresAt,
-      undefined,
-      false,
-    );
+  async logout(res: Response, req: IApiRequest): Promise<void> {
+    this.sessionService.stopSession(res, req);
   }
 
   /**
-   * Metodo que permite restablecer y finalizar la recuperacion de contraseña
-   * @param resetPasswordDto
-   * @returns
+   * Handles the logic for reseting the user's password
+   * @param resetPasswordDto A DTO that containing the user's new password 
+   * @returns A promise that don't resolves nothing
    */
   async resetPassword(
     resetPasswordDto: ResetPasswordDto,
@@ -217,22 +151,11 @@ export class AuthService {
   ): Promise<void> {
     const { newPassword } = resetPasswordDto;
 
-    const sessionId = this.sessionService.verify(req);
+    const sessionId = this.sessionService.verifySession(req);
 
     const userId = await this.sessionService.get(sessionId);
 
     const user = await this.usersService.findUserById(userId);
-
-    if (!user) {
-      this.loggerApp.warn(
-        'Intento de restablecer contraseña: El usuario no existe',
-        'AuthService',
-      );
-
-      throw new ConflictException(
-        'No encontramos un usuario con esa informacion',
-      );
-    }
 
     const hashedNewPassword = await this.usersService.hashPassword(newPassword);
 
@@ -241,62 +164,78 @@ export class AuthService {
     return await this.sessionService.del(sessionId, res);
   }
 
-  async checkSession(
-    req: Request,
-    res: Response,
-  ): Promise<{ active: boolean; role: ROLE }> {
-    const { accessToken, refreshToken } = this.tokenService.get(req);
-
-    const userData = await this.tokenService.verify<JwtPayload>(accessToken);
-
-    const user = await this.usersService.findUserById(userData.id);
-
-    return { active: true, role: user.role };
+  /**
+   * Handles the logic for checking the user's session
+   * @param req A request object
+   * @returns A promise that resolves ISession containing the user's role
+   */
+  async checkSession(req: IApiRequest): Promise<ISession> {
+    return await this.sessionService.checkSession(req);
   }
 
-  async refreshToken(req: Request, res: Response): Promise<boolean> {
-    const { accessToken, refreshToken } = this.tokenService.get(req);
+  /**
+   * Handles the logic for refreshing the user's token
+   * @param req A request object
+   * @param res A response object
+   * @returns A promise that don't resolves notihng
+   */
+  async refreshToken(req: IApiRequest, res: Response): Promise<void> {
+    return await this.refreshTokenService.refreshTokenWithRedis(req, res);
+  }
 
-    if (!refreshToken) {
-      this.loggerApp.warn(
-        'Intento de actualizar el refres tokende: El refresh token no existe',
-        'AuthService',
-      );
+  /**
+   * Handles the logic for user account activation
+   * @summary This method is used to activate a user account
+   * @param token The unique token to activate the user account
+   * @returns A promise that resolves when user account is successfully activated
+   */
+  async activateAccount(token: string): Promise<void> {
+    return await this.accountActivationService.activate(token);
+  }
 
-      throw new UnauthorizedException('Su token es invalido o expiro');
-    }
+  /**
+   * Handles the logic for sending sms code to the user
+   * @param phone The user's phone
+   * @returns A promise that resolves when user successfully recived sms code
+   */
+  async sendSMS(phone: string): Promise<void> {
+    return await this.verificationService.sendSMS(phone);
+  }
 
-    const refreshTokenData = await this.redisService.get<{ userId: string }>(
-      `refresh:${refreshToken}`,
+  /**
+   * Handles the logic for verifying sms code to the user
+   * @param phone The user's phone
+   * @param code The unique OTP code identification
+   * @param res The response object
+   * @returns A promise that resolves when user successfully verified sms code
+   */
+  async verifySMS(phone: string, code: string, res: Response): Promise<void> {
+    const user = await this.usersService.findUserByPhone(phone);
+
+    const sessionId = await this.sessionService.generateTemporarySession(
+      user.id,
     );
 
-    if (!refreshTokenData) {
-      this.loggerApp.warn(
-        'Intento de actualizar el token de acceso: Los datos no existen',
-        'AuthService',
-      );
+    this.sessionService.sendSessionInCookie(sessionId, res);
 
-      throw new UnauthorizedException('Su token es invalido o expiro');
-    }
+    return await this.verificationService.verifySMS(phone, code);
+  }
 
-    const { userId } = refreshTokenData;
+  /**
+   * Handles the logic for sending recovery link to the user
+   * @param email The user's email
+   * @param res A response object
+   * @returns A primise that don't resolves nothing
+   */
+  async sendRecoveryLink(email: string, res: Response): Promise<void> {
+    const user = await this.usersService.findUserByEmail(email);
 
-    const user = await this.usersService.findUserById(userId);
-
-    const jwtAge = JWT_BY_ROLE[user.role];
-
-    const newJwt = this.tokenService.generate(
-      { id: user.id, role: user.role },
-      jwtAge,
+    const sessionId = await this.sessionService.generateTemporarySession(
+      user.id,
     );
 
-    this.tokenService.send(
-      newJwt,
-      res,
-      'trendy_session',
-      COOKIE_BY_ROLE[user.role],
-    );
+    this.sessionService.sendSessionInCookie(sessionId, res);
 
-    return true;
+    return await this.verificationService.byEmail(user);
   }
 }

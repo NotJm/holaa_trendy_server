@@ -12,5 +12,6 @@ import { CategorySaleTrend } from './entity/category_sale_trend.entity';
   ],
   controllers: [CategoryController],
   providers: [CategoryService],
+  exports: [CategoryService]
 })
 export class CategoryModule {}

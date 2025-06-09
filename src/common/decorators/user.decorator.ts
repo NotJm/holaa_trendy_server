@@ -1,13 +1,17 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import {
+  createParamDecorator,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { IApiRequest } from '../interfaces/api-request.interface';
 
-export const User = createParamDecorator(
+export const UserId = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
+    const request = ctx.switchToHttp().getRequest<IApiRequest>();
     const user = request.user;
 
-
-    if (!user) { 
-      throw new Error("Usuario no encotrado en la peticion")
+    if (!user) {
+      throw new UnauthorizedException('Su sesion ha expirado o es invalida');
     }
 
     return user.userId;

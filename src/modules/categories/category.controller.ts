@@ -1,13 +1,13 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  UseGuards,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
+    UseGuards,
 } from '@nestjs/common';
 import { BaseController } from 'src/common/base.controller';
 import { ROLE } from 'src/common/constants/contants';
@@ -15,15 +15,15 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt.auth.guard';
 import { RoleGuard } from 'src/common/guards/role.guard';
 import { CategoryId } from '../../common/decorators/category.decorator';
-import { IApiResponse } from '../../common/interfaces/api.response.interface';
+import { IApiResponse } from '../../common/interfaces/api-response.interface';
 import { CategoryService } from './category.service';
 import {
-  CreateCategoryDto,
-  CreateManyCategoriesDto,
+    CreateCategoryDto,
+    CreateManyCategoriesDto,
 } from './dtos/create.category.dto';
 import {
-  UpdateCategoryDto,
-  UpdateManyCategoriesDto,
+    UpdateCategoryDto,
+    UpdateManyCategoriesDto,
 } from './dtos/update.category.dto';
 
 @Controller('category')

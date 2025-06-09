@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Inject } from '@nestjs/common';
-import { IApiResponse } from './interfaces/api.response.interface';
+import { IApiResponse } from './interfaces/api-response.interface';
 import { LoggerApp } from './logger/logger.service';
 
 export abstract class BaseController {
@@ -12,7 +12,7 @@ export abstract class BaseController {
         `Error del servidor: ${error.message || 'Error desconocido'}`,
         error.stack || null,
         'BaseController',
-      );
+    );
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: 'Hubo un problema al momento de procesar la solicitud',

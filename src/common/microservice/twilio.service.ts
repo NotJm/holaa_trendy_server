@@ -9,23 +9,25 @@ import { LoggerApp } from '../logger/logger.service';
 export class TwilioService {
   #client: Twilio;
 
-  private readonly AUTH_TOKEN: string =
-    this.configService.get<string>('TWILIO_AUTH_TOKEN');
-  private readonly ACCOUNT_SID: string =
-    this.configService.get<string>('TWILIO_ACCOUNT_SID');
-  private readonly VERIFY_SERVICE_SID: string = this.configService.get<string>(
-    'TWILIO_VERIFY_SERVICE_SID',
-  );
+  private AUTH_TOKEN: string;
+  private ACCOUNT_SID: string;
+  private VERIFY_SERVICE_SID: string;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly loggerApp: LoggerApp,
   ) {
+    this.AUTH_TOKEN = this.configService.get<string>('TWILIO_AUTH_TOKEN');
+    this.ACCOUNT_SID = this.configService.get<string>('TWILIO_ACCOUNT_SID');
+    this.VERIFY_SERVICE_SID = this.configService.get<string>(
+      'TWILIO_VERIFY_SERVICE_SID',
+    );
     this.#client = new Twilio(this.ACCOUNT_SID, this.AUTH_TOKEN);
   }
 
   async send(to: string): Promise<VerificationInstance> {
     try {
+      this.#client = new Twilio(this.ACCOUNT_SID, this.AUTH_TOKEN);
       return await this.#client.verify.v2
         .services(this.VERIFY_SERVICE_SID)
         .verifications.create({ to, channel: 'sms' });
@@ -39,10 +41,7 @@ export class TwilioService {
     }
   }
 
-  async verify(
-    to: string,
-    code: string,
-  ): Promise<VerificationCheckInstance> {
+  async verify(to: string, code: string): Promise<VerificationCheckInstance> {
     try {
       return await this.#client.verify.v2
         .services(this.VERIFY_SERVICE_SID)

@@ -1,7 +1,7 @@
 /**
- * Generates a expiration date for a token
- * @param durationInMinutes Duration in minutes to validate the token 
- * @returns The expiration date the token
+ * Genera una fecha de expiracion para un token
+ * @param durationInMinutes Duracion en minutos para el token
+ * @returns Fecha de expiracion
  */
 export function generateExpirationDate(durationInMinutes: number = 60): Date {
   const expirationDate = new Date();

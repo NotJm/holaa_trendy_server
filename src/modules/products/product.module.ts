@@ -1,25 +1,29 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CategoryService } from '../categories/category.service';
+import { CategoryModule } from '../categories/category.module';
 import { Category } from '../categories/entity/category.entity';
-import { ColorsService } from '../colors/colors.service';
+import { CategorySaleTrend } from '../categories/entity/category_sale_trend.entity';
+import { CategoryStockInitial } from '../categories/entity/category_stock_initial.entity';
+import { ColorsModule } from '../colors/colors.module';
 import { Color } from '../colors/entity/colors.entity';
 import { Size } from '../sizes/entity/sizes.entity';
-import { SizesService } from '../sizes/sizes.service';
+import { SizesModule } from '../sizes/sizes.module';
 import { SubCategory } from '../sub-categories/entity/sub-categories.entity';
+import { SubCategoryModule } from '../sub-categories/sub-category.module';
+import { BestOffers } from './entity/best-offers.entity';
+import { BestSellers } from './entity/best-sellers.entity';
+import { NewArrivals } from './entity/new-arrivals.entity';
 import { ProductImages } from './entity/products-images.entity';
 import { Product } from './entity/products.entity';
 import { ProductController } from './product.controller';
 import { ProductService } from './product.service';
-import { SubCategoryService } from '../sub-categories/sub-category.service';
-import { NewArrivals } from './entity/new-arrivals.entity';
-import { BestOffers } from './entity/best-offers.entity';
-import { BestSellers } from './entity/best-sellers.entity';
-import { CategoryStockInitial } from '../categories/entity/category_stock_initial.entity';
-import { CategorySaleTrend } from '../categories/entity/category_sale_trend.entity';
 
 @Module({
   imports: [
+    CategoryModule,
+    SubCategoryModule,
+    SizesModule,
+    ColorsModule,
     TypeOrmModule.forFeature([
       Product,
       Category,
@@ -35,12 +39,7 @@ import { CategorySaleTrend } from '../categories/entity/category_sale_trend.enti
     ]),
   ],
   controllers: [ProductController],
-  providers: [
-    ProductService,
-    CategoryService,
-    SubCategoryService,
-    SizesService,
-    ColorsService,
-  ],
+  providers: [ProductService],
+  exports: [ProductService]
 })
 export class ProductModule {}

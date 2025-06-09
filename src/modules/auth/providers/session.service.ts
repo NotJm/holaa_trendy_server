@@ -1,54 +1,152 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { COOKIE_BY_ROLE } from 'src/common/constants/contants';
-import { JWT_BY_ROLE } from '../../../common/constants/contants';
+import { IApiRequest } from 'src/common/interfaces/api-request.interface';
 import { LoggerApp } from '../../../common/logger/logger.service';
-import { RedisService } from '../../../common/microservice/redis.service';
+import { RedisService } from '../../../common/microservice/redis/redis.service';
 import { CookieService } from '../../../common/providers/cookie.service';
-import { TokenService } from '../../../common/providers/token.service';
 import { generateSessionId } from '../../../common/utils/generate-session-id';
+import { User } from '../../../modules/users/entity/users.entity';
 import { UsersService } from '../../users/users.service';
+import { IJwtPayload } from '../interfaces/jwt-payload.interface';
+import { ISession } from '../interfaces/session.interface';
+import { RefreshTokenService } from './refresh-token.service';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class SessionService {
+  private readonly EXPIRATION_TEMPORARY_SESSION = 300; // 5 minutes
+
   constructor(
     private readonly loggerApp: LoggerApp,
     private readonly redisService: RedisService,
     private readonly cookieService: CookieService,
     private readonly tokenService: TokenService,
     private readonly usersService: UsersService,
+    private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
-  async start(token: string, res: Response): Promise<void> {
-    const { userId } = await this.tokenService.verify<{ userId: string }>(
-      token,
+  /**
+   * Handles the logic for starting the user's session
+   * @summary This method is used to start the user's session and the send cookies 
+   * @param user The user's object containing user's data
+   * @param res The response object
+   * @param token The optional parameter containing user's unique identification
+   * @param useToken The flag for working with the user's unique identification
+   * @returns A promise that resolves to void
+   * @throws UnauthorizedException if the token is invalid
+   * @throws NotFoundException if the token is not found
+   */
+  async startSession(
+    user: User,
+    res: Response,
+    token?: string,
+    useToken: boolean = false,
+    useRedisService: boolean = true,
+  ): Promise<void> {
+    /**
+     * Si se ocupa inciar sesion mediante un token unico generado esto
+     * es necesario si se indica que tiene que ver una verificacion persistente despues de cada inicio de sesion
+     */
+    if (token && useToken) {
+      const { userId } = await this.tokenService.verifyToken<{
+        userId: string;
+      }>(token);
+
+      user = await this.usersService.findUserById(userId);
+    }
+
+    // Generamos payload para los JWT
+    const payload: IJwtPayload = {
+      sub: user.id,
+      role: user.role,
+    };
+
+    // Obtenemos los tiempos de expiracion mediante el rol del usuario
+    const { accessTokenAge, refreshTokenAge } =
+      this.tokenService.getTokenAgesByRole(user.role);
+    const { accessCookieAge, refreshCookieAge } =
+      this.cookieService.getCookieAgesByRole(user.role);
+
+    // Generamos los tokens
+    const accessToken = this.tokenService.generateToken(
+      payload,
+      accessTokenAge,
+    );
+    const refreshToken = this.tokenService.generateToken(
+      payload,
+      refreshTokenAge,
     );
 
-    const user = await this.usersService.findUserById(userId);
+    // Si se utiliza Redis, almacenar el refresh token en Redis
+    if (useRedisService) {
+      const redisTTL = this.redisService.getTTLByRole(user.role);
 
-    const jwtAge = JWT_BY_ROLE[user.role];
+      await this.redisService.set(
+        `refresh:${refreshToken}`,
+        { userId: user.id },
+        redisTTL,
+      );
+      // Si no se utiliza Redis, se utiliza una forma mas rudimentaria
+    } else {
+      this.refreshTokenService.saveRefreshToken(
+        user,
+        refreshToken,
+        accessCookieAge,
+      );
+    }
 
-
-    const accessToken = this.tokenService.generate(
-      { id: user.id, role: user.role },
-      jwtAge,
+    // Enviar los tokens en las cookies
+    this.tokenService.sendInCookie(
+      accessToken,
+      res,
+      'trendy_session',
+      accessCookieAge,
     );
-
-    const refreshToken = this.tokenService.generate(
-      { id: user.id, role: user.role },
-      '7d',
+    this.tokenService.sendInCookie(
+      refreshToken,
+      res,
+      'trendy_refresh_session',
+      refreshCookieAge,
     );
+  }
 
-    await this.redisService.set(
-      `refresh:${refreshToken}`,
-      { userId: user.id },
-      60 * 60 * 24 * 7,
-    );
+  async stopSession(
+    res: Response,
+    req: IApiRequest,
+    useRedisService: boolean = true,
+  ): Promise<void> {
+    try {
+      const { refreshToken } = this.tokenService.getTokensByCookie(req);
 
-    return (
-      this.tokenService.send(accessToken, res, 'trendy_session', 1 * 60 * 60 * 1000) &&
-      this.tokenService.send(refreshToken, res, 'trendy_refresh_session', 1 * 60 * 60 * 1000)
-    );
+      if (useRedisService) {
+        this.redisService.del(`refresh:${refreshToken}`);
+      } else {
+        this.refreshTokenService.deleteRefreshToken(refreshToken);
+      }
+
+      await Promise.all([
+        Promise.resolve().then(() => {
+          this.tokenService.delete(res, 'trendy_session');
+          this.tokenService.delete(res, 'trendy_refresh_session');
+        }),
+      ]);
+    } catch (error) {
+      this.loggerApp.error(
+        `Error durante finalizar la sesion: ${error.message}`,
+        'SessionService',
+      );
+    }
+  }
+
+  async checkSession(req: IApiRequest): Promise<ISession> {
+    const { accessToken } = this.tokenService.getTokensByCookie(req);
+
+    const userData =
+      await this.tokenService.verifyToken<IJwtPayload>(accessToken);
+
+    const user = await this.usersService.findUserById(userData.sub);
+
+    return { active: true, role: user.role };
   }
 
   /**
@@ -59,11 +157,11 @@ export class SessionService {
    */
   async generateTemporarySession(userId: string): Promise<string> {
     const sessionId = generateSessionId();
- 
+
     await this.redisService.set(
       `session:${sessionId}`,
       { userId: userId },
-      300,
+      this.EXPIRATION_TEMPORARY_SESSION,
     );
 
     return sessionId;
@@ -75,12 +173,12 @@ export class SessionService {
    * @param sessionId The session id
    * @param res The response object
    */
-  send(sessionId: string, res: Response): void {
-    return this.cookieService.send(res, 'session_id', sessionId);
+  sendSessionInCookie(sessionId: string, res: Response): void {
+    return this.cookieService.sendCookie(res, 'session_id', sessionId);
   }
 
-  verify(req: Request): string {
-    const sessionId = this.cookieService.get(req, 'session_id');
+  verifySession(req: Request): string {
+    const sessionId = this.cookieService.getCookie(req, 'session_id');
 
     if (!sessionId) {
       this.loggerApp.warn(
@@ -111,6 +209,6 @@ export class SessionService {
   async del(sessionId: string, res: Response): Promise<void> {
     await this.redisService.del(`session:${sessionId}`);
 
-    return this.cookieService.delete(res, 'session_id');
+    return this.cookieService.deleteCookie(res, 'session_id');
   }
 }

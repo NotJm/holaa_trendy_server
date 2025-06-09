@@ -9,7 +9,7 @@ import {
     Put,
 } from '@nestjs/common';
 import { BaseController } from 'src/common/base.controller';
-import { IApiResponse } from '../../common/interfaces/api.response.interface';
+import { IApiResponse } from '../../common/interfaces/api-response.interface';
 import { ColorsService } from './colors.service';
 import { CreateColorDto, CreateManyColorsDto } from './dtos/create.color.dto';
 import { UpdateColorDto, UpdateManyColorsDto } from './dtos/update.color.dto';

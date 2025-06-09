@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CategoryService } from '../categories/category.service';
+import { Category } from '../categories/entity/category.entity';
+import { CategorySaleTrend } from '../categories/entity/category_sale_trend.entity';
+import { CategoryStockInitial } from '../categories/entity/category_stock_initial.entity';
 import { SubCategory } from './entity/sub-categories.entity';
 import { SubCategoryController } from './sub-category.controller';
 import { SubCategoryService } from './sub-category.service';
-import { Category } from '../categories/entity/category.entity';
-import { CategoryService } from '../categories/category.service';
-import { CategoryStockInitial } from '../categories/entity/category_stock_initial.entity';
-import { CategorySaleTrend } from '../categories/entity/category_sale_trend.entity';
 
 @Module({
   imports: [
@@ -19,5 +19,6 @@ import { CategorySaleTrend } from '../categories/entity/category_sale_trend.enti
   ],
   controllers: [SubCategoryController],
   providers: [SubCategoryService, CategoryService],
+  exports: [SubCategoryService]
 })
-export class SubCategoriyModule {}
+export class SubCategoryModule {}

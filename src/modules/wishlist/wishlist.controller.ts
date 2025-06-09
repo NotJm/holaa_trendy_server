@@ -1,20 +1,19 @@
 import {
-  Controller,
-  Get,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  UseGuards,
+    Controller,
+    Get,
+    HttpStatus,
+    Post,
+    Put,
+    UseGuards
 } from '@nestjs/common';
 import { BaseController } from '../../common/base.controller';
 import { ROLE } from '../../common/constants/contants';
 import { ProductCode } from '../../common/decorators/product.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { User } from '../../common/decorators/user.decorator';
+import { UserId } from '../../common/decorators/user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt.auth.guard';
 import { RoleGuard } from '../../common/guards/role.guard';
-import { IApiResponse } from '../../common/interfaces/api.response.interface';
+import { IApiResponse } from '../../common/interfaces/api-response.interface';
 import { WishlistService } from './wishlist.service';
 
 
@@ -28,7 +27,7 @@ export class WishlistController extends BaseController {
 
   @Post('add/:productCode')
   async addProduct(
-    @User() userId: string,
+    @UserId() userId: string,
     @ProductCode() productCode: string,
   ): Promise<IApiResponse> {
     try {
@@ -44,7 +43,7 @@ export class WishlistController extends BaseController {
   }
 
   @Get()
-  async getWishList(@User() userId: string): Promise<IApiResponse> {
+  async getWishList(@UserId() userId: string): Promise<IApiResponse> {
     try {
       const wishList = await this.wishListService.getWishList(userId);
 
@@ -62,7 +61,7 @@ export class WishlistController extends BaseController {
 
   @Put('remove/:productCode')
   async removeProductCode(
-    @User() userId: string,
+    @UserId() userId: string,
     @ProductCode() productCode: string,
   ): Promise<IApiResponse> {
     try {

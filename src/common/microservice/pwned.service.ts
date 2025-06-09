@@ -1,17 +1,19 @@
 import { HttpService } from '@nestjs/axios';
 import { HttpStatus, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
 import * as crypto from 'crypto';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class PwnedService {
-  private API_PWNED = this.configService.get<string>('API_PWNED');
+  private readonly API_PWNED: string;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
-  ) {}
+  ) {
+    this.API_PWNED = this.configService.get<string>('API_PWNED');
+  }
 
   /**
    * Metodo principal para saber si una contraseña esta comprometida

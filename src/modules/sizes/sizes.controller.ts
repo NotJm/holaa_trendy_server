@@ -9,7 +9,7 @@ import {
     Put,
 } from '@nestjs/common';
 import { BaseController } from '../../common/base.controller';
-import { IApiResponse } from '../../common/interfaces/api.response.interface';
+import { IApiResponse } from '../../common/interfaces/api-response.interface';
 import { CreateManySizesDto, CreateSizeDto } from './dtos/create.size.dto';
 import { UpdateManySizesDto, UpdateSizeDto } from './dtos/update.size.dto';
 import { Size } from './entity/sizes.entity';

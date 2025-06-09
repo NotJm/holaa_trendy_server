@@ -2,20 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
-import { formattedDate } from '../utils/formatted-date';
 import { HbsService } from './hbs.service';
 import { formattedDateInMinutes } from '../utils/formatted-date-in-minutes';
-import { generateActivationLink } from '../utils/generate-activation-link';
-import { generateVerificationLink } from '../utils/generate-confirmation-link';
 import { generateLink } from '../utils/generate-link';
 @Injectable()
 export class EmailService {
-  private readonly transporter: Transporter = this.generateTranasporter();
+  private readonly transporter: Transporter;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly hbsService: HbsService,
-  ) {}
+  ) {
+    this.transporter = this.generateTranasporter();
+  }
 
   private generateTranasporter(): Transporter {
     return createTransport(this.generateTransporterOptions());
@@ -41,7 +40,11 @@ export class EmailService {
     token: string,
     expiresAt: Date,
   ): Promise<void> {
-    const activationLink = generateActivationLink(this.configService, token);
+    const activationLink = generateLink(
+      this.configService,
+      '/auth/signup/success/:token',
+      { token: token}
+    );
 
     const expirationInMinutes = formattedDateInMinutes(expiresAt);
 
@@ -110,7 +113,11 @@ export class EmailService {
     email: string,
     expiresAt: Date,
   ) {
-    const recoverLink = generateLink(this.configService, 'auth/request-forgot-password/:step', { step: 'reset-password' });
+    const recoverLink = generateLink(
+      this.configService,
+      'auth/request-forgot-password/:step',
+      { step: 'reset-password' },
+    );
     const expirationInMinutes = formattedDateInMinutes(expiresAt);
 
     const template = await this.loadTemplate('recover-link.hbs', {

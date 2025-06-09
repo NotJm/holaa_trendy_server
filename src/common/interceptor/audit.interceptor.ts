@@ -1,42 +1,48 @@
 import {
+  CallHandler,
+  ExecutionContext,
   Injectable,
   NestInterceptor,
-  ExecutionContext,
-  CallHandler,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { AuditService } from '../../modules/admin/audit/audit.service';
-import { RegisterActionDto } from '../../modules/admin/audit/dto/register.action.dto';
+import { AuditService } from 'src/modules/audit/audit.service';
+import { AuditMeta } from '../decorators/audit-log.decorator';
+import { IApiRequest } from '../interfaces/api-request.interface';
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
-
   constructor(private readonly auditService: AuditService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest();
+    const ctx = context.switchToHttp();
+    const request = ctx.getRequest<IApiRequest>();
 
-    const method = request.method;
-    const user = request.user;
-    const url = request.url;
-
-    const { username } = user;
+    const handler = context.getHandler();
+    const auditMeta: AuditMeta | undefined = Reflect.getMetadata(
+      'audit',
+      handler,
+    );
 
     return next.handle().pipe(
-      
-      tap(() => {
-        
-        if ((['POST', 'PUT', 'DELETE']).includes(method)) {
-          const auditDto = new RegisterActionDto();
-          auditDto.username = username;
-          auditDto.date = new Date();
-          auditDto.action = method
-          auditDto.details = `El usuario ${username} realizo accion de tipo ${method} a la ruta ${url}`
+      tap(async (response) => this.handleSuccess(response, request, auditMeta)),
+    );
+  }
 
-          this.auditService.registerAction(auditDto)
-        }
-      })
-    )
+  private async handleSuccess(
+    response: any,
+    request: IApiRequest,
+    auditMeta: AuditMeta,
+  ): Promise<void> {
+    if (!auditMeta) return;
+
+    await this.auditService.registerLog(
+      request.user.userId,
+      auditMeta.action,
+      auditMeta.module,
+      auditMeta.getEntityId?.(response),
+      auditMeta.oldValue || null,
+      response || null,
+    );
   }
 }

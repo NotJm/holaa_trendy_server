@@ -1,20 +1,23 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
-import { LoggerApp } from 'src/common/logger/logger.service';
+import { LoggerApp } from '../common/logger/logger.service';
+import { IApiRequest } from '../common/interfaces/api-request.interface';
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
   private readonly loggerApp = new LoggerApp();
 
-  use(req: any, res: any, next: (error?: Error | any) => void) {
+  use(req: IApiRequest, res: any, next: (error?: Error | any) => void) {
     const { method, originalUrl, ip } = req;
-
-    const user = req.user ? req.user.id : 'Guest';
+    console.log(req.user);
+    const user = req.user ? req.user.userId : 'Guest';
 
     res.on('finish', () => {
-      this.loggerApp.log(`[${method}] ${originalUrl} - User: ${user} - IP: ${ip} - Status: ${res.statusCode}`)
-    })
+      this.loggerApp.log(
+        `[${method}] ${originalUrl} - User: ${user} - IP: ${ip} - Status: ${res.statusCode}`,
+        'LoggerMiddleware',
+      );
+    });
 
     next();
-
   }
 }
