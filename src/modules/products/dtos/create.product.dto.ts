@@ -12,7 +12,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { CreateProductsToSizesDto as CreateProductVariantDto } from './create.products_to_sizes.dto';
+import { CreateProductVariantDto } from './create.product_variant.dto';
 
 export class CreateProductDto {
   @IsNotEmpty({ message: 'El codigo del producto es requerido' })

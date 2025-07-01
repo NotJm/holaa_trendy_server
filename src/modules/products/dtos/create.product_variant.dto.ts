@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsNumber, IsPositive, IsString, Min } from "class-validator";
 
-export class CreateProductsToSizesDto {
+export class CreateProductVariantDto {
 
   @IsNotEmpty({ message: 'La talla del producto es requerida'})
   @IsString({ message: 'La talla deberia ser texto'})
