@@ -2,7 +2,7 @@ import { Check, Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity('new_arrivals', { synchronize: false })
 @Check(
-  '"price"::numeric > 0.0 AND "stock" > 0 AND "discount"::numeric >= 0 AND "discount"::numeric <= 100',
+  '"price"::numeric > 0.0  AND "discount"::numeric >= 0 AND "discount"::numeric <= 100',
 )
 export class NewArrivals {
   @PrimaryColumn({ name: 'product_code' })

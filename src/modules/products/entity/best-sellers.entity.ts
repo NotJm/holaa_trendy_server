@@ -2,7 +2,7 @@ import { Check, Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity('best_sellers', { synchronize: false })
 @Check(
-  '"price"::numeric > 0.0 AND "stock" > 0 AND "sold_quantity" >= 0 AND "discount"::numeric >= 0 AND "discount"::numeric <= 100' ,
+  '"price"::numeric > 0.0 AND "discount"::numeric >= 0 AND "discount"::numeric <= 100' ,
 )
 export class BestSellers {
   @PrimaryColumn({ name: 'product_code' })
@@ -31,9 +31,6 @@ export class BestSellers {
     default: 0,
   })
   finalPrice?: number;
-
-  // @Column({ name: 'sold_quantity', type: 'int', default: 0 })
-  // soldQuantity: number;
 
   @Column({ name: 'category_name', type: 'varchar', nullable: false })
   categoryName: string;
