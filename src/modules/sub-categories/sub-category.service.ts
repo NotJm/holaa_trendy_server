@@ -52,6 +52,19 @@ export class SubCategoryService extends BaseService<SubCategory> {
     return subCategories;
   }
 
+  public async existsSubCategoriesByNames(
+    names: string[]
+  ): Promise<boolean> {
+    const subCategories = await this.find({
+      relations: ['categoires'],
+      where: {
+        name: In(names)
+      }
+    });
+
+    return !!subCategories;
+  }
+
   /**
    * Metodo que encuentra una sub categoria por codigo
    * @param code Codigo de la sub categoria

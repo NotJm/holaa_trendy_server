@@ -53,10 +53,10 @@ export function toProductResponseDto(product: Product): ProductResponseDto {
     price: product.price, 
     discount: product.discount, 
     finalPrice: product.finalPrice, 
-    stock: product.stock,
+    // stock: product.stock,
     categoryName: product.category?.name || null, // Evita error si category es undefined
     subCategoryName: product.subCategories?.map(subCat => subCat.name) || [], // Evita error si subCategories es undefined
-    sizesNames: product.sizes?.map(size => size.size) || [], // Evita error si sizes es undefined
-    colorsNames: product.colors?.map(color => color.hexCode) || [], // Evita error si colors es undefined
+    // sizesNames: product.sizes?.map(size => size.size) || [], // Evita error si sizes es undefined
+    // colorsNames: product.colors?.map(color => color.hexCode) || [], // Evita error si colors es undefined
   });
 }

@@ -6,7 +6,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/base.service';
 import { In, Repository } from 'typeorm';
-import { CategoryResponseDto, toCategoryResponseDto } from './dtos/category.response.dto';
+import {
+  CategoryResponseDto,
+  toCategoryResponseDto,
+} from './dtos/category.response.dto';
 import {
   CreateCategoryDto as CreateCategorieDto,
   CreateManyCategoriesDto,
@@ -27,7 +30,7 @@ export class CategoryService extends BaseService<Category> {
     @InjectRepository(CategoryStockInitial)
     private readonly categoryStockInitialRepository: Repository<CategoryStockInitial>,
     @InjectRepository(CategorySaleTrend)
-    private readonly categorySaleTrendRepository: Repository<CategorySaleTrend>
+    private readonly categorySaleTrendRepository: Repository<CategorySaleTrend>,
   ) {
     super(categoriesRepository);
   }
@@ -43,12 +46,26 @@ export class CategoryService extends BaseService<Category> {
       where: { name: name },
     });
   }
-  
+
+  /**
+   * Handles the logic for finding an category if exists return true otherwise false
+   * @param name Category name
+   * @returns true if exists category otherwise false
+   */
+  async existsCategoryByName(name: string): Promise<Boolean> {
+    const category = this.findOne({
+      relations: ['subCategories'],
+      where: { name: name },
+    });
+
+    return !!category;
+  }
+
   async findCategoriesByNames(names: string[]): Promise<Category[]> {
     return this.find({
       relations: ['subCategories'],
       where: { name: In(names) },
-    })
+    });
   }
 
   async findCategoryById(id: string): Promise<Category> {
@@ -56,15 +73,14 @@ export class CategoryService extends BaseService<Category> {
       relations: ['subCategories'],
       where: {
         id: id,
-      }
-    })
+      },
+    });
   }
-  
+
   async findAllCategories(): Promise<CategoryResponseDto[]> {
     const categories = await this.find({ relations: ['subCategories'] });
 
-    return  categories.map((category) => toCategoryResponseDto(category));
-  
+    return categories.map((category) => toCategoryResponseDto(category));
   }
 
   /**
@@ -80,7 +96,9 @@ export class CategoryService extends BaseService<Category> {
     const entity = await this.findCategoryById(id);
 
     if (!entity) {
-      throw new NotFoundException(`Categoria con el codigo ${id} no encontrado`);
+      throw new NotFoundException(
+        `Categoria con el codigo ${id} no encontrado`,
+      );
     }
 
     Object.assign(entity, data);
@@ -98,7 +116,9 @@ export class CategoryService extends BaseService<Category> {
     const entity = await this.findCategoryById(id);
 
     if (!entity) {
-      throw new NotFoundException(`Categoria con el codigo ${id} no encontrado`);
+      throw new NotFoundException(
+        `Categoria con el codigo ${id} no encontrado`,
+      );
     }
 
     return await this.categoriesRepository.remove(entity);
@@ -149,21 +169,25 @@ export class CategoryService extends BaseService<Category> {
   }
 
   async getStockInitial(): Promise<number> {
-    const categoriesStockInitial = await this.categoryStockInitialRepository.find();
+    const categoriesStockInitial =
+      await this.categoryStockInitialRepository.find();
 
-    const stockInitalTotal = categoriesStockInitial.reduce((acc, curr) => acc + curr.initialStock, 0);
+    const stockInitalTotal = categoriesStockInitial.reduce(
+      (acc, curr) => acc + curr.initialStock,
+      0,
+    );
 
     return stockInitalTotal;
   }
 
   async getStockInitialByCategory(category: string): Promise<number> {
-    const categoryStockInitial = await this.categoryStockInitialRepository.findOne({
-      where: { categoryId: category },
-    });
+    const categoryStockInitial =
+      await this.categoryStockInitialRepository.findOne({
+        where: { categoryId: category },
+      });
 
     return categoryStockInitial.initialStock;
   }
-
 
   async getCategoryTrend(): Promise<string> {
     const categorySaleTrend = await this.categorySaleTrendRepository.findOne({

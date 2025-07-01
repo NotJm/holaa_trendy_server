@@ -25,6 +25,14 @@ export class ColorsService extends BaseService<Color> {
     });
   }
 
+  public async existsColorByName(name: string): Promise<boolean> {
+    const color = this.findOne({
+      where: { name: name }
+    })
+
+    return !!color;
+  }
+
   public async findColorsByNames(names: string[]): Promise<Color[]> {
     return await this.find({
       where: { name: In(names) },

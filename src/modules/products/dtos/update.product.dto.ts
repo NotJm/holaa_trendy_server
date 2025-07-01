@@ -8,6 +8,7 @@ import {
   IsPositive,
   IsString,
   IsUrl,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -24,11 +25,11 @@ export class UpdateProductDto {
   imgUri: string;
 
   @IsOptional()
-  @IsArray({ message: 'Las uri deberia ser un arreglo' })
-  @ArrayMinSize(2, { message: 'Deberia ser minimo 2 uri' })
-  @ArrayMaxSize(4, { message: 'Dberia ser maximo 4 uri' })
-  @IsUrl({}, { each: true, message: 'Las uri deberia ser un uri valido' })
-  assets: string[];
+  @IsArray({ message: 'Las imagenes deberian estar en un arreglo' })
+  @ArrayMinSize(2, { message: 'Minimo 2 imagenes para el producto' })
+  @ArrayMaxSize(8, { message: 'Maximpo 8 imagenes para el producto' })
+  @IsUrl({}, { each: true, message: 'La imagenes deberia ser un url valido' })
+  images: string[];
 
   @IsOptional()
   description: string;
@@ -38,6 +39,12 @@ export class UpdateProductDto {
   @IsPositive({ message: 'El precio deberia de ser un numero entero positivo' })
   @Min(0, { message: 'El precio deberia de tener un valor minimo de 0' })
   price: number;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'El descuento deberia ser numero' })
+  @Min(0, { message: 'El minimo valor del descuento deberia ser 0' })
+  @Max(100, { message: 'El maximo valor del descuento deberia ser 100' })
+  discount: number;
 
   @IsOptional()
   @IsNumber({}, { message: 'El stock deberia de ser un numero entero' })
@@ -54,6 +61,16 @@ export class UpdateProductDto {
   @IsArray({ message: 'Los colores deberia ser un arreglo' })
   @IsString({ each: true, message: 'Cada color debereria ser un string' })
   colors: string[];
+
+  @IsOptional()
+  @IsString({ message: 'La categoria deberia ser string' })
+  categoryName: string;
+
+  @IsOptional()
+  @IsArray({ message: 'Las subs categorias debeeria ser un requeridas' })
+  @ArrayMinSize(1, { message: 'Deberia ser al menos una sub categoria' })
+  @IsString({ each: true, message: 'Cada sub categoria deberia seria string' })
+  subCategoriesNames: string[];
 }
 
 export class UpdateManyProductsDto {

@@ -14,14 +14,13 @@ import {
 } from 'typeorm';
 import { CartItem } from '../../cart/entity/cart-item.entity';
 import { Category } from '../../categories/entity/category.entity';
-import { Color } from '../../colors/entity/colors.entity';
-import { Size } from '../../sizes/entity/sizes.entity';
 import { SubCategory } from '../../sub-categories/entity/sub-categories.entity';
+import { ProductVariant } from './product-variant.entity';
 import { ProductImages } from './products-images.entity';
 
 @Entity('products')
 @Check(
-  '"price"::numeric > 0.0 AND "stock" > 0 AND "sold_quantity" >= 0 AND "discount"::numeric >= 0 AND "discount"::numeric <= 100' ,
+  '"price"::numeric > 0.0 AND "discount"::numeric >= 0 AND "discount"::numeric <= 100',
 )
 export class Product {
   @PrimaryColumn('varchar')
@@ -52,32 +51,16 @@ export class Product {
   })
   finalPrice?: number;
 
-  @Column({ name: 'sold_quantity', type: 'int', default: 0 })
-  soldQuantity: number;
-
-  @Column({ type: 'int', default: 0 })
-  stock: number;
-
   @OneToMany(() => ProductImages, (productImage) => productImage.product, {
     cascade: true,
   })
   images?: ProductImages[];
 
-  @ManyToMany(() => Size, { eager: true, cascade: true })
-  @JoinTable({
-    name: 'products_to_sizes',
-    joinColumn: { name: 'product_id', referencedColumnName: 'code' },
-    inverseJoinColumn: { name: 'size_id', referencedColumnName: 'id' },
+  @OneToMany(() => ProductVariant, (pts) => pts.product, {
+    cascade: true,
   })
-  sizes: Size[];
+  productVariant: ProductVariant[];
 
-  @ManyToMany(() => Color, { eager: true, cascade: true })
-  @JoinTable({
-    name: 'products_to_colors',
-    joinColumn: { name: 'product_id', referencedColumnName: 'code' },
-    inverseJoinColumn: { name: 'color_id', referencedColumnName: 'id' },
-  })
-  colors: Color[];
 
   @ManyToOne(() => Category, (category) => category.products, {
     onDelete: 'SET NULL',

@@ -13,6 +13,7 @@ import { SubCategoryModule } from '../sub-categories/sub-category.module';
 import { BestOffers } from './entity/best-offers.entity';
 import { BestSellers } from './entity/best-sellers.entity';
 import { NewArrivals } from './entity/new-arrivals.entity';
+import { ProductVariant } from './entity/product-variant.entity';
 import { ProductImages } from './entity/products-images.entity';
 import { Product } from './entity/products.entity';
 import { ProductController } from './product.controller';
@@ -36,6 +37,7 @@ import { ProductService } from './product.service';
       BestSellers,
       CategoryStockInitial,
       CategorySaleTrend,
+      ProductVariant
     ]),
   ],
   controllers: [ProductController],
