@@ -18,6 +18,7 @@ import { ProductImages } from './entity/products-images.entity';
 import { Product } from './entity/products.entity';
 import { ProductController } from './product.controller';
 import { ProductService } from './product.service';
+import { ProductVariantService } from './providers/product-variant.service';
 
 @Module({
   imports: [
@@ -41,7 +42,7 @@ import { ProductService } from './product.service';
     ]),
   ],
   controllers: [ProductController],
-  providers: [ProductService],
-  exports: [ProductService]
+  providers: [ProductService, ProductVariantService],
+  exports: [ProductService, ProductVariantService]
 })
 export class ProductModule {}

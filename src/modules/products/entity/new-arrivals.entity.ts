@@ -5,11 +5,11 @@ import { Check, Column, Entity, PrimaryColumn } from 'typeorm';
   '"price"::numeric > 0.0  AND "discount"::numeric >= 0 AND "discount"::numeric <= 100',
 )
 export class NewArrivals {
-  @PrimaryColumn({ name: 'product_code' })
+  @PrimaryColumn({ name: 'code' })
   code: string;
 
-  @Column({ type: 'varchar', nullable: false })
-  name: string;
+  @Column({ type: 'varchar', name: 'product_name', nullable: false })
+  productName: string;
 
   @Column({ name: 'img_uri', type: 'varchar', nullable: false })
   imgUri: string;
@@ -35,21 +35,23 @@ export class NewArrivals {
   @Column({ name: 'category_name', type: 'varchar', nullable: false })
   categoryName: string;
 
-  @Column({ name: 'subcategory_name', type: 'varchar', nullable: false })
-  subCategoryName: string;
-  
   @Column({
-    name: 'colors_names',
+    name: 'subcategories_names',
     type: 'character varying',
-    array: true,
     nullable: false,
   })
-  colorsNames: string[];
+  subCategoriesNames: string[];
+
+  @Column({
+    name: 'color_name',
+    type: 'character varying',
+    nullable: false,
+  })
+  colorName: string;
 
   @Column({
     name: 'sizes_names',
     type: 'character varying',
-    array: true,
     nullable: false,
   })
   sizesNames: string[];

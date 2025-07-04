@@ -2,14 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BaseService } from '../../common/base.service';
+import { LoggerApp } from '../../common/logger/logger.service';
 import { ProductService } from '../products/product.service';
+import { ProductVariantService } from '../products/providers/product-variant.service';
+import { SizesService } from '../sizes/sizes.service';
 import { User } from '../users/entity/users.entity';
 import { UsersService } from '../users/users.service';
 import { AddProductToCartDto } from './dtos/add-product.cart.dto';
+import { CartResponseDto, toCartResponseDto } from './dtos/cart.response.dto';
 import { UpdateProductQuantityToCartDto } from './dtos/update-quantity.cart.dto';
 import { CartItem } from './entity/cart-item.entity';
 import { Cart } from './entity/cart.entity';
-import { LoggerApp } from '../../common/logger/logger.service';
 
 @Injectable()
 export class CartService extends BaseService<Cart> {
@@ -17,22 +20,52 @@ export class CartService extends BaseService<Cart> {
     @InjectRepository(Cart)
     private readonly cartRepository: Repository<Cart>,
     @InjectRepository(CartItem)
-    private readonly cartItemRepository: Repository<CartItem>,
+    private readonly cartIRepository: Repository<CartItem>,
     private readonly usersService: UsersService,
     private readonly productService: ProductService,
+    private readonly pvService: ProductVariantService,
+    private readonly sizeService: SizesService,
     private readonly loggerApp: LoggerApp,
   ) {
     super(cartRepository);
   }
 
   private async findCartByIsActive(user: User): Promise<Cart> {
-    return await this.findOne({
+    const cart = await this.findOne({
+      relations: [
+        'cartItems',
+        'cartItems.product',
+        'cartItems.variant',
+        'cartItems.variant.size',
+        'cartItems.variant.product',
+      ],
+      where: {
+        user: user,
+        isActive: true,
+      },
+    });
+
+    if (cart) return cart;
+
+    this.loggerApp.warn(
+      `El usuario (${user.id}) no tiene asociado o no existe el carrito`,
+      'CartService',
+    );
+    throw new NotFoundException(
+      'El carrito del usuario no pudo ser recuperado',
+    );
+  }
+
+  private async hasCart(user: User): Promise<boolean> {
+    const cart = await this.findOne({
       relations: ['cartItems', 'cartItems.product'],
       where: {
         user: user,
         isActive: true,
       },
     });
+
+    return !!cart;
   }
 
   private async createCart(user: User): Promise<Cart> {
@@ -43,52 +76,42 @@ export class CartService extends BaseService<Cart> {
   }
 
   private async getOrCreateCart(user: User): Promise<Cart> {
-    let cart = await this.findCartByIsActive(user);
+    const hasCart = await this.hasCart(user);
 
-    if (!cart) {
-      cart = await this.createCart(user);
-    }
+    if (hasCart) return await this.findCartByIsActive(user);
 
-    return cart;
+    return await this.createCart(user);
   }
 
-  public async getCart(userId: string): Promise<Cart> {
+  /**
+   * Handles logic for getting the user's cart data
+   * @param userId The unique user's id for searching user's data
+   * @returns A Cart object that contain data
+   */
+  public async getCart(userId: string): Promise<CartResponseDto> {
     const user = await this.usersService.findUserById(userId);
-
-
-
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
 
     const cart = await this.findCartByIsActive(user);
 
-
-
-    if (!cart) {
-      throw new NotFoundException('Carrito no encontrado');
-    }
-
-
-
-    return cart;
+    return toCartResponseDto(cart);
   }
 
   public async addProduct(
     userId: string,
     addProductToCartDto: AddProductToCartDto,
-  ): Promise<Cart> {
-    const { productCode, quantity } = addProductToCartDto;
+  ): Promise<CartResponseDto> {
+    const { productCode, sizeName, quantity } = addProductToCartDto;
 
     const user = await this.usersService.findUserById(userId);
 
     const product = await this.productService.findProductByCode(productCode);
 
-    if (!product) {
-      throw new NotFoundException(
-        `El producto con el codigo ${productCode} no encontrado`,
-      );
-    }
+    const size = await this.sizeService.findSizeByName(sizeName);
+
+    const variant = await this.pvService.findProductVariantByProductAndSize(
+      product,
+      size,
+    );
 
     const cart = await this.getOrCreateCart(user);
 
@@ -103,37 +126,35 @@ export class CartService extends BaseService<Cart> {
     if (cartItem) {
       cartItem.quantity += quantity;
     } else {
-      cartItem = this.cartItemRepository.create({
+      cartItem = this.cartIRepository.create({
         cart,
-        product,
+        product: product,
+        variant: variant,
         quantity,
       });
-
 
       cart.cartItems.push(cartItem);
     }
 
-    await this.cartItemRepository.save(cartItem);
+    await this.cartIRepository.save(cartItem);
 
-    return await this.cartRepository.save(cart);
+    const userCart = await this.cartRepository.save(cart);
+
+    return toCartResponseDto(userCart);
   }
 
   public async updateProductQuantity(
     userId: string,
     updateProductQuantityToCartDto: UpdateProductQuantityToCartDto,
-  ): Promise<Cart> {
-    const { productCode, quantity } = updateProductQuantityToCartDto;
+  ): Promise<CartResponseDto> {
+    const { productCode, sizeName, quantity } = updateProductQuantityToCartDto;
 
     const user = await this.usersService.findUserById(userId);
-
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
 
     const cart = await this.getOrCreateCart(user);
 
     if (!cart) {
-      throw new NotFoundException('Carrito no encontrado');
+      throw new NotFoundException(`User cart don't exists`);
     }
 
     const cartItem = cart.cartItems.find(
@@ -144,30 +165,24 @@ export class CartService extends BaseService<Cart> {
       cartItem.quantity = quantity;
     } else {
       throw new NotFoundException(
-        `Producto con el codigo ${productCode} no se encontro en el carrito`,
+        `The product with code '${productCode}' don't exists in the cart`,
       );
     }
 
-    await this.cartItemRepository.save(cartItem);
+    await this.cartIRepository.save(cartItem);
 
-    return this.cartRepository.save(cart);
+    const userCart = await this.cartRepository.save(cart);
+
+    return toCartResponseDto(userCart);
   }
 
   public async removeProductToCart(
     userId: string,
     productCode: string,
-  ): Promise<Cart> {
+  ): Promise<CartResponseDto> {
     const user = await this.usersService.findUserById(userId);
 
-    if (!user) {
-      throw new NotFoundException('El usuario no existe');
-    }
-
     const cart = await this.findCartByIsActive(user);
-
-    if (!cart) {
-      throw new NotFoundException('Carrito no encontrado');
-    }
 
     const cartItemIndex = cart.cartItems.findIndex(
       (item) => item.product.code === productCode,
@@ -181,7 +196,7 @@ export class CartService extends BaseService<Cart> {
 
     const cartItem = cart.cartItems[cartItemIndex];
 
-    await this.cartItemRepository.remove(cartItem);
+    await this.cartIRepository.remove(cartItem);
 
     cart.cartItems.splice(cartItemIndex, 1);
 
@@ -189,26 +204,22 @@ export class CartService extends BaseService<Cart> {
       cart.isActive = false;
     }
 
-    return this.cartRepository.save(cart);
+    const userCart = await this.cartRepository.save(cart);
+
+    return toCartResponseDto(userCart);
   }
 
-  public async clearCart(userId: string): Promise<Cart> {
+  public async clearCart(userId: string): Promise<CartResponseDto> {
     const user = await this.usersService.findUserById(userId);
-
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
 
     const cart = await this.getOrCreateCart(user);
 
-    if (!cart) {
-      throw new NotFoundException('Carrito no encontrado');
-    }
+    await this.cartIRepository.delete({ cart: cart });
 
-    await this.cartItemRepository.delete({ cart: cart });
-    
     cart.cartItems = [];
 
-    return await this.cartRepository.save(cart);
+    const userCart = await this.cartRepository.save(cart);
+
+    return toCartResponseDto(userCart);
   }
 }

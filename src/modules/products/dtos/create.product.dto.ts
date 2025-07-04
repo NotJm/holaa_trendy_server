@@ -12,7 +12,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { CreateProductVariantDto } from './create.product_variant.dto';
+import { CreateProductVariantDto as CreateProductVariantSizeDto } from './create.product_variant.dto';
 
 export class CreateProductDto {
   @IsNotEmpty({ message: 'El codigo del producto es requerido' })
@@ -56,12 +56,17 @@ export class CreateProductDto {
   @IsString({ each: true, message: 'Cada sub categoria deberia seria string' })
   subCategoriesNames: string[];
 
+
+  @IsNotEmpty({ message: 'El color del producto es requerido'})
+  @IsString({ message: 'El color deberia ser texto'})
+  colorName: string;
+
   @IsNotEmpty({ message: 'Las tallas del producto son requeridas' })
   @IsArray({ message: 'Las tallas deberia ser un arreglo' })
   @ArrayMinSize(1, { message: 'Al menos una talla en el arreglo' })
   @ValidateNested({ each: true })
-  @Type(() => CreateProductVariantDto)
-  variants: CreateProductVariantDto[];
+  @Type(() => CreateProductVariantSizeDto)
+  variants: CreateProductVariantSizeDto[];
 }
 
 export class CreateManyProductsDto {

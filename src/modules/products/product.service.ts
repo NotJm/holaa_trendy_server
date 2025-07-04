@@ -23,7 +23,9 @@ import {
   CreateProductDto,
 } from './dtos/create.product.dto';
 import {
+  FeaturedProductResponseDto,
   ProductResponseDto,
+  toFeaturedProductResponseDto,
   toProductResponseDto,
 } from './dtos/product.response.dto';
 import {
@@ -60,6 +62,14 @@ export class ProductService extends BaseService<Product> {
     super(productsRepository);
   }
 
+  relations: string[] = [
+    'category',
+    'subCategories',
+    'images',
+    'color',
+    'variants',
+  ];
+
   /**
    * Handle the logic for finding a product through the code
    * @param code Product's code
@@ -68,7 +78,7 @@ export class ProductService extends BaseService<Product> {
    */
   public async findProductByCode(code: string): Promise<Product> {
     const product = await this.findOne({
-      relations: ['category', 'subCategories', 'images'],
+      relations: this.relations,
       where: { code: code },
     });
 
@@ -139,7 +149,7 @@ export class ProductService extends BaseService<Product> {
         'discount',
         'finalPrice',
       ],
-      relations: ['category', 'subCategories', 'images'],
+      relations: ['category', 'subCategories', 'images', 'color', 'variants'],
     });
 
     return products.map((product) => toProductResponseDto(product));
@@ -202,8 +212,14 @@ export class ProductService extends BaseService<Product> {
    * @returns Regresa una respuesta
    */
   public async createOne(createProductDto: CreateProductDto): Promise<any> {
-    const { code, categoryName, variants, subCategoriesNames, images } =
-      createProductDto;
+    const {
+      code,
+      images,
+      categoryName,
+      subCategoriesNames,
+      colorName,
+      variants,
+    } = createProductDto;
 
     if (await this.existsProductByCode(code)) {
       throw new ConflictException(
@@ -219,12 +235,15 @@ export class ProductService extends BaseService<Product> {
         subCategoriesNames,
       );
 
+    const color = await this.colorsService.findColorByName(colorName);
+
     const productCreate = await this.create({
       ...createProductDto,
       category: category,
       subCategories: subCategories,
+      color: color,
       images: [],
-      productVariant: [],
+      variants: [],
     });
 
     const productImages = images.map((imageUrl) => {
@@ -236,24 +255,16 @@ export class ProductService extends BaseService<Product> {
 
     const productVariant = await Promise.all(
       variants.map(async (variant) => {
-        const color = await this.colorsService.findColorByName(variant.color);
-        const size = await this.sizesService.findSizeByName(variant.size);
-
-        if (!color) {
-          throw new NotFoundException(
-            `The next color '${variant.color}' don't exists`,
-          );
-        }
+        const size = await this.sizesService.findSizeByName(variant.sizeName);
 
         if (!size) {
           throw new NotFoundException(
-            `The next size '${variant.size}' don't exists`,
+            `The next size '${variant.sizeName}' don't exists`,
           );
         }
 
         const v = new ProductVariant();
         v.product = productCreate;
-        v.color = color;
         v.size = size;
         v.stock = variant.stock;
         return v;
@@ -266,7 +277,7 @@ export class ProductService extends BaseService<Product> {
 
     productCreate.images = productImages;
 
-    productCreate.productVariant = productVariant;
+    productCreate.variants = productVariant;
 
     return instanceToPlain(productCreate);
   }
@@ -308,7 +319,7 @@ export class ProductService extends BaseService<Product> {
    */
   public async getProductsView(
     view: 'new-arrivals' | 'best-offers' | 'best-sellers',
-  ): Promise<any> {
+  ): Promise<FeaturedProductResponseDto[]> {
     const repositoryMap = {
       'new-arrivals': this.naRepository,
       'best-offers': this.boRepository,
@@ -321,7 +332,11 @@ export class ProductService extends BaseService<Product> {
       throw new Error(`Invalid view name: ${view}`);
     }
 
-    return await repository.find();
+    const featuredProduct = await repository.find();
+
+    return featuredProduct.map((featuredProduct) =>
+      toFeaturedProductResponseDto(featuredProduct),
+    );
   }
 
   /**

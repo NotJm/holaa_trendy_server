@@ -26,6 +26,7 @@ import { CartController } from './cart.controller';
 import { CartService } from './cart.service';
 import { CartItem } from './entity/cart-item.entity';
 import { Cart } from './entity/cart.entity';
+import { ProductVariant } from '../products/entity/product-variant.entity';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { Cart } from './entity/cart.entity';
       CategoryStockInitial,
       CategorySaleTrend,
       Address,
+      ProductVariant
     ]),
   ],
   controllers: [CartController],

@@ -4,7 +4,7 @@ import { ArrayNotEmpty, IsArray, IsNotEmpty, IsString, ValidateNested } from "cl
 export class CreateSizeDto {
   @IsNotEmpty({ message: "El tamaño de la talla es requerido" })
   @IsString({ message: "El tamaño de la talla debería ser texto" })
-  size: string
+  name: string
 }
 
 export class CreateManySizesDto {

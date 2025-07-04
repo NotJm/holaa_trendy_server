@@ -26,13 +26,13 @@ export class SizesService extends BaseService<Size> {
    */
   async findSizeByName(size: string): Promise<Size> {
     return await this.findOne({
-      where: { size: size },
+      where: { name: size },
     });
   }
 
   public async existsSizeByName(sizeName: string): Promise<boolean> {
     const size = await this.findOne({
-      where: { size: sizeName }
+      where: { name: sizeName }
     })
 
     return !!size;
@@ -46,7 +46,7 @@ export class SizesService extends BaseService<Size> {
    */
   async findSizesByIDs(ids: string[]): Promise<Size[]> {
     return await this.find({
-      where: { size: In(ids) },
+      where: { name: In(ids) },
     });
   }
 
@@ -56,7 +56,7 @@ export class SizesService extends BaseService<Size> {
    * @returns Una promesa que se resuelve con la talla creada
    */
   public async createOne(createSizeDto: CreateSizeDto): Promise<Size> {
-    const { size: id } = createSizeDto;
+    const { name: id } = createSizeDto;
 
     const existsSize = await this.findSizeByName(id);
 
@@ -117,7 +117,7 @@ export class SizesService extends BaseService<Size> {
         throw new ConflictException(`Ya existe una talla con el ID ${newSize}`);
       }
 
-      size.size = newSize;
+      size.name = newSize;
     }
 
     return await this.update(id, size);

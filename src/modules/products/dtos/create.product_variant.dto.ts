@@ -4,11 +4,7 @@ export class CreateProductVariantDto {
 
   @IsNotEmpty({ message: 'La talla del producto es requerida'})
   @IsString({ message: 'La talla deberia ser texto'})
-  size: string;
-
-  @IsNotEmpty({ message: 'El color del producto es requerida'})
-  @IsString({ message: 'El color deberia ser texto'})
-  color: string;
+  sizeName: string;
 
   @IsNotEmpty({ message: 'El stock del producto es requerido'})
   @IsNumber({}, { message: 'El stock deberia de ser un numero entero' })

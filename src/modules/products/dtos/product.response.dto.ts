@@ -1,6 +1,10 @@
 import { Expose, plainToInstance } from 'class-transformer';
+import { IColor } from 'src/modules/colors/interface/color.interface';
+import { BestOffers } from '../entity/best-offers.entity';
+import { BestSellers } from '../entity/best-sellers.entity';
+import { NewArrivals } from '../entity/new-arrivals.entity';
 import { Product } from '../entity/products.entity';
-import { IProductVariantsInterface } from '../interface/variants.interface';
+import { IProductVariantsSizes } from '../interface/variants.interface';
 
 /**
  * Defined DTO for sending product information to the website
@@ -10,7 +14,7 @@ export class ProductResponseDto {
   code: string;
 
   @Expose()
-  name: string;
+  productName: string;
 
   @Expose()
   imgUri: string;
@@ -31,22 +35,51 @@ export class ProductResponseDto {
   finalPrice: number;
 
   @Expose()
-  stock: number;
+  categoryName: string;
+
+  @Expose()
+  subCategoriesNames: string[];
+
+  @Expose()
+  colorName: IColor;
+
+  @Expose()
+  variants: IProductVariantsSizes[];
+}
+
+export class FeaturedProductResponseDto {
+  @Expose()
+  code: string;
+
+  @Expose()
+  productName: string;
+
+  @Expose()
+  imgUri: string;
+
+  @Expose()
+  description: string;
+
+  @Expose()
+  price: number;
+
+  @Expose()
+  discount: number;
+
+  @Expose()
+  finalPrice: number;
 
   @Expose()
   categoryName: string;
 
   @Expose()
-  subCategoryName: string[];
+  subCategoriesNames: string[];
 
   @Expose()
-  sizesNames: string[];
+  colorName: string;
 
   @Expose()
-  colorsNames: string[];
-
-  @Expose()
-  variants: IProductVariantsInterface[];
+  sizeNames: string[];
 }
 
 /**
@@ -64,14 +97,36 @@ export const toProductResponseDto = (product: Product): ProductResponseDto => {
     price: product.price,
     discount: product.discount,
     finalPrice: product.finalPrice,
-    categoryName: product.category?.name || null,
-    subCategoryName: product.subCategories?.map((subCat) => subCat.name) || [],
-    variants: product.productVariant.map((variant) => {
-      return {
-        size: variant.size.size,
-        color: variant.color.name,
-        stock: variant.stock,
-      };
-    }),
+    categoryName: product.category.name || "",
+    subCategoriesNames: product.subCategories.map((subCat) => subCat.name) || [],
+    color: {
+      name: product.color.name,
+      hexCode: product.color.hexCode,
+    },
+    variants:
+      product.variants.map((variant) => {
+        return {
+          sizeName: variant.size.name,
+          stock: variant.stock,
+        };
+      }) || [],
   });
-}
+};
+
+export const toFeaturedProductResponseDto = (
+  featured: BestOffers | BestSellers | NewArrivals,
+) => {
+  return plainToInstance(FeaturedProductResponseDto, {
+    code: featured.code,
+    name: featured.productName,
+    imgUri: featured.imgUri,
+    description: featured.description,
+    price: featured.price,
+    discount: featured.discount,
+    finalPrice: featured.finalPrice,
+    categoryName: featured.categoryName,
+    subCategoriesNames: featured.subCategoriesNames,
+    colorName: featured.colorName,
+    sizeNames: featured.sizesNames
+  });
+};

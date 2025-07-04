@@ -6,7 +6,7 @@ export class Size {
   id?: string;
 
   @Column({ type: 'varchar', unique: true, nullable: false })
-  size: string;
+  name: string;
 
   @CreateDateColumn()
   createdAt?: Date;

@@ -1,16 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { plainToInstance } from 'class-transformer';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { BaseService } from '../../common/base.service';
 import { CartService } from '../cart/cart.service';
 import { Cart } from '../cart/entity/cart.entity';
 import { User } from '../users/entity/users.entity';
 import { UsersService } from '../users/users.service';
+import { SaleByCategoryResponseDto } from './dtos/sale-by-category.response.dto';
 import { SaleItem } from './entity/sale-item.entity';
 import { Sale } from './entity/sale.entity';
 import { StockDepletionTime } from './entity/stock-depletion-time.entity';
-import { SaleByCategoryResponseDto } from './dtos/sale-by-category.response.dto';
-import { plainToInstance } from 'class-transformer';
+import { CartResponseDto } from '../cart/dtos/cart.response.dto';
 
 @Injectable()
 export class SaleService extends BaseService<Sale> {
@@ -79,7 +80,7 @@ export class SaleService extends BaseService<Sale> {
     return sale;
   }
 
-  public async add(userId: string): Promise<Cart> {
+  public async add(userId: string): Promise<CartResponseDto> {
     return this.dataSource.transaction(async (entityManager: EntityManager) => {
       const user = await this.usersService.findUserById(userId);
 
@@ -87,7 +88,7 @@ export class SaleService extends BaseService<Sale> {
 
       const cart = await this.cartService.getCart(userId);
 
-      if (!cart.cartItems.length) {
+      if (!cart.items.length) {
         throw new Error('El carrito está vacío');
       }
 
@@ -95,7 +96,7 @@ export class SaleService extends BaseService<Sale> {
         sale.saleItems = [];
       }
 
-      const salesItems = cart.cartItems.map((item) => {
+      const salesItems = cart.items.map((item) => {
         return this.saleItemRepository.create({
           sale: sale,
           product: item.product,

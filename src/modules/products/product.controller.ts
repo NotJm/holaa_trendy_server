@@ -38,13 +38,13 @@ export class ProductController extends BaseController {
    * @param createProductDto DTO con estructura necesaria para crear producto
    * @returns
    */
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles(ROLE.EMPLOYEE)
-  @AuditLog({
-    action: ACTIONS_TYPE.CREATE,
-    module: 'products',
-    getEntityId: (res) => res.id,
-  })
+  // @UseGuards(JwtAuthGuard, RoleGuard)
+  // @Roles(ROLE.EMPLOYEE)
+  // @AuditLog({
+  //   action: ACTIONS_TYPE.CREATE,
+  //   module: 'products',
+  //   getEntityId: (res) => res.id,
+  // })
   @Post('create')
   async createProduct(
     @Body() createProductDto: CreateProductDto,
@@ -121,8 +121,8 @@ export class ProductController extends BaseController {
   }
 
   /**
-   * Endpoint que obtiene todos los productos en base a la categoria de la base de datos
-   * @returns Todos los productos
+   * Endpoint for getting all products by category
+   * @returns A promise that resolves when got all products by category succesfully
    */
   @Get('by-category/:category')
   async getProductsByCategory(@Param('category') category: string): Promise<IApiResponse> {

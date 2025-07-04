@@ -1,5 +1,4 @@
-export interface IProductVariantsInterface {
+export interface IProductVariantsSizes {
   size: string;
-  color: number;
   stock: number;
 }

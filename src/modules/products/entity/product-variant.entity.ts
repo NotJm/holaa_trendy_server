@@ -5,25 +5,21 @@ import { Product } from "./products.entity";
 
 @Entity('products_variants')
 @Check('"stock" > 0')
-@Unique(['product', 'size', 'color'])
+@Unique(['product', 'size'])
 export class ProductVariant {
-  @PrimaryGeneratedColumn('increment')
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @ManyToOne(() => Product, (product) => product.productVariant, {
+  @ManyToOne(() => Product, (product) => product.variants, {
     onDelete: 'CASCADE'
   })
-  @JoinColumn({ name: 'product_id'})
+  @JoinColumn({ name: 'product_code'})
   product: Product;
 
-  @ManyToOne(() => Size, { eager: true})
+  @ManyToOne(() => Size, { eager: true })
   @JoinColumn({ name: 'size_id'})
   size: Size
 
-  @ManyToOne(() => Color, { eager: true })
-  @JoinColumn({ name: 'color_id'})
-  color: Color;
-  
   @Column({ type: 'int', default: 0})
   stock: number;
 

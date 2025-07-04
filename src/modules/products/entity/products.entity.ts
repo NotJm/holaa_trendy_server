@@ -1,3 +1,4 @@
+import { Color } from 'src/modules/colors/entity/colors.entity';
 import {
   Check,
   Column,
@@ -15,7 +16,7 @@ import {
 import { CartItem } from '../../cart/entity/cart-item.entity';
 import { Category } from '../../categories/entity/category.entity';
 import { SubCategory } from '../../sub-categories/entity/sub-categories.entity';
-import { ProductVariant } from './product-variant.entity';
+import { ProductVariant as ProductVariantSize } from './product-variant.entity';
 import { ProductImages } from './products-images.entity';
 
 @Entity('products')
@@ -56,11 +57,13 @@ export class Product {
   })
   images?: ProductImages[];
 
-  @OneToMany(() => ProductVariant, (pts) => pts.product, {
-    cascade: true,
+  @ManyToOne(() => Color, (color) => color.products, {
+    onDelete: 'SET NULL',
+    onUpdate: 'CASCADE',
+    nullable: true
   })
-  productVariant: ProductVariant[];
-
+  @JoinColumn({ name: 'color' })
+  color: Color
 
   @ManyToOne(() => Category, (category) => category.products, {
     onDelete: 'SET NULL',
@@ -84,6 +87,11 @@ export class Product {
     },
   })
   subCategories: SubCategory[];
+
+  @OneToMany(() => ProductVariantSize, (pvz) => pvz.product, {
+    cascade: true,
+  })
+  variants: ProductVariantSize[];
 
   @OneToMany(() => CartItem, (cartItem) => cartItem.product)
   cartItems?: CartItem[];

@@ -1,6 +1,7 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { LoggerApp } from '../common/logger/logger.service';
 import { IApiRequest } from '../common/interfaces/api-request.interface';
+import { HttpStatusCode } from 'axios';
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
@@ -8,14 +9,14 @@ export class LoggerMiddleware implements NestMiddleware {
 
   use(req: IApiRequest, res: any, next: (error?: Error | any) => void) {
     const { method, originalUrl, ip } = req;
-    console.log(req.user);
     const user = req.user ? req.user.userId : 'Guest';
 
     res.on('finish', () => {
-      this.loggerApp.log(
-        `[${method}] ${originalUrl} - User: ${user} - IP: ${ip} - Status: ${res.statusCode}`,
-        'LoggerMiddleware',
-      );
+      if (res.statusCode === HttpStatusCode.Created)
+        this.loggerApp.log(
+          `[${method}] ${originalUrl} - User: ${user} - IP: ${ip} - Status: ${res.statusCode}`,
+          'LoggerMiddleware',
+        );
     });
 
     next();

@@ -88,20 +88,13 @@ export class UsersService extends BaseService<User> {
   async findUserById(id: string): Promise<User> {
     const user = await this.findOne({
       relations: ['address'],
-      where: {
-        id: id,
-      },
+      where: { id: id },
     });
 
-    if (!user) {
-      this.loggerApp.warn(
-        'Intento de obtener un usuario que no existe',
-        'UserService',
-      );
-      throw new NotFoundException('Su cuenta no se pudo encontrar');
-    }
+    if (user) return user;
 
-    return user;
+    this.loggerApp.warn(`The user with ID '${id}' don't exists`, 'UserService');
+    throw new NotFoundException(`The user with ID '${id}' don't exists`);
   }
 
   async findUserByPhone(phone: string): Promise<User> {
@@ -183,6 +176,12 @@ export class UsersService extends BaseService<User> {
     return !!user;
   }
 
+  async existsUserById(id: string): Promise<boolean> {
+    const user = await this.findUserById(id);
+
+    return !!user;
+  }
+
   /**
    * Handles the logic for creating an user
    * @param data An user object containing all user information
@@ -208,9 +207,7 @@ export class UsersService extends BaseService<User> {
     return await this.argon2Service.compare(hashPassword, password);
   }
 
-  async getUserById(
-    userId: string,
-  ): Promise<UserResponseDto> {
+  async getUserById(userId: string): Promise<UserResponseDto> {
     const user = await this.findUserById(userId);
 
     return toUserResponseDto(user);
