@@ -60,10 +60,10 @@ export class Product {
   @ManyToOne(() => Color, (color) => color.products, {
     onDelete: 'SET NULL',
     onUpdate: 'CASCADE',
-    nullable: true
+    nullable: true,
   })
   @JoinColumn({ name: 'color' })
-  color: Color
+  color: Color;
 
   @ManyToOne(() => Category, (category) => category.products, {
     onDelete: 'SET NULL',
@@ -73,14 +73,13 @@ export class Product {
   @JoinColumn({ name: 'category' })
   category: Category;
 
-  @ManyToMany(() => SubCategory, {
-    onDelete: 'SET NULL',
-    onUpdate: 'CASCADE',
-    nullable: true,
-  })
+  @ManyToMany(() => SubCategory, { cascade: true, onDelete: 'CASCADE' })
   @JoinTable({
     name: 'products_to_subcategories',
-    joinColumn: { name: 'product_id', referencedColumnName: 'code' },
+    joinColumn: {
+      name: 'product_id',
+      referencedColumnName: 'code',
+    },
     inverseJoinColumn: {
       name: 'subcategory_id',
       referencedColumnName: 'id',

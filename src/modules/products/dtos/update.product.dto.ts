@@ -12,6 +12,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { UpdateProductVariantDto } from './update.product_variant.dto';
 
 export class UpdateProductDto {
   @IsString()
@@ -47,22 +48,6 @@ export class UpdateProductDto {
   discount: number;
 
   @IsOptional()
-  @IsNumber({}, { message: 'El stock deberia de ser un numero entero' })
-  @IsPositive({ message: 'El stock deberia ser un numero entero positivo' })
-  @Min(0, { message: 'El stock deberia de tener un valor minimo de 0' })
-  stock: number;
-
-  @IsOptional()
-  @IsArray({ message: 'Las tallas deberia ser un arreglo' })
-  @IsString({ each: true, message: 'Cada tipo deberia ser un string' })
-  sizes: string[];
-
-  @IsOptional()
-  @IsArray({ message: 'Los colores deberia ser un arreglo' })
-  @IsString({ each: true, message: 'Cada color debereria ser un string' })
-  colors: string[];
-
-  @IsOptional()
   @IsString({ message: 'La categoria deberia ser string' })
   categoryName: string;
 
@@ -71,6 +56,17 @@ export class UpdateProductDto {
   @ArrayMinSize(1, { message: 'Deberia ser al menos una sub categoria' })
   @IsString({ each: true, message: 'Cada sub categoria deberia seria string' })
   subCategoriesNames: string[];
+
+  @IsOptional()
+  @IsString({ message: 'El color deberia ser texto' })
+  colorName: string;
+
+  @IsOptional()
+  @IsArray({ message: 'Las tallas deberia ser un arreglo' })
+  @ArrayMinSize(1, { message: 'Al menos una talla en el arreglo' })
+  @ValidateNested({ each: true })
+  @Type(() => UpdateProductVariantDto)
+  variants: UpdateProductVariantDto[];
 }
 
 export class UpdateManyProductsDto {

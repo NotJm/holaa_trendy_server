@@ -68,13 +68,13 @@ export class ProductController extends BaseController {
    * @param createProductsDto
    * @returns
    */
-  @UseGuards(JwtAuthGuard, RoleGuard)
-  @Roles(ROLE.EMPLOYEE)
-  @AuditLog({
-    action: ACTIONS_TYPE.CREATE,
-    module: 'products',
-    getEntityId: (res) => res.id,
-  })
+  // @UseGuards(JwtAuthGuard, RoleGuard)
+  // @Roles(ROLE.EMPLOYEE)
+  // @AuditLog({
+  //   action: ACTIONS_TYPE.CREATE,
+  //   module: 'products',
+  //   getEntityId: (res) => res.id,
+  // })
   @Post('create-many')
   async createManyProducts(
     @Body() createProductsDto: CreateManyProductsDto,

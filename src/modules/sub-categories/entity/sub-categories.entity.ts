@@ -4,7 +4,7 @@ import {
   Entity,
   ManyToMany,
   PrimaryGeneratedColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
 import { Category } from '../../categories/entity/category.entity';
 import { Product } from '../../products/entity/products.entity';
@@ -24,12 +24,16 @@ export class SubCategory {
   })
   categories?: Category[];
 
-  @ManyToMany(() => Product, (product) => product.subCategories)
+  @ManyToMany(() => Product, (product) => product.subCategories, {
+    onDelete: 'SET NULL',
+    onUpdate: 'CASCADE',
+    nullable: true,
+  })
   products?: Product[];
 
   @CreateDateColumn({
     nullable: false,
-    type: 'timestamptz', 
+    type: 'timestamptz',
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt?: Date;

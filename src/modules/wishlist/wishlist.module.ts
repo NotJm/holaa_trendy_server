@@ -14,7 +14,7 @@ import { NewArrivals } from '../products/entity/new-arrivals.entity';
 import { ProductVariant } from '../products/entity/product-variant.entity';
 import { ProductImages } from '../products/entity/products-images.entity';
 import { Product } from '../products/entity/products.entity';
-import { ProductService } from '../products/product.service';
+import { ProductModule } from '../products/product.module';
 import { Size } from '../sizes/entity/sizes.entity';
 import { SizesService } from '../sizes/sizes.service';
 import { SubCategory } from '../sub-categories/entity/sub-categories.entity';
@@ -33,6 +33,7 @@ import { WishlistService } from './wishlist.service';
     HttpModule,
     AuthModule,
     UsersModule,
+    ProductModule,
     TypeOrmModule.forFeature([
       Wishlist,
       WishListItem,
@@ -50,13 +51,12 @@ import { WishlistService } from './wishlist.service';
       CategoryStockInitial,
       CategorySaleTrend,
       ProductVariant,
-      Address
+      Address,
     ]),
   ],
   controllers: [WishlistController],
   providers: [
     WishlistService,
-    ProductService,
     CategoryService,
     SubCategoryService,
     SizesService,

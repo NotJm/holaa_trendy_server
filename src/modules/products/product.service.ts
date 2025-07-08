@@ -5,7 +5,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { instanceToPlain } from 'class-transformer';
 import {
   ILike,
   In,
@@ -38,6 +37,8 @@ import { NewArrivals } from './entity/new-arrivals.entity';
 import { ProductVariant } from './entity/product-variant.entity';
 import { ProductImages } from './entity/products-images.entity';
 import { Product } from './entity/products.entity';
+import { ProductImageService } from './providers/product-image.service';
+import { ProductVariantService } from './providers/product-variant.service';
 
 @Injectable()
 export class ProductService extends BaseService<Product> {
@@ -54,6 +55,8 @@ export class ProductService extends BaseService<Product> {
     private readonly boRepository: Repository<BestOffers>,
     @InjectRepository(BestSellers)
     private readonly bsRepository: Repository<BestSellers>,
+    private readonly piService: ProductImageService,
+    private readonly pvService: ProductVariantService,
     private readonly categoriesService: CategoryService,
     private readonly subCategoriesService: SubCategoryService,
     private readonly sizesService: SizesService,
@@ -211,7 +214,9 @@ export class ProductService extends BaseService<Product> {
    * @param createProductDto Estructura donde se define datos basicos del producto
    * @returns Regresa una respuesta
    */
-  public async createOne(createProductDto: CreateProductDto): Promise<any> {
+  public async createOne(
+    createProductDto: CreateProductDto,
+  ): Promise<ProductResponseDto> {
     const {
       code,
       images,
@@ -279,7 +284,7 @@ export class ProductService extends BaseService<Product> {
 
     productCreate.variants = productVariant;
 
-    return instanceToPlain(productCreate);
+    return toProductResponseDto(productCreate);
   }
 
   /**
@@ -289,7 +294,7 @@ export class ProductService extends BaseService<Product> {
    */
   public async createMany(
     createManyProductsDto: CreateManyProductsDto,
-  ): Promise<Product[]> {
+  ): Promise<ProductResponseDto[]> {
     const { products } = createManyProductsDto;
 
     const createProducts = await Promise.all(
@@ -307,7 +312,7 @@ export class ProductService extends BaseService<Product> {
    */
   public async getProducts(): Promise<ProductResponseDto[]> {
     const products = await this.find({
-      relations: ['category', 'subCategories'],
+      relations: this.relations,
     });
     return products.map((product) => toProductResponseDto(product));
   }
@@ -416,52 +421,29 @@ export class ProductService extends BaseService<Product> {
    * @returns
    */
   public async updateOne(updateProductDto: UpdateProductDto): Promise<Product> {
-    const { code } = updateProductDto;
-
-    let existsSizes,
-      existsColors,
-      existsImages,
-      existsCategory,
-      existsSubCategories;
+    const { code, categoryName, subCategoriesNames, images, variants } =
+      updateProductDto;
 
     const product = await this.findProductByCode(code);
 
-    if (!product) {
-      throw new NotFoundException(
-        `Producto con el codigo ${code} no encontrado`,
-      );
-    }
+    const category =
+      await this.categoriesService.findCategoryByName(categoryName);
 
-    if (updateProductDto.sizes) {
-      existsSizes = await this.sizesService.findSizesByIDs(
-        updateProductDto.sizes,
+    const subCategories =
+      await this.subCategoriesService.findSubCategoriesByNames(
+        subCategoriesNames,
       );
-    }
 
-    if (updateProductDto.colors) {
-      existsColors = await this.colorsService.findColorsByNames(
-        updateProductDto.colors,
-      );
-    }
+    const productImages = await this.piService.createOne(images, product);
 
-    if (updateProductDto.categoryName) {
-      existsCategory = await this.categoriesService.findCategoryByName(
-        updateProductDto.categoryName,
-      );
-    }
-
-    if (updateProductDto.subCategoriesNames) {
-      existsSubCategories =
-        await this.subCategoriesService.findSubCategoriesByNames(
-          updateProductDto.subCategoriesNames,
-        );
-    }
+    const productVariants = await this.pvService.createOne(variants, product);
 
     return await this.update(code, {
       ...updateProductDto,
-      images: existsImages || product.images,
-      category: existsCategory || product.category,
-      subCategories: existsSubCategories || product.subCategories,
+      category: category,
+      subCategories: subCategories,
+      images: productImages,
+      variants: productVariants,
     });
   }
 

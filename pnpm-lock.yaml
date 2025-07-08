@@ -52,7 +52,7 @@ importers:
         version: 6.4.0(@nestjs/common@11.0.11(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.0.11)(reflect-metadata@0.2.2)
       '@nestjs/typeorm':
         specifier: ^11.0.0
-        version: 11.0.0(@nestjs/common@11.0.11(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.0.11)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.21(ioredis@5.6.0)(pg@8.14.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
+        version: 11.0.0(@nestjs/common@11.0.11(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.0.11)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.25(ioredis@5.6.0)(mongodb@6.14.2)(pg@8.14.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))
       '@nestjs/websockets':
         specifier: ^11.0.11
         version: 11.0.11(@nestjs/common@11.0.11(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.0.11)(@nestjs/platform-socket.io@11.0.11)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -171,8 +171,8 @@ importers:
         specifier: ^5.5.0
         version: 5.5.0
       typeorm:
-        specifier: ^0.3.21
-        version: 0.3.21(ioredis@5.6.0)(pg@8.14.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2))
+        specifier: ^0.3.25
+        version: 0.3.25(ioredis@5.6.0)(mongodb@6.14.2)(pg@8.14.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2))
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
@@ -2138,8 +2138,8 @@ packages:
     resolution: {integrity: sha512-aW35yZM6Bb/4oJlZncMH2LCoZtJXTRxES17vE3hoRiowU2kWHaJKFkSBDnDR+cm9J+9QhXmREyIfv0pji9ejCQ==}
     engines: {node: '>=10'}
 
-  dedent@1.5.3:
-    resolution: {integrity: sha512-NHQtfOOW68WD8lgypbLA5oT+Bt0xXJhiYvoR6SmmNXZfpzOGXwdKWmcwG8N7PwVVWV3eF/68nmD9BaJSsTBhyQ==}
+  dedent@1.6.0:
+    resolution: {integrity: sha512-F1Z+5UCFpmQUzJa11agbyPVMbpgT/qA3/SKyJ1jyBgm7dUcUEa8v9JwDkerSQXfakBwFljIxhOJqGkjUwZ9FSA==}
     peerDependencies:
       babel-plugin-macros: ^3.1.0
     peerDependenciesMeta:
@@ -3107,8 +3107,8 @@ packages:
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
-  keyv@5.3.2:
-    resolution: {integrity: sha512-Lji2XRxqqa5Wg+CHLVfFKBImfJZ4pCSccu9eVWK6w4c2SDFLd8JAn1zqTuSFnsxb7ope6rMsnIHfp+eBbRBRZQ==}
+  keyv@5.3.4:
+    resolution: {integrity: sha512-ypEvQvInNpUe+u+w8BIcPkQvEqXquyyibWE/1NB5T2BTzIpS5cGEV1LZskDzPSTvNAaT4+5FutvzlvnkxOSKlw==}
 
   kind-of@6.0.3:
     resolution: {integrity: sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw==}
@@ -4374,17 +4374,17 @@ packages:
   typedarray@0.0.6:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
 
-  typeorm@0.3.21:
-    resolution: {integrity: sha512-lh4rUWl1liZGjyPTWpwcK8RNI5x4ekln+/JJOox1wCd7xbucYDOXWD+1cSzTN3L0wbTGxxOtloM5JlxbOxEufA==}
+  typeorm@0.3.25:
+    resolution: {integrity: sha512-fTKDFzWXKwAaBdEMU4k661seZewbNYET4r1J/z3Jwf+eAvlzMVpTLKAVcAzg75WwQk7GDmtsmkZ5MfkmXCiFWg==}
     engines: {node: '>=16.13.0'}
     hasBin: true
     peerDependencies:
-      '@google-cloud/spanner': ^5.18.0
+      '@google-cloud/spanner': ^5.18.0 || ^6.0.0 || ^7.0.0
       '@sap/hana-client': ^2.12.25
       better-sqlite3: ^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0
       hdb-pool: ^0.1.6
       ioredis: ^5.0.4
-      mongodb: ^5.8.0
+      mongodb: ^5.8.0 || ^6.0.0
       mssql: ^9.1.1 || ^10.0.1 || ^11.0.1
       mysql2: ^2.2.5 || ^3.0.1
       oracledb: ^6.3.0
@@ -4396,7 +4396,7 @@ packages:
       sql.js: ^1.4.0
       sqlite3: ^5.0.3
       ts-node: ^10.7.0
-      typeorm-aurora-data-api-driver: ^2.0.0
+      typeorm-aurora-data-api-driver: ^2.0.0 || ^3.0.0
     peerDependenciesMeta:
       '@google-cloud/spanner':
         optional: true
@@ -5603,13 +5603,13 @@ snapshots:
       '@nestjs/core': 11.0.11(@nestjs/common@11.0.11(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.0.11)(@nestjs/websockets@11.0.11)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
 
-  '@nestjs/typeorm@11.0.0(@nestjs/common@11.0.11(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.0.11)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.21(ioredis@5.6.0)(pg@8.14.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))':
+  '@nestjs/typeorm@11.0.0(@nestjs/common@11.0.11(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.0.11)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.25(ioredis@5.6.0)(mongodb@6.14.2)(pg@8.14.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)))':
     dependencies:
       '@nestjs/common': 11.0.11(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/core': 11.0.11(@nestjs/common@11.0.11(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.0.11)(@nestjs/websockets@11.0.11)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
-      typeorm: 0.3.21(ioredis@5.6.0)(pg@8.14.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2))
+      typeorm: 0.3.25(ioredis@5.6.0)(mongodb@6.14.2)(pg@8.14.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2))
 
   '@nestjs/websockets@11.0.11(@nestjs/common@11.0.11(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.0.11)(@nestjs/platform-socket.io@11.0.11)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
     dependencies:
@@ -6475,7 +6475,7 @@ snapshots:
 
   cache-manager@6.4.1:
     dependencies:
-      keyv: 5.3.2
+      keyv: 5.3.4
 
   cacheable-lookup@7.0.0: {}
 
@@ -6798,7 +6798,7 @@ snapshots:
     dependencies:
       mimic-response: 3.1.0
 
-  dedent@1.5.3: {}
+  dedent@1.6.0: {}
 
   deep-is@0.1.4: {}
 
@@ -7640,7 +7640,7 @@ snapshots:
       '@types/node': 22.13.10
       chalk: 4.1.2
       co: 4.6.0
-      dedent: 1.5.3
+      dedent: 1.6.0
       is-generator-fn: 2.1.0
       jest-each: 29.7.0
       jest-matcher-utils: 29.7.0
@@ -8007,7 +8007,7 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  keyv@5.3.2:
+  keyv@5.3.4:
     dependencies:
       '@keyv/serialize': 1.0.3
 
@@ -9175,7 +9175,7 @@ snapshots:
 
   typedarray@0.0.6: {}
 
-  typeorm@0.3.21(ioredis@5.6.0)(pg@8.14.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)):
+  typeorm@0.3.25(ioredis@5.6.0)(mongodb@6.14.2)(pg@8.14.0)(reflect-metadata@0.2.2)(ts-node@10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)):
     dependencies:
       '@sqltools/formatter': 1.2.5
       ansis: 3.17.0
@@ -9183,6 +9183,7 @@ snapshots:
       buffer: 6.0.3
       dayjs: 1.11.13
       debug: 4.4.0
+      dedent: 1.6.0
       dotenv: 16.4.7
       glob: 10.4.5
       reflect-metadata: 0.2.2
@@ -9193,9 +9194,11 @@ snapshots:
       yargs: 17.7.2
     optionalDependencies:
       ioredis: 5.6.0
+      mongodb: 6.14.2
       pg: 8.14.0
       ts-node: 10.9.2(@swc/core@1.11.9)(@types/node@22.13.10)(typescript@5.8.2)
     transitivePeerDependencies:
+      - babel-plugin-macros
       - supports-color
 
   typescript@5.7.3: {}

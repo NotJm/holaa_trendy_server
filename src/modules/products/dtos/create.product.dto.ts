@@ -56,7 +56,6 @@ export class CreateProductDto {
   @IsString({ each: true, message: 'Cada sub categoria deberia seria string' })
   subCategoriesNames: string[];
 
-
   @IsNotEmpty({ message: 'El color del producto es requerido'})
   @IsString({ message: 'El color deberia ser texto'})
   colorName: string;

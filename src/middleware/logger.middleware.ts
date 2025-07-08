@@ -12,7 +12,7 @@ export class LoggerMiddleware implements NestMiddleware {
     const user = req.user ? req.user.userId : 'Guest';
 
     res.on('finish', () => {
-      if (res.statusCode === HttpStatusCode.Created)
+      if (res.statusCode === HttpStatusCode.Created || res.statusCode === HttpStatusCode.Ok)
         this.loggerApp.log(
           `[${method}] ${originalUrl} - User: ${user} - IP: ${ip} - Status: ${res.statusCode}`,
           'LoggerMiddleware',

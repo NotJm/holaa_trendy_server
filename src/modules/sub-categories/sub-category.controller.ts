@@ -1,22 +1,22 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpStatus,
-    Param,
-    Post,
-    Put,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
 } from '@nestjs/common';
 import { BaseController } from '../../common/base.controller';
 import { IApiResponse } from '../../common/interfaces/api-response.interface';
 import {
-    CreateManySubCategoriesDto,
-    CreateSubCategoryDto,
+  CreateManySubCategoriesDto,
+  CreateSubCategoryDto,
 } from './dtos/create.sub-category.dto';
 import {
-    UpdateManySubCategoriesDto,
-    UpdateSubCategoryDto,
+  UpdateManySubCategoriesDto,
+  UpdateSubCategoryDto,
 } from './dtos/update.sub-category.dto';
 import { SubCategoryService } from './sub-category.service';
 
@@ -87,8 +87,21 @@ export class SubCategoryController extends BaseController {
    * @returns Todos los productos
    */
   @Get('by-category/:category')
-  async getSubCategoriesByCategory(@Param('category') category: string) {
-    return await this.subCategoriesService.getSubCategoriesByCategory(category);
+  async getSubCategoriesByCategory(
+    @Param('category') category: string,
+  ): Promise<IApiResponse> {
+    try {
+      const subCategories =
+        await this.subCategoriesService.getSubCategoriesByCategory(category);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Sub Categories retrieved successfully',
+        data: subCategories,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
   }
 
   @Get('by-name/:name')

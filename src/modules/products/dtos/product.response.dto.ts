@@ -14,7 +14,7 @@ export class ProductResponseDto {
   code: string;
 
   @Expose()
-  productName: string;
+  name: string;
 
   @Expose()
   imgUri: string;
@@ -41,7 +41,7 @@ export class ProductResponseDto {
   subCategoriesNames: string[];
 
   @Expose()
-  colorName: IColor;
+  color: IColor;
 
   @Expose()
   variants: IProductVariantsSizes[];
@@ -52,7 +52,7 @@ export class FeaturedProductResponseDto {
   code: string;
 
   @Expose()
-  productName: string;
+  name: string;
 
   @Expose()
   imgUri: string;
@@ -106,7 +106,7 @@ export const toProductResponseDto = (product: Product): ProductResponseDto => {
     variants:
       product.variants.map((variant) => {
         return {
-          sizeName: variant.size.name,
+          sizeName: variant.size.name || "",
           stock: variant.stock,
         };
       }) || [],

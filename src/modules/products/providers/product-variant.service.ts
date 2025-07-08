@@ -2,16 +2,19 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/base.service';
 import { LoggerApp } from 'src/common/logger/logger.service';
+import { Size } from 'src/modules/sizes/entity/sizes.entity';
+import { SizesService } from 'src/modules/sizes/sizes.service';
 import { In, Repository } from 'typeorm';
+import { CreateProductVariantDto } from '../dtos/create.product_variant.dto';
 import { ProductVariant } from '../entity/product-variant.entity';
 import { Product } from '../entity/products.entity';
-import { Size } from 'src/modules/sizes/entity/sizes.entity';
 
 @Injectable()
 export class ProductVariantService extends BaseService<ProductVariant> {
   constructor(
     @InjectRepository(ProductVariant)
     private readonly pVRepository: Repository<ProductVariant>,
+    private readonly sizesService: SizesService,
     private readonly loggerApp: LoggerApp,
   ) {
     super(pVRepository);
@@ -59,5 +62,31 @@ export class ProductVariantService extends BaseService<ProductVariant> {
     throw new NotFoundException(
       `The varaint of product ID ${product.code} don't exists`,
     );
+  }
+
+  public async createOne(
+    variants: CreateProductVariantDto[],
+    product: Product,
+  ): Promise<ProductVariant[]> {
+    return Promise.all(
+      variants.map(async (variant) => {
+        const size = await this.sizesService.findSizeByName(variant.sizeName);
+
+        if (!size) {
+          throw new NotFoundException(
+            `The next size '${variant.sizeName}' don't exists`,
+          );
+        }
+
+        return {
+          product: product,
+          size: size,
+          stock: variant.stock,
+        } as ProductVariant;
+      }),
+    );
+
+    // productVariants.forEach((productVariant) => this.create(productVariant));
+
   }
 }

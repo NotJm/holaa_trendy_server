@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/base.service';
+import { LoggerApp } from 'src/common/logger/logger.service';
 import { In, Repository } from 'typeorm';
 import { CreateColorDto, CreateManyColorsDto } from './dtos/create.color.dto';
 import { UpdateColorDto, UpdateManyColorsDto } from './dtos/update.color.dto';
@@ -15,14 +16,21 @@ export class ColorsService extends BaseService<Color> {
   constructor(
     @InjectRepository(Color)
     private readonly colorsRepository: Repository<Color>,
+    private readonly loggerApp: LoggerApp
   ) {
     super(colorsRepository);
   }
 
   public async findColorByName(name: string): Promise<Color> {
-    return await this.findOne({
+    const color = await this.findOne({
       where: { name: name },
     });
+
+    if (color) return color;
+
+    this.loggerApp.warn(`Color ${name} dont exists`, 'ColorService');
+    throw new NotFoundException(`The next color '${name}' dont exists`)
+
   }
 
   public async existsColorByName(name: string): Promise<boolean> {

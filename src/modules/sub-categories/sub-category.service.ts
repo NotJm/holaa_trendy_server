@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/base.service';
+import { LoggerApp } from 'src/common/logger/logger.service';
 import { In, Repository } from 'typeorm';
 import { CategoryService } from '../categories/category.service';
 import { Category } from '../categories/entity/category.entity';
@@ -24,6 +25,7 @@ export class SubCategoryService extends BaseService<SubCategory> {
     @InjectRepository(SubCategory)
     private readonly subCategoryRepository: Repository<SubCategory>,
     private readonly categoryService: CategoryService,
+    private readonly loggerApp: LoggerApp,
   ) {
     super(subCategoryRepository);
   }
@@ -43,23 +45,23 @@ export class SubCategoryService extends BaseService<SubCategory> {
       },
     });
 
-    if (!subCategories) {
-      throw new NotFoundException(
-        'No se pudo encontrar ninguna coincidencia con las sub categorias',
-      );
-    }
+    if (subCategories.length > 0) return subCategories;
 
-    return subCategories;
+    const foundNames = subCategories.map((sc) => sc.name);
+    const notFound = names.filter((name) => !foundNames.includes(name));
+
+    this.loggerApp.warn(`Subcategories dont found: ${notFound.join(',')}`);
+    throw new NotFoundException(
+      `Subcategories dont found: ${notFound.join(',')}`,
+    );
   }
 
-  public async existsSubCategoriesByNames(
-    names: string[]
-  ): Promise<boolean> {
+  public async existsSubCategoriesByNames(names: string[]): Promise<boolean> {
     const subCategories = await this.find({
       relations: ['categoires'],
       where: {
-        name: In(names)
-      }
+        name: In(names),
+      },
     });
 
     return !!subCategories;
@@ -161,7 +163,7 @@ export class SubCategoryService extends BaseService<SubCategory> {
     }
 
     const existsCategories =
-      await this.categoryService.findCategoriesByNames(categoriesNames)
+      await this.categoryService.findCategoriesByNames(categoriesNames);
 
     if (existsCategories.length !== categoriesNames.length) {
       const foundCodes = existsCategories.map((cat) => cat.name);

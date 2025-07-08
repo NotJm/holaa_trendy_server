@@ -74,7 +74,7 @@
         "socket.io": "^4.8.1",
         "speakeasy": "^2.0.0",
         "twilio": "^5.5.0",
-        "typeorm": "^0.3.21",
+        "typeorm": "^0.3.25",
         "uuid": "^11.1.0",
         "winston": "^3.17.0",
         "winston-daily-rotate-file": "^5.0.0",
