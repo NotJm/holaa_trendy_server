@@ -58,7 +58,7 @@ export class FeaturedProductResponseDto {
   imgUri: string;
 
   @Expose()
-  description: string;
+  description: string;  
 
   @Expose()
   price: number;

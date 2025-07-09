@@ -116,8 +116,19 @@ export class ProductController extends BaseController {
   @Get('view/:view')
   async getProductView(
     @Param('view') view: 'new-arrivals' | 'best-offers' | 'best-sellers',
-  ) {
-    return await this.productService.getProductsView(view);
+  ): Promise<IApiResponse> {
+    try {
+      const product = await this.productService.getProductsView(view);
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Successfully retrieved products',
+        data: product,
+      }
+
+    } catch (error) {
+      return this.handleError(error);
+    }
   }
 
   /**
