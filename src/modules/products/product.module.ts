@@ -1,5 +1,7 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CloudinaryModule } from '../../common/cloudinary/cloudinary.module';
 import { CategoryModule } from '../categories/category.module';
 import { Category } from '../categories/entity/category.entity';
 import { CategorySaleTrend } from '../categories/entity/category_sale_trend.entity';
@@ -12,14 +14,15 @@ import { SubCategory } from '../sub-categories/entity/sub-categories.entity';
 import { SubCategoryModule } from '../sub-categories/sub-category.module';
 import { BestOffers } from './entity/best-offers.entity';
 import { BestSellers } from './entity/best-sellers.entity';
+import { LowStockProducts } from './entity/low-stock-products.entity';
 import { NewArrivals } from './entity/new-arrivals.entity';
 import { ProductVariant } from './entity/product-variant.entity';
 import { ProductImages } from './entity/products-images.entity';
 import { Product } from './entity/products.entity';
 import { ProductController } from './product.controller';
 import { ProductService } from './product.service';
-import { ProductVariantService } from './providers/product-variant.service';
 import { ProductImageService } from './providers/product-image.service';
+import { ProductVariantService } from './providers/product-variant.service';
 
 @Module({
   imports: [
@@ -27,6 +30,8 @@ import { ProductImageService } from './providers/product-image.service';
     SubCategoryModule,
     SizesModule,
     ColorsModule,
+    CloudinaryModule,
+    HttpModule,
     TypeOrmModule.forFeature([
       Product,
       Category,
@@ -39,11 +44,16 @@ import { ProductImageService } from './providers/product-image.service';
       BestSellers,
       CategoryStockInitial,
       CategorySaleTrend,
-      ProductVariant
+      ProductVariant,
+      LowStockProducts,
     ]),
   ],
   controllers: [ProductController],
-  providers: [ProductService, ProductVariantService, ProductImageService],
-  exports: [ProductService, ProductVariantService, ProductImageService]
+  providers: [
+    ProductService,
+    ProductVariantService,
+    ProductImageService,
+  ],
+  exports: [ProductService, ProductVariantService, ProductImageService],
 })
 export class ProductModule {}

@@ -36,10 +36,6 @@ import { SaleService } from './sale.service';
     AuthModule,
     UsersModule,
     CartModule,
-    ProductModule,
-    SubCategoryModule,
-    ColorsModule,
-    SizesModule,
     TypeOrmModule.forFeature([
       Sale,
       SaleItem,

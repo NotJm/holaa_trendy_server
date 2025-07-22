@@ -27,6 +27,10 @@ import { WishListItem } from './entity/wishlist-item.entity';
 import { Wishlist } from './entity/wishlist.entity';
 import { WishlistController } from './wishlist.controller';
 import { WishlistService } from './wishlist.service';
+import { CategoryModule } from '../categories/category.module';
+import { SubCategoryModule } from '../sub-categories/sub-category.module';
+import { SizesModule } from '../sizes/sizes.module';
+import { ColorsModule } from '../colors/colors.module';
 
 @Module({
   imports: [
@@ -34,6 +38,10 @@ import { WishlistService } from './wishlist.service';
     AuthModule,
     UsersModule,
     ProductModule,
+    CategoryModule,
+    SubCategoryModule,
+    SizesModule,
+    ColorsModule,
     TypeOrmModule.forFeature([
       Wishlist,
       WishListItem,
@@ -55,13 +63,7 @@ import { WishlistService } from './wishlist.service';
     ]),
   ],
   controllers: [WishlistController],
-  providers: [
-    WishlistService,
-    CategoryService,
-    SubCategoryService,
-    SizesService,
-    ColorsService,
-  ],
+  providers: [WishlistService],
   exports: [WishlistService],
 })
 export class WishlistModule {}

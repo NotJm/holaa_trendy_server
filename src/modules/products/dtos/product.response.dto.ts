@@ -5,6 +5,7 @@ import { BestSellers } from '../entity/best-sellers.entity';
 import { NewArrivals } from '../entity/new-arrivals.entity';
 import { Product } from '../entity/products.entity';
 import { IProductVariantsSizes } from '../interface/variants.interface';
+import { LowStockProducts } from '../entity/low-stock-products.entity';
 
 /**
  * Defined DTO for sending product information to the website
@@ -58,7 +59,10 @@ export class FeaturedProductResponseDto {
   imgUri: string;
 
   @Expose()
-  description: string;  
+  images: string[];
+
+  @Expose()
+  description: string;
 
   @Expose()
   price: number;
@@ -82,6 +86,20 @@ export class FeaturedProductResponseDto {
   sizeNames: string[];
 }
 
+export class LowStockProductResponseDto {
+  @Expose()
+  name: string;
+
+  @Expose()
+  categoryName: string;
+
+  @Expose()
+  subCategoriesNames: string[];
+
+  @Expose()
+  totalStock: number;
+}
+
 /**
  * Handle the logic for creating a ProductResponseDto instance
  * @param product The product entity that contain information about product
@@ -94,11 +112,12 @@ export const toProductResponseDto = (product: Product): ProductResponseDto => {
     imgUri: product.imgUri,
     images: product.images?.map((image) => image.url) || [],
     description: product.description,
-    price: product.price,
-    discount: product.discount,
-    finalPrice: product.finalPrice,
-    categoryName: product.category.name || "",
-    subCategoriesNames: product.subCategories.map((subCat) => subCat.name) || [],
+    price: +product.price,
+    discount: +product.discount,
+    finalPrice: +product.finalPrice,
+    categoryName: product.category.name || '',
+    subCategoriesNames:
+      product.subCategories.map((subCat) => subCat.name) || [],
     color: {
       name: product.color.name,
       hexCode: product.color.hexCode,
@@ -106,7 +125,7 @@ export const toProductResponseDto = (product: Product): ProductResponseDto => {
     variants:
       product.variants.map((variant) => {
         return {
-          sizeName: variant.size.name || "",
+          sizeName: variant.size.name || '',
           stock: variant.stock,
         };
       }) || [],
@@ -114,12 +133,31 @@ export const toProductResponseDto = (product: Product): ProductResponseDto => {
 };
 
 export const toFeaturedProductResponseDto = (
-  featured: BestOffers | BestSellers | NewArrivals,
-) => {
+  featured: Product | BestOffers | BestSellers | NewArrivals,
+): FeaturedProductResponseDto => {
+  if (featured instanceof Product) {
+    return plainToInstance(FeaturedProductResponseDto, {
+      code: featured.code,
+      name: featured.name,
+      imgUri: featured.imgUri,
+      images: featured.images,
+      description: featured.description,
+      price: +featured.price,
+      discount: +featured.discount,
+      finalPrice: +featured.finalPrice,
+      categoryName: featured.category.name,
+      subCategoriesNames:
+        featured.subCategories.map((subCat) => subCat.name) || [],
+      colorName: featured.color.name,
+      sizeNames: featured.variants.map((variant) => variant.size.name) || [],
+    });
+  }
+
   return plainToInstance(FeaturedProductResponseDto, {
     code: featured.code,
     name: featured.productName,
     imgUri: featured.imgUri,
+    images: featured.images,
     description: featured.description,
     price: featured.price,
     discount: featured.discount,
@@ -127,6 +165,15 @@ export const toFeaturedProductResponseDto = (
     categoryName: featured.categoryName,
     subCategoriesNames: featured.subCategoriesNames,
     colorName: featured.colorName,
-    sizeNames: featured.sizesNames
+    sizeNames: featured.sizesNames,
+  });
+};
+
+export const toLowStockProductResponseDto = (lowStock: LowStockProducts) => {
+  return plainToInstance(LowStockProductResponseDto, {
+    name: lowStock.productName,
+    category: lowStock.categoryName,
+    subCategoriesNames: lowStock.subCategoriesName,
+    totalStock: +lowStock.totalStock,
   });
 };

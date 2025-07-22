@@ -78,8 +78,19 @@ export class SubCategoryController extends BaseController {
    * @returns
    */
   @Get()
-  async getSubCategories() {
-    return await this.subCategoriesService.getSubCategories();
+  async getSubCategories(): Promise<IApiResponse> {
+    try {
+      const subCategories = await this.subCategoriesService.getSubCategories();
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Sub Categorias obtenidas exitosamente',
+        data: subCategories,
+      } as IApiResponse
+
+    } catch (error) {
+      return this.handleError(error);
+    }
   }
 
   /**

@@ -1,28 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
-import { Readable } from 'stream';
 import { CloduinaryResponse } from '../interfaces/cloudinary.response.interface';
+import { LoggerApp } from '../logger/logger.service';
 
 @Injectable()
 export class CloudinaryService {
-  async uploadImage(
-    file: Express.Multer.File,
-    folder: string
-  ): Promise<CloduinaryResponse> {
-    return new Promise((resolve, reject) => {
-      const upload = cloudinary.uploader.upload_stream(
-        { folder: folder },
-        (error, result) => {
-          if (error) return reject(error);
-          resolve(result);
-        }
-      );
-      Readable.from(file.buffer).pipe(upload);
-    });
+  constructor(private readonly loggerApp: LoggerApp) {}
+
+  async uploadImage(url: string, folder: string): Promise<CloduinaryResponse> {
+    return cloudinary.uploader.upload(url, { folder: folder });
   }
 
   async deleteImage(publicId: string): Promise<void> {
     await cloudinary.uploader.destroy(publicId);
+  }
+
+  async deleteFolder(folder: string): Promise<void> {
+    try {
+      return await cloudinary.api.delete_resources_by_prefix(folder);
+    } catch (error) {
+      this.loggerApp.error(
+        `Ocurrio un error eliminando los recursos de la carpeta ${folder}`,
+      );
+    }
   }
 
   getImageUrl(publicId: string): string {

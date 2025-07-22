@@ -1,10 +1,4 @@
-import {
-    Controller,
-    Get,
-    HttpStatus,
-    Post,
-    UseGuards
-} from '@nestjs/common';
+import { Controller, Get, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { CategoryId } from 'src/common/decorators/category.decorator';
 import { IApiResponse } from 'src/common/interfaces/api-response.interface';
 import { BaseController } from '../../common/base.controller';
@@ -62,13 +56,57 @@ export class SaleController extends BaseController {
   ): Promise<IApiResponse> {
     try {
       const sales = await this.saleService.getSalesByCategory(category);
-      
 
       return {
         status: HttpStatus.OK,
         data: sales,
       };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
 
+  @Get('count/today')
+  @Roles(ROLE.ADMIN)
+  public async getCountSaleToday(): Promise<IApiResponse> {
+    try {
+      const count = await this.saleService.getCountSalesToday();
+
+      return {
+        status: HttpStatus.OK,
+        data: count,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @Get('income/today')
+  @Roles(ROLE.ADMIN)
+  public async getIncomeToday(): Promise<IApiResponse> {
+    try {
+      const income = await this.saleService.getIncomeToday();
+
+      return {
+        status: HttpStatus.OK,
+        data: income,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @Get('ranking')
+  @Roles(ROLE.ADMIN)
+  public async getRankingProducts(): Promise<IApiResponse> {
+    try {
+      const top = await this.saleService.getRankingProducts();
+
+      return {
+        status: HttpStatus.OK,
+        data: top,
+      };
+      
     } catch (error) {
       return this.handleError(error);
     }

@@ -28,6 +28,7 @@ import { SizesModule } from './modules/sizes/sizes.module';
 import { SubCategoryModule } from './modules/sub-categories/sub-category.module';
 import { UsersModule } from './modules/users/users.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
+import { RecommendationModule } from './modules/products/recommendations/recommendations.module';
 
 @Module({
   imports: [
@@ -37,13 +38,14 @@ import { WishlistModule } from './modules/wishlist/wishlist.module';
     WishlistModule,
     PurchaseModule,
     CloudinaryModule,
+    RecommendationModule,
+    ProductModule,
     CartModule,
     SizesModule,
     ColorsModule,
     SubCategoryModule,
     CategoryModule,
     SettingsModule,
-    ProductModule,
     AuthModule,
     UsersModule,
     LoggerModule,

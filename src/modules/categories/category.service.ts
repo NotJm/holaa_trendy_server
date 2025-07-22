@@ -21,6 +21,7 @@ import {
 import { Category } from './entity/category.entity';
 import { CategoryStockInitial } from './entity/category_stock_initial.entity';
 import { CategorySaleTrend } from './entity/category_sale_trend.entity';
+import { LoggerApp } from 'src/common/logger/logger.service';
 
 @Injectable()
 export class CategoryService extends BaseService<Category> {
@@ -31,6 +32,7 @@ export class CategoryService extends BaseService<Category> {
     private readonly categoryStockInitialRepository: Repository<CategoryStockInitial>,
     @InjectRepository(CategorySaleTrend)
     private readonly categorySaleTrendRepository: Repository<CategorySaleTrend>,
+    private readonly loggerApp: LoggerApp,
   ) {
     super(categoriesRepository);
   }
@@ -41,10 +43,38 @@ export class CategoryService extends BaseService<Category> {
    * @returns Regresa categoria con el codigo que coincida
    */
   async findCategoryByName(name: string): Promise<Category> {
-    return this.findOne({
+    const category = this.findOne({
       relations: ['subCategories'],
       where: { name: name },
     });
+
+    if (category) return category;
+
+    this.loggerApp.warn(`La categoria con el nombre ${name} no existe`);
+    throw new NotFoundException(`La categoria con el nombre ${name} no existe`);
+  }
+
+  async findCategoriesByNames(names: string[]): Promise<Category[]> {
+    const categories = await this.find({
+      relations: ['subCategories'],
+      where: {
+        name: In(names),
+      },
+    });
+
+    const foundNames = categories.map((c) => c.name);
+    const notFound = names.filter((n) => !foundNames.includes(n));
+
+    if (notFound.length > 0) {
+      this.loggerApp.warn(
+        `No se encontraron las siguientes categorías: ${notFound.join(', ')}`,
+      );
+      throw new NotFoundException(
+        `No se encontraron las siguientes categorías: ${notFound.join(', ')}`,
+      );
+    }
+
+    return categories;
   }
 
   /**
@@ -59,13 +89,6 @@ export class CategoryService extends BaseService<Category> {
     });
 
     return !!category;
-  }
-
-  async findCategoriesByNames(names: string[]): Promise<Category[]> {
-    return this.find({
-      relations: ['subCategories'],
-      where: { name: In(names) },
-    });
   }
 
   async findCategoryById(id: string): Promise<Category> {

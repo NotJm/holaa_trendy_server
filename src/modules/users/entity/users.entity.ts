@@ -1,17 +1,18 @@
 import {
-    Column,
-    Entity,
-    JoinColumn,
-    OneToMany,
-    OneToOne,
-    PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ACCOUNT_STATE, ROLE } from '../../../common/constants/contants';
 import { Cart } from '../../cart/entity/cart.entity';
 import { Wishlist } from '../../wishlist/entity/wishlist.entity';
 import { Address } from './user-address.entity';
 import { Incident } from './user-incident.entity';
-import { Audit } from '../../audit/entity/audit.entity'
+import { Audit } from '../../audit/entity/audit.entity';
 import { RefreshToken } from 'src/modules/auth/entity/refresh-token.entity';
 
 @Entity('users')
@@ -28,7 +29,13 @@ export class User {
   @Column({ type: 'varchar', nullable: false, unique: true })
   email: string;
 
-  @Column({ type: 'varchar', unique: true, nullable: false, length: 13, default: '' })
+  @Column({
+    type: 'varchar',
+    unique: true,
+    nullable: false,
+    length: 13,
+    default: '',
+  })
   phone: string;
 
   @Column({
@@ -71,4 +78,7 @@ export class User {
   @OneToOne(() => Cart, (cart) => cart.user)
   @JoinColumn()
   cart?: Cart;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp', nullable: false })
+  createdAt?: Date;
 }

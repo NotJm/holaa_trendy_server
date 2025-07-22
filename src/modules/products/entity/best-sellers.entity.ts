@@ -1,58 +1,51 @@
-import { Check, Column, Entity, PrimaryColumn } from 'typeorm';
+import { Check, Column, PrimaryColumn, ViewColumn, ViewEntity } from 'typeorm';
 
-@Entity('best_sellers', { synchronize: false })
+@ViewEntity({ name: 'best_sellers', synchronize: false })
 @Check(
   '"price"::numeric > 0.0 AND "discount"::numeric >= 0 AND "discount"::numeric <= 100',
 )
 export class BestSellers {
-  @PrimaryColumn({ name: 'code' })
+  @ViewColumn({ name: 'code' })
   code: string;
 
-  @Column({ type: 'varchar', name: 'product_name', nullable: false })
+  @ViewColumn({ name: 'product_name' })
   productName: string;
 
-  @Column({ type: 'varchar', name: 'img_uri', nullable: false })
+  @ViewColumn({ name: 'img_uri' })
   imgUri: string;
 
-  @Column({ type: 'text', nullable: false })
+  @ViewColumn({ name: 'product_images'})
+  images: string[]
+
+  @ViewColumn()
   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @ViewColumn()
   price: number;
 
-  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @ViewColumn()
   discount: number;
 
-  @Column({
+  @ViewColumn({
     name: 'final_price',
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0,
   })
   finalPrice?: number;
 
-  @Column({ name: 'category_name', type: 'varchar', nullable: false })
+  @ViewColumn({ name: 'category_name' })
   categoryName: string;
 
-  @Column({
+  @ViewColumn({
     name: 'subcategories_names',
-    type: 'character varying',
-    nullable: false,
   })
   subCategoriesNames: string[];
 
-  @Column({
+  @ViewColumn({
     name: 'color_name',
-    type: 'character varying',
-    nullable: false,
   })
   colorName: string;
 
-  @Column({
+  @ViewColumn({
     name: 'sizes_names',
-    type: 'character varying',
-    nullable: false,
   })
   sizesNames: string[];
 }

@@ -19,7 +19,7 @@ export class UpdateSubCategoryDto {
 
   @IsOptional()
   @IsString({ message: 'El codigo deberia ser texto' })
-  newName?: string;
+  name?: string;
 
   @IsArray({
     message: 'Las categorías deben ser proporcionadas como un array.',
@@ -30,7 +30,7 @@ export class UpdateSubCategoryDto {
     message: 'Cada categoría debe ser una cadena de texto.',
   })
   @IsOptional()
-  newCategoriesNames?: string[];
+  categoriesNames?: string[];
 }
 
 export class UpdateManySubCategoriesDto {

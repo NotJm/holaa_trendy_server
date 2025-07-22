@@ -10,7 +10,8 @@ import { Request } from 'express';
 import { BaseService } from 'src/common/base.service';
 import { Argon2Service } from 'src/common/providers/argon2.service';
 import { formattedDate } from 'src/common/utils/formatted-date';
-import { Repository } from 'typeorm';
+import { getDateRange } from 'src/common/utils/get-range-date';
+import { Between, Repository } from 'typeorm';
 import {
   ACCOUNT_STATE,
   INCIDENT_STATE,
@@ -24,10 +25,15 @@ import {
   toProfileResponseDto,
 } from './dtos/profile.response.dto';
 import { RegisterAddressDto } from './dtos/register-address.dto';
-import { toUserResponseDto, UserResponseDto } from './dtos/user.response.dto';
+import {
+  toUserProfileResponseDto,
+  UserProfileResponseDto,
+} from './dtos/user.response.dto';
+import { UserActivity } from './entity/user-activity.entity';
 import { Address } from './entity/user-address.entity';
 import { User } from './entity/users.entity';
 import { IncidentService } from './incident.service';
+import { SaleService } from '../sales/sale.service';
 
 @Injectable()
 export class UsersService extends BaseService<User> {
@@ -36,6 +42,8 @@ export class UsersService extends BaseService<User> {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Address)
     private readonly addressRepository: Repository<Address>,
+    @InjectRepository(UserActivity)
+    private readonly uaRepository: Repository<UserActivity>,
     private readonly pwnedService: PwnedService,
     private readonly incidentService: IncidentService,
     private readonly argon2Service: Argon2Service,
@@ -207,10 +215,10 @@ export class UsersService extends BaseService<User> {
     return await this.argon2Service.compare(hashPassword, password);
   }
 
-  async getUserById(userId: string): Promise<UserResponseDto> {
+  async getUserById(userId: string): Promise<UserProfileResponseDto> {
     const user = await this.findUserById(userId);
 
-    return toUserResponseDto(user);
+    return toUserProfileResponseDto(user);
   }
 
   async getProfile(userId: string): Promise<ProfileResponseDto> {
@@ -222,6 +230,46 @@ export class UsersService extends BaseService<User> {
 
     return toProfileResponseDto(user);
   }
+
+  /**
+   * Handle the logic for getting the total users registered in website
+   * @returns The total users registered in website
+   */
+  async getUserCount(): Promise<number> {
+    const count = await this.userRepository.count();
+
+    return count;
+  }
+
+  async getActivitys(): Promise<UserActivity[]> {
+    const activitys = await this.uaRepository.find();
+
+    return activitys.length > 0 ? activitys : [];
+  }
+
+  public async getCountUserToday(): Promise<number> {
+    const { start, end } = getDateRange(new Date());
+
+    const count = await this.userRepository.count({
+      where: {
+        createdAt: Between(start, end),
+      },
+    });
+
+    return count;
+  }
+
+  public async getCountUserActive(): Promise<number> {
+    const count = await this.userRepository.count({
+      where: {
+        accountState: ACCOUNT_STATE.ACTIVED,
+      },
+    });
+
+    return count;
+  }
+
+  
 
   /**
    * Marks as actived the user's account

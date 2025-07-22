@@ -25,6 +25,8 @@ import { Address } from '../../modules/users/entity/user-address.entity';
 import { Incident } from '../../modules/users/entity/user-incident.entity';
 import { WishListItem } from '../../modules/wishlist/entity/wishlist-item.entity';
 import { Wishlist } from '../../modules/wishlist/entity/wishlist.entity';
+import { UserActivity } from 'src/modules/users/entity/user-activity.entity';
+import { LowStockProducts } from 'src/modules/products/entity/low-stock-products.entity';
 
 export const ormConfig = (
   configService: ConfigService,
@@ -41,6 +43,7 @@ export const ormConfig = (
 
     // Users
     User,
+    UserActivity,
     Address,
     Incident,
     RefreshToken,
@@ -65,10 +68,11 @@ export const ormConfig = (
     SaleItem,
     Audit,
 
-    // Vistas Materializadas
+    // Vistas
     NewArrivals,
     BestOffers,
     BestSellers,
+    LowStockProducts,
     CategoryStockInitial,
     CategorySaleTrend,
     StockDepletionTime,

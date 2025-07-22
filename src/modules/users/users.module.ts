@@ -11,11 +11,13 @@ import { User } from './entity/users.entity';
 import { IncidentService } from './incident.service';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { UserActivity } from './entity/user-activity.entity';
+import { SaleModule } from '../sales/sale.module';
 
 @Module({
   imports: [
     HttpModule,
-    TypeOrmModule.forFeature([User, Incident, Address]),
+    TypeOrmModule.forFeature([User, Incident, Address, UserActivity]),
   ],
   controllers: [UsersController],
   providers: [

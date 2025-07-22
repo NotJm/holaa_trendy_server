@@ -1,10 +1,10 @@
 import {
-    Body,
-    Controller,
-    Get,
-    HttpStatus,
-    Put,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Put,
+  UseGuards,
 } from '@nestjs/common';
 import { ROLE } from 'src/common/constants/contants';
 import { UserId } from 'src/common/decorators/user.decorator';
@@ -30,8 +30,12 @@ export class UsersController extends BaseController {
   @Get()
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(ROLE.ADMIN)
-  async findUsers() {
-    return this.userService.findAllUsers();
+  public async findUsers(): Promise<IApiResponse> {
+    try {
+      
+    } catch (error) {
+      return this.handleError(error)
+    }
   }
 
   /**
@@ -90,7 +94,6 @@ export class UsersController extends BaseController {
         status: HttpStatus.OK,
         data: userData,
       };
-
     } catch (error) {
       return this.handleError(error);
     }
@@ -106,6 +109,76 @@ export class UsersController extends BaseController {
       return {
         status: HttpStatus.OK,
         data: profile,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @Get('count')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.ADMIN)
+  public async getUserCount(): Promise<IApiResponse> {
+    try {
+      const totalUsers = await this.userService.getUserCount();
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Total de usuarios registrados',
+        data: totalUsers,
+      };
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @Get('count/today')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.ADMIN)
+  public async getCountUserToday(): Promise<IApiResponse> {
+    try {
+      const totalUserToday = await this.userService.getCountUserToday();
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Total de usuarios registrados hoy',
+        data: totalUserToday,
+      }
+
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  @Get('count/active')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.ADMIN)
+  public async getCountUserActive(): Promise<IApiResponse> {
+    try {
+      const totalUserActive = await this.userService.getCountUserActive();
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Total de usuarios activos',
+        data: totalUserActive,
+      }
+
+    } catch (error) { 
+      return this.handleError(error);
+    }
+  }
+
+  @Get('activitys')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.ADMIN)
+  async getUserActivity(): Promise<IApiResponse> {
+    try {
+      const acitivity = await this.userService.getActivitys();
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Actividad de usuarios recuperada',
+        data: acitivity,
       };
     } catch (error) {
       return this.handleError(error);

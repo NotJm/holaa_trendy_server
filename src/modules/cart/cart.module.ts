@@ -35,8 +35,8 @@ import { ProductVariant } from '../products/entity/product-variant.entity';
     AuthModule,
     CategoryModule,
     SubCategoryModule,
-    ColorsModule,
     SizesModule,
+    ColorsModule,
     ProductModule,
     TypeOrmModule.forFeature([
       Cart,
@@ -55,7 +55,7 @@ import { ProductVariant } from '../products/entity/product-variant.entity';
       CategoryStockInitial,
       CategorySaleTrend,
       Address,
-      ProductVariant
+      ProductVariant,
     ]),
   ],
   controllers: [CartController],

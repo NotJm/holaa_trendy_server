@@ -26,6 +26,7 @@ import {
     UpdateProductDto,
 } from './dtos/update.product.dto';
 import { ProductService } from './product.service';
+import { UserId } from 'src/common/decorators/user.decorator';
 
 @Controller('products')
 export class ProductController extends BaseController {
@@ -130,6 +131,44 @@ export class ProductController extends BaseController {
       return this.handleError(error);
     }
   }
+
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(ROLE.EMPLOYEE, ROLE.ADMIN)
+  @Get('low-stock')
+  async getLowStockProducts(): Promise<IApiResponse> {
+    try {
+      const lowStockProducts = await this.productService.getLowStockProducts();
+
+      return {
+        status: HttpStatus.OK,
+        message: 'Productos recuperados exitosamente',
+        data: lowStockProducts,
+      }
+
+    } catch (error) {
+      return this.handleError(error)
+    }
+  }
+
+  // @UseGuards(JwtAuthGuard, RoleGuard)
+  // @Roles(ROLE.USER)
+  // @Get('recommender')
+  // public async getRecommenderProducts(
+  //   @UserId() userId: string
+  // ): Promise<IApiResponse> {
+  //   try {
+  //     const products = await this.productService.getRecommenderProducts(userId);
+
+  //     return {
+  //       status: HttpStatus.OK,
+  //       message: 'Productos recomendados recuperados exitosamente',
+  //       data: products,
+  //     }
+
+  //   } catch (error) {
+  //     return this.handleError(error);
+  //   }
+  // }
 
   /**
    * Endpoint for getting all products by category

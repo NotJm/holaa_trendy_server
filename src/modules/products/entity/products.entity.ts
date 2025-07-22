@@ -53,6 +53,7 @@ export class Product {
   finalPrice?: number;
 
   @OneToMany(() => ProductImages, (productImage) => productImage.product, {
+    onDelete: 'CASCADE',
     cascade: true,
   })
   images?: ProductImages[];

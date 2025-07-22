@@ -18,6 +18,7 @@ import {
   UpdateSubCategoryDto,
 } from './dtos/update.sub-category.dto';
 import { SubCategory } from './entity/sub-categories.entity';
+import { toSubCategoryResponse } from './dtos/sub-category.response.dto';
 
 @Injectable()
 export class SubCategoryService extends BaseService<SubCategory> {
@@ -67,27 +68,56 @@ export class SubCategoryService extends BaseService<SubCategory> {
     return !!subCategories;
   }
 
+  public async findSubCategories(): Promise<SubCategory[]> {
+    return this.find({
+      relations: ['categories'],
+    });
+  }
+
   /**
    * Metodo que encuentra una sub categoria por codigo
    * @param code Codigo de la sub categoria
    * @returns Regresa la sub categoria encontrada
    */
   private async findSubCategoryByName(code: string): Promise<SubCategory> {
-    return this.findOne({
+    const subCategory = await this.findOne({
       relations: ['categories'],
       where: {
         name: code,
       },
     });
+
+    if (subCategory) return subCategory;
+
+    this.loggerApp.warn(`La sub categoria con el codigo ${code} no existe`);
+    throw new NotFoundException(
+      `La sub categoria con el codigo ${code} no existe}`,
+    );
+  }
+
+  private async existsSubCategoryByName(name: string): Promise<boolean> {
+    const subCategory = await this.findOne({
+      relations: ['categories'],
+      where: {
+        name: name,
+      },
+    });
+
+    return !!subCategory;
   }
 
   private async findSubCategoryById(id: string): Promise<SubCategory> {
-    return this.findOne({
+    const subCategory = this.findOne({
       relations: ['categories'],
       where: {
         id: id,
       },
     });
+
+    if (subCategory) return subCategory;
+
+    this.loggerApp.warn(`La subcategoria con el id ${id} no existe`);
+    throw new NotFoundException(`La subcategoria con el id ${id} no existe}`);
   }
 
   private async findSubCategoriesByCategory(
@@ -158,7 +188,7 @@ export class SubCategoryService extends BaseService<SubCategory> {
 
     if (existsSubCategory) {
       throw new ConflictException(
-        `Sub Categoria con el nombre ${name} ya se encuentra registradoya existe`,
+        `Sub Categoria con el nombre ${name} ya se encuentra registrado ya existe`,
       );
     }
 
@@ -203,9 +233,11 @@ export class SubCategoryService extends BaseService<SubCategory> {
    * @returns Arreglo de sub categorias
    */
   public async getSubCategories(): Promise<SubCategory[]> {
-    return this.find({
-      relations: ['categories'],
-    });
+    const subCategories = await this.findSubCategories();
+
+    return subCategories
+      ? subCategories.map((subCategory) => toSubCategoryResponse(subCategory))
+      : [];
   }
 
   /**
@@ -237,49 +269,24 @@ export class SubCategoryService extends BaseService<SubCategory> {
   public async updateOne(
     updateSubCategoryDto: UpdateSubCategoryDto,
   ): Promise<SubCategory> {
-    const { id, newName, newCategoriesNames } = updateSubCategoryDto;
+    const { id, name, categoriesNames } = updateSubCategoryDto;
 
     const subCategory = await this.findSubCategoryById(id);
 
-    if (!subCategory) {
-      throw new NotFoundException(
-        `Sub Categoria con el ID ${id} no encontrado`,
-      );
-    }
+    subCategory.name = (await this.existsSubCategoryByName(name))
+      ? subCategory.name
+      : name;
 
-    if (newName) {
-      const existsSubCategoryNewName =
-        await this.findSubCategoryByName(newName);
+    const newCategories =
+      await this.categoryService.findCategoriesByNames(categoriesNames);
 
-      if (existsSubCategoryNewName) {
-        throw new ConflictException(
-          `El nombre ${name} ya existe, Por favor utilice un nombre diferente`,
-        );
-      }
+    const mixCategories = [...subCategory.categories, ...newCategories];
 
-      subCategory.name = newName;
-    }
+    const uniqueCategories = Array.from(
+      new Map(mixCategories.map((cat) => [cat.id, cat])).values(),
+    );
 
-    if (newCategoriesNames) {
-      const newCategories = await Promise.all(
-        newCategoriesNames.map(async (categoryName) => {
-          const category =
-            await this.categoryService.findCategoryByName(categoryName);
-          if (!category) {
-            throw new NotFoundException(
-              `Categoria con el nombre ${categoryName} no encontrada`,
-            );
-          }
-          return category;
-        }),
-      );
-
-      const currentCategories = new Set<Category>(subCategory.categories);
-
-      newCategories.forEach((category) => currentCategories.add(category));
-
-      subCategory.categories = [...currentCategories];
-    }
+    subCategory.categories = uniqueCategories;
 
     return await this.update(id, subCategory);
   }

@@ -9,34 +9,42 @@ import { In, Repository } from 'typeorm';
 import { CreateManySizesDto, CreateSizeDto } from './dtos/create.size.dto';
 import { UpdateManySizesDto, UpdateSizeDto } from './dtos/update.size.dto';
 import { Size } from './entity/sizes.entity';
+import { LoggerApp } from 'src/common/logger/logger.service';
 
 @Injectable()
 export class SizesService extends BaseService<Size> {
   constructor(
     @InjectRepository(Size)
     private readonly sizesRepository: Repository<Size>,
+    private readonly loggerApp: LoggerApp,
   ) {
     super(sizesRepository);
   }
 
   /**
    * Busca una talla por su ID
-   * @param size - La talla a buscar
+   * @param sizeName - La talla a buscar
    * @returns Una promesa que se resuelve con la talla encontrada
    */
-  async findSizeByName(size: string): Promise<Size> {
-    return await this.findOne({
-      where: { name: size },
+  async findSizeByName(sizeName: string): Promise<Size> {
+    const size = await this.findOne({
+      where: { name: sizeName },
     });
+
+    if (size) return size;
+
+    this.loggerApp.warn(`La talla con el nombre: ${sizeName} no existe`);
+    throw new NotFoundException(
+      `La talla con el nombre: ${sizeName} no existe`,
+    );
   }
 
   public async existsSizeByName(sizeName: string): Promise<boolean> {
     const size = await this.findOne({
-      where: { name: sizeName }
-    })
+      where: { name: sizeName },
+    });
 
     return !!size;
-
   }
 
   /**

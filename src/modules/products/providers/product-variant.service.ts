@@ -29,7 +29,8 @@ export class ProductVariantService extends BaseService<ProductVariant> {
 
     if (variants.length != 0) return variants;
 
-    throw new NotFoundException(`Two or more products variants don't exists`);
+    this.loggerApp.warn('Dos o mas variantes de productos no existen');
+    throw new NotFoundException(`Dos o mas variantes de productos no existen`);
   }
 
   public async findProductVariantById(id: string): Promise<ProductVariant> {
@@ -39,8 +40,8 @@ export class ProductVariantService extends BaseService<ProductVariant> {
 
     if (variant) return variant;
 
-    this.loggerApp.warn(`The variant with ID ${id} don't exists`);
-    throw new NotFoundException(`The variant with ID ${id} don't exists`);
+    this.loggerApp.warn(`La variante con id: ${id} no existe`);
+    throw new NotFoundException(`La variante con id ${id} no existe`);
   }
 
   public async findProductVariantByProductAndSize(
@@ -57,36 +58,93 @@ export class ProductVariantService extends BaseService<ProductVariant> {
     if (variant) return variant;
 
     this.loggerApp.warn(
-      `The varaint of product ID ${product.code} don't exists`,
+      `La variante del producto con codigo: ${product.code} no existen`,
     );
     throw new NotFoundException(
-      `The varaint of product ID ${product.code} don't exists`,
+      `La variantE del producto con codigo: ${product.code} no existen`,
+    );
+  }
+
+  public async findProductVariantsByProduct(
+    product: Product,
+  ): Promise<ProductVariant[]> {
+    const variant = await this.find({
+      where: {
+        product: { code: product.code },
+      },
+    });
+
+    if (variant.length > 0) return variant;
+
+    this.loggerApp.warn(
+      `Las variantes del producto con codigo: ${product.code} no existen`,
+    );
+    throw new NotFoundException(
+      `Las variantes del producto con codigo: ${product.code} no existen`,
     );
   }
 
   public async createOne(
+    variant: CreateProductVariantDto,
+    product: Product,
+  ): Promise<ProductVariant> {
+    const size = await this.sizesService.findSizeByName(variant.sizeName);
+    return await this.create({
+      product: product,
+      size: size,
+      stock: variant.stock,
+    });
+  }
+
+  public async createMany(
     variants: CreateProductVariantDto[],
     product: Product,
   ): Promise<ProductVariant[]> {
     return Promise.all(
       variants.map(async (variant) => {
-        const size = await this.sizesService.findSizeByName(variant.sizeName);
-
-        if (!size) {
-          throw new NotFoundException(
-            `The next size '${variant.sizeName}' don't exists`,
-          );
-        }
-
-        return {
-          product: product,
-          size: size,
-          stock: variant.stock,
-        } as ProductVariant;
+        return await this.createOne(variant, product);
       }),
     );
+  }
 
-    // productVariants.forEach((productVariant) => this.create(productVariant));
+  public async updateOne(
+    variants: CreateProductVariantDto[],
+    product: Product,
+  ): Promise<ProductVariant[]> {
+    const productVariants = await this.findProductVariantsByProduct(product);
 
+    const toUpdated = variants.slice(0, productVariants.length);
+    const toCreated = variants.slice(productVariants.length);
+
+    const productVariantsUpdated = await Promise.all(
+      productVariants
+        .slice(0, toUpdated.length)
+        .map(async (productVariant, idx) => {
+          return this.update(productVariant.id, {
+            stock: toUpdated[idx].stock,
+            product: product,
+          });
+        }),
+    );
+
+    const productVariantsCreated = toCreated.length
+      ? await this.createMany(toCreated, product)
+      : [];
+
+    return [...productVariantsUpdated, ...productVariantsCreated];
+  }
+
+  public async deleteOne(id: string): Promise<ProductVariant> {
+    return this.deleteById(id);
+  }
+
+  public async deleteMany(
+    productVariants: ProductVariant[],
+  ): Promise<ProductVariant[]> {
+    return Promise.all(
+      productVariants.map(async (productVariant) => {
+        return await this.deleteOne(productVariant.id);
+      }),
+    );
   }
 }

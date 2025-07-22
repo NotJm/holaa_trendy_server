@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { CloudinaryService } from 'src/common/cloudinary/cloudinary.service';
 import {
   ILike,
   In,
@@ -23,8 +24,10 @@ import {
 } from './dtos/create.product.dto';
 import {
   FeaturedProductResponseDto,
+  LowStockProductResponseDto,
   ProductResponseDto,
   toFeaturedProductResponseDto,
+  toLowStockProductResponseDto,
   toProductResponseDto,
 } from './dtos/product.response.dto';
 import {
@@ -33,6 +36,7 @@ import {
 } from './dtos/update.product.dto';
 import { BestOffers } from './entity/best-offers.entity';
 import { BestSellers } from './entity/best-sellers.entity';
+import { LowStockProducts } from './entity/low-stock-products.entity';
 import { NewArrivals } from './entity/new-arrivals.entity';
 import { ProductVariant } from './entity/product-variant.entity';
 import { ProductImages } from './entity/products-images.entity';
@@ -55,12 +59,17 @@ export class ProductService extends BaseService<Product> {
     private readonly boRepository: Repository<BestOffers>,
     @InjectRepository(BestSellers)
     private readonly bsRepository: Repository<BestSellers>,
+    @InjectRepository(LowStockProducts)
+    private readonly lspRepository: Repository<LowStockProducts>,
     private readonly piService: ProductImageService,
     private readonly pvService: ProductVariantService,
     private readonly categoriesService: CategoryService,
     private readonly subCategoriesService: SubCategoryService,
     private readonly sizesService: SizesService,
     private readonly colorsService: ColorsService,
+    private readonly cloudinaryService: CloudinaryService,
+    // private readonly saleService: SaleService,
+    // private readonly recommenderService: RecomenderService
   ) {
     super(productsRepository);
   }
@@ -108,7 +117,7 @@ export class ProductService extends BaseService<Product> {
    */
   public async findProductsByCodes(codes: string[]): Promise<Product[]> {
     return await this.find({
-      relations: ['category', 'images'],
+      relations: this.relations,
       where: { code: In(codes) },
     });
   }
@@ -228,7 +237,7 @@ export class ProductService extends BaseService<Product> {
 
     if (await this.existsProductByCode(code)) {
       throw new ConflictException(
-        `The Product with the code '${code}' already exists`,
+        `El producto con el codigo: '${code}' ya existe`,
       );
     }
 
@@ -323,7 +332,7 @@ export class ProductService extends BaseService<Product> {
    * @returns A promise that resolves when the materialized view is successfully got
    */
   public async getProductsView(
-    view: 'new-arrivals' | 'best-offers' | 'best-sellers',
+    view: 'new-arrivals' | 'best-offers' | 'best-sellers' | 'low-stock',
   ): Promise<FeaturedProductResponseDto[]> {
     const repositoryMap = {
       'new-arrivals': this.naRepository,
@@ -343,6 +352,35 @@ export class ProductService extends BaseService<Product> {
       toFeaturedProductResponseDto(featuredProduct),
     );
   }
+
+  public async getLowStockProducts(): Promise<LowStockProductResponseDto[]> {
+    const lowStockProducts = await this.lspRepository.find();
+
+    return lowStockProducts.length > 0
+      ? lowStockProducts.map((lowStockProduct) =>
+          toLowStockProductResponseDto(lowStockProduct),
+        )
+      : [];
+  }
+
+  // public async getRecommenderProducts(
+  //   userId: string,
+  // ): Promise<FeaturedProductResponseDto[]> {
+  //   const sale = await this.saleService.findSaleByUserId(userId);
+
+  //   if (!sale) return [];
+
+  //   const productCode = sale.saleItems[0].product.code;
+
+  //   const codes = await this.recommenderService.getRecomenderProducts(
+  //     productCode,
+  //     5,
+  //   );
+
+  //   const products = await this.findProductsByCodes(codes);
+
+  //   return products.map((product) => toFeaturedProductResponseDto(product));
+  // }
 
   /**
    * Metodo que obtienen todos los productos de una categoria especifica
@@ -371,33 +409,32 @@ export class ProductService extends BaseService<Product> {
     minPrice?: number,
     maxPrice?: number,
   ): Promise<ProductResponseDto[]> {
-    const whereConditions: any = {};
+    const qb = this.productsRepository.createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.subCategories', 'subCategory')
+      .leftJoinAndSelect('product.variants', 'variant');
 
-    whereConditions.category = { name: category };
+    qb.where('category.name = :category', { category });
 
     if (subCategory) {
-      whereConditions.subCategories = { name: subCategory };
+      qb.andWhere('subCategory.name = :subCategory', { subCategory });
     }
 
     if (size) {
-      whereConditions.sizes = { size: size };
-    }
-    if (minPrice || maxPrice) {
-      whereConditions.price = {};
-      if (minPrice) {
-        whereConditions.price = MoreThanOrEqual(minPrice);
-      }
-      if (maxPrice) {
-        whereConditions.price = LessThanOrEqual(maxPrice);
-      }
+      qb.andWhere('variant.size = :size', { size });
     }
 
-    const productsFiltered = await this.find({
-      relations: ['category', 'subCategories', 'sizes'],
-      where: whereConditions,
-    });
+    if (minPrice) {
+      qb.andWhere('product.price >= :minPrice', { minPrice });
+    }
 
-    return productsFiltered.map((product) => toProductResponseDto(product));
+    if (maxPrice) {
+      qb.andWhere('product.price <= :maxPrice', { maxPrice });
+    }
+
+    const productsFiltered = await qb.getMany();
+
+    return productsFiltered.map(toProductResponseDto);
   }
 
   /**
@@ -420,9 +457,18 @@ export class ProductService extends BaseService<Product> {
    * @param updateProductDto Estructura parcial de datos que se pueden modificar
    * @returns
    */
-  public async updateOne(updateProductDto: UpdateProductDto): Promise<Product> {
-    const { code, categoryName, subCategoriesNames, images, variants } =
-      updateProductDto;
+  public async updateOne(
+    updateProductDto: UpdateProductDto,
+  ): Promise<ProductResponseDto> {
+    const {
+      code,
+      imgUri,
+      categoryName,
+      subCategoriesNames,
+      images,
+      colorName,
+      variants,
+    } = updateProductDto;
 
     const product = await this.findProductByCode(code);
 
@@ -434,17 +480,30 @@ export class ProductService extends BaseService<Product> {
         subCategoriesNames,
       );
 
-    const productImages = await this.piService.createOne(images, product);
+    const color = await this.colorsService.findColorByName(colorName);
 
-    const productVariants = await this.pvService.createOne(variants, product);
+    this.cloudinaryService.deleteFolder(`products/${categoryName}/${code}`);
 
-    return await this.update(code, {
+    const { secure_url } = await this.cloudinaryService.uploadImage(
+      imgUri,
+      `products/${categoryName}/${code}`,
+    );
+
+    const productImages = await this.piService.updateOne(images, product);
+
+    const productVariants = await this.pvService.updateOne(variants, product);
+
+    const productUpdated = await this.update(code, {
       ...updateProductDto,
+      color: color,
+      imgUri: secure_url,
       category: category,
       subCategories: subCategories,
       images: productImages,
       variants: productVariants,
     });
+
+    return toProductResponseDto(productUpdated);
   }
 
   /**
@@ -455,7 +514,7 @@ export class ProductService extends BaseService<Product> {
    */
   public async updateMany(
     updateManyProductDto: UpdateManyProductsDto,
-  ): Promise<Product[]> {
+  ): Promise<ProductResponseDto[]> {
     const { products } = updateManyProductDto;
     const updateProducts = Promise.all(
       products.map(async (product) => {
