@@ -25,18 +25,24 @@ export class CookieService {
    */
   private cookieOptions: CookieOptions = {
     httpOnly: true,
-    sameSite: 'strict',
-    secure: true,
+    sameSite: 'strict', 
+    secure: true, 
     path: '/',
-    domain: 'localhost',
+    domain: 'blanchedalmond-opossum-452346.hostingersite.com', // tu dominio real
     maxAge: this.COOKIE_AGE_DEFAULT,
   };
 
-  public getCookieAgesByRole(role: string): { accessCookieAge: number; refreshCookieAge: number } {
+  public getCookieAgesByRole(role: string): {
+    accessCookieAge: number;
+    refreshCookieAge: number;
+  } {
     return {
-      accessCookieAge: this.COOKIE_AGE_BY_ROLE[role.toUpperCase()] || this.COOKIE_AGE_DEFAULT,
-      refreshCookieAge: this.REFRESH_COOKIE_AGE_BY_ROLE[role.toUpperCase()] || this.COOKIE_AGE_DEFAULT
-    }
+      accessCookieAge:
+        this.COOKIE_AGE_BY_ROLE[role.toUpperCase()] || this.COOKIE_AGE_DEFAULT,
+      refreshCookieAge:
+        this.REFRESH_COOKIE_AGE_BY_ROLE[role.toUpperCase()] ||
+        this.COOKIE_AGE_DEFAULT,
+    };
   }
 
   /**
