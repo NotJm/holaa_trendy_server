@@ -28,7 +28,6 @@ export class CookieService {
     sameSite: 'none', 
     secure: true, 
     path: '/',
-    domain: 'blanchedalmond-opossum-452346.hostingersite.com',
     maxAge: this.COOKIE_AGE_DEFAULT,
   };
 
