@@ -25,10 +25,10 @@ export class CookieService {
    */
   private cookieOptions: CookieOptions = {
     httpOnly: true,
-    sameSite: 'strict', 
+    sameSite: 'none', 
     secure: true, 
     path: '/',
-    domain: 'blanchedalmond-opossum-452346.hostingersite.com', // tu dominio real
+    domain: 'blanchedalmond-opossum-452346.hostingersite.com',
     maxAge: this.COOKIE_AGE_DEFAULT,
   };
 
