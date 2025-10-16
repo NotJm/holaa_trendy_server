@@ -12,6 +12,7 @@ import { RefreshTokenService } from './providers/refresh-token.service';
 import { SessionService } from './providers/session.service';
 import { VerificationService } from './providers/verification.service';
 import { ISession } from './interfaces/session.interface';
+import { TokenService } from './providers/token.service';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +20,7 @@ export class AuthService {
     private readonly loggerApp: LoggerApp,
     private readonly usersService: UsersService,
     private readonly sessionService: SessionService,
+    private readonly tokenService: TokenService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly verificationService: VerificationService,
     private readonly accountActivationService: AccountActivationService,
@@ -70,9 +72,9 @@ export class AuthService {
   /**
    * Handles the logic for the user's authentication
    * @param loginDto A DTO that containing the user's credentials
-   * @param res A response object 
+   * @param res A response object
    * @param useVerficiationSession A flag for controller if the user should verify him session after of login
-   * @returns A promise that resolves when the users successfully login 
+   * @returns A promise that resolves when the users successfully login
    */
   async logIn(
     loginDto: LoginDto,
@@ -101,12 +103,46 @@ export class AuthService {
 
     await this.usersService.isUserAccountActived(user);
 
-  
     if (!useVerficiationSession) {
       return await this.sessionService.startSession(user, res);
     }
 
     return await this.verificationService.byVerificationLink(user);
+  }
+
+  async mobileLogIn(
+    loginDto: LoginDto,
+    res: Response,
+    req: IApiRequest,
+  ): Promise<{ token: string; }> {
+    const { username, password } = loginDto;
+
+    const { ip, userAgent } = this.usersService.recoverUserIpAndUserAgent(req);
+
+    const user = await this.usersService.findUserByUsername(username);
+
+    await this.usersService.isUserLocked(user);
+
+    const isPasswordMatching = await this.usersService.isPasswordMatch(
+      password,
+      user.password,
+    );
+
+    if (!isPasswordMatching) {
+      await this.usersService.registerIncident(user, ip, userAgent);
+
+      await this.usersService.checkAttemptsExceeded(user);
+    }
+
+    await this.usersService.isUserAccountActived(user);
+
+    const token = this.tokenService.generateToken(
+      { userId: user.id, role: ROLE.USER },
+      '3h'
+    );
+
+    return { token };
+
   }
 
   /**
@@ -141,7 +177,7 @@ export class AuthService {
 
   /**
    * Handles the logic for reseting the user's password
-   * @param resetPasswordDto A DTO that containing the user's new password 
+   * @param resetPasswordDto A DTO that containing the user's new password
    * @returns A promise that don't resolves nothing
    */
   async resetPassword(

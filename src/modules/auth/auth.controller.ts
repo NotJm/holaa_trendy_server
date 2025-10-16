@@ -96,6 +96,29 @@ export class AuthController extends BaseController {
     }
   }
 
+  @Post('mobile/login')
+  async mobileLogIn(
+    @Body() LoginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: IApiRequest,
+  ): Promise<IApiResponse> {
+    try {
+      const { token } = await this.authService.mobileLogIn(LoginDto, res, req);
+
+      return {
+        status: HttpStatus.OK,
+        message: `¡Bienvenido, ${LoginDto.username}!
+        Estamos felices de verte de nuevo en HOLAA Trendy. ¡Disfruta de tus compras!`,
+        data: token
+      };
+
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+
+  
+
   /**
    * Endpoint that handles the logic for sending a verification code to the user's phone number
    * @param to The user's phone number
@@ -181,6 +204,16 @@ export class AuthController extends BaseController {
     return await this.authService.logout(res, req);
   }
 
+  @Post("mobile/forgot-password")
+  async forgotPasswordMobile(
+
+  ): Promise<IApiResponse> {
+    return {
+      status: HttpStatus.OK,
+      message: "Se ha iniciado el proceso de recuperación de contraseña"
+    }
+  }
+
   /**
    * Handles the logic for resetting a user's password
    * @param resetPasswordDto Contains the user's new password
@@ -205,6 +238,8 @@ export class AuthController extends BaseController {
       return this.handleError(error);
     }
   }
+
+  
 
   /**
    * Handles the logic for sending a recovery link to the user's email
@@ -231,7 +266,7 @@ export class AuthController extends BaseController {
   }
 
   /**
-   * Handles the logic for checking the user's session 
+   * Handles the logic for checking the user's session
    * @param req A request object
    * @returns A promise that resolves IApiResponse containing the response data
    */

@@ -21,6 +21,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   private retrieveJWTFromRequest(req: IApiRequest): any {
+    if (req.headers.authorization) {
+      return req.headers.authorization.split(' ')[1];
+    }
+
+
     return this.cookieService.existsCookie(req, 'trendy_session')
       ? this.cookieService.getCookie(req, 'trendy_session')
       : this.cookieService.getCookie(req, 'refresh_trendy_session');
