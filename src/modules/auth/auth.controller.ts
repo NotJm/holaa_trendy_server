@@ -109,15 +109,12 @@ export class AuthController extends BaseController {
         status: HttpStatus.OK,
         message: `¡Bienvenido, ${LoginDto.username}!
         Estamos felices de verte de nuevo en HOLAA Trendy. ¡Disfruta de tus compras!`,
-        data: token
+        data: token,
       };
-
     } catch (error) {
       return this.handleError(error);
     }
   }
-
-  
 
   /**
    * Endpoint that handles the logic for sending a verification code to the user's phone number
@@ -204,13 +201,43 @@ export class AuthController extends BaseController {
     return await this.authService.logout(res, req);
   }
 
-  @Post("mobile/forgot-password")
-  async forgotPasswordMobile(
-
+  @Post('mobile/request/forgot-password')
+  async mobileRequestForgotPassword(
+    @Body() to: { email: string },
   ): Promise<IApiResponse> {
-    return {
-      status: HttpStatus.OK,
-      message: "Se ha iniciado el proceso de recuperación de contraseña"
+    try {
+      const { token } = await this.authService.mobileRequestforgotPassword(
+        to.email,
+      );
+
+      return {
+        status: HttpStatus.OK,
+        message:
+          'Correo verificado, cuenta con una sesión dedicada de 10 minutos para cambiar su contraseña',
+        data: token,
+      };
+    } catch (err) {
+      return this.handleError(err);
+    }
+  }
+
+  @Post('mobile/reset/password')
+  async mobileResetPassword(
+    @Body() resetPasswordDto: { email: string; newPassword: string },
+  ): Promise<IApiResponse> {
+    try {
+      await this.authService.mobileResetPassword(
+        resetPasswordDto.email,
+        resetPasswordDto.newPassword,
+      );
+
+      return {
+        status: HttpStatus.OK,
+        message:
+          'Contraseña cambiada exitosamente, por favor inicie sesión con su nueva contraseña',
+      };
+    } catch (err) {
+      return this.handleError(err);
     }
   }
 
@@ -238,8 +265,6 @@ export class AuthController extends BaseController {
       return this.handleError(error);
     }
   }
-
-  
 
   /**
    * Handles the logic for sending a recovery link to the user's email

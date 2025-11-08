@@ -34,6 +34,7 @@ import { Address } from './entity/user-address.entity';
 import { User } from './entity/users.entity';
 import { IncidentService } from './incident.service';
 import { SaleService } from '../sales/sale.service';
+import { TokenService } from '../auth/providers/token.service';
 
 @Injectable()
 export class UsersService extends BaseService<User> {

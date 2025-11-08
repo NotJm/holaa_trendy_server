@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { IApiRequest } from '../interfaces/api-request.interface';
+import { TokenService } from 'src/modules/auth/providers/token.service';
 
 export const UserId = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {

@@ -21,7 +21,14 @@ export enum ACCOUNT_STATE {
   DESACTIVED = 'DESACTIVED',
   SUSPENDED = 'SUSPENDED',
   BLOCKED = 'BLOCKED'
+}
 
+export enum ORDER_STATUS {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  SHIPPED = 'shipped',
+  DELIVERED = 'delivered',
+  CANCELLED = 'cancelled',
 }
 
 export enum DOCUMENT_STATE {

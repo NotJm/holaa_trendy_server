@@ -14,6 +14,7 @@ import { Address } from './user-address.entity';
 import { Incident } from './user-incident.entity';
 import { Audit } from '../../audit/entity/audit.entity';
 import { RefreshToken } from 'src/modules/auth/entity/refresh-token.entity';
+import { Order } from 'src/modules/orders/entity/orders.entity';
 
 @Entity('users')
 export class User {
@@ -78,6 +79,9 @@ export class User {
   @OneToOne(() => Cart, (cart) => cart.user)
   @JoinColumn()
   cart?: Cart;
+
+  @OneToMany(() => Order, (order) => order.user)
+  orders: Order[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp', nullable: false })
   createdAt?: Date;

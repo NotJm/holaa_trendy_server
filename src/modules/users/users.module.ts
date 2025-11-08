@@ -13,6 +13,7 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { UserActivity } from './entity/user-activity.entity';
 import { SaleModule } from '../sales/sale.module';
+import { TokenService } from '../auth/providers/token.service';
 
 @Module({
   imports: [

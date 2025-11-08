@@ -1,3 +1,4 @@
+import { OrdersModule } from './modules/orders/orders.module';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
@@ -32,6 +33,7 @@ import { RecommendationModule } from './modules/products/recommendations/recomme
 
 @Module({
   imports: [
+    OrdersModule, 
     AuditModule,
     SaleModule,
     RedisModule,
@@ -55,7 +57,7 @@ import { RecommendationModule } from './modules/products/recommendations/recomme
       useFactory: (configService: ConfigService) => ormConfig(configService),
       inject: [ConfigService],
     }),
-    ThrottlerModule.forRoot(throttlerConfig())
+    ThrottlerModule.forRoot(throttlerConfig()),
   ],
   controllers: [AppController],
   providers: [

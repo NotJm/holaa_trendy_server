@@ -17,12 +17,12 @@ export class UserManagmentResponseDto {
 
   @Expose()
   createdAt: Date;
-
-  
-
 }
 
 export class UserProfileResponseDto {
+  @Expose()
+  id: string;
+
   @Expose()
   username: string;
 
@@ -30,13 +30,18 @@ export class UserProfileResponseDto {
   email: string;
 
   @Expose()
+  phone: string;
+
+  @Expose()
   avatar: string;
 }
 
 export function toUserProfileResponseDto(user: User): UserProfileResponseDto {
   return plainToInstance(UserProfileResponseDto, {
+    id: `${user.username.substring(0, 2).toUpperCase()}-${user.id.substring(0,5)}`,
     username: user.username,
     email: user.email,
+    phone: user.phone,
     avatar: `https://ui-avatars.com/api/?name=${user.username}`,
   });
 }

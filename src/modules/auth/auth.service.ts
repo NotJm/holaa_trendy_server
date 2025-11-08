@@ -55,6 +55,7 @@ export class AuthService {
       password: hashedPassword,
       email: email,
       phone: phone,
+      orders: [],
     });
 
     const { token, expiresAt } = await this.accountActivationService.generate(
@@ -114,7 +115,7 @@ export class AuthService {
     loginDto: LoginDto,
     res: Response,
     req: IApiRequest,
-  ): Promise<{ token: string; }> {
+  ): Promise<{ token: string }> {
     const { username, password } = loginDto;
 
     const { ip, userAgent } = this.usersService.recoverUserIpAndUserAgent(req);
@@ -138,11 +139,10 @@ export class AuthService {
 
     const token = this.tokenService.generateToken(
       { userId: user.id, role: ROLE.USER },
-      '3h'
+      '3h',
     );
 
     return { token };
-
   }
 
   /**
@@ -173,6 +173,25 @@ export class AuthService {
    */
   async logout(res: Response, req: IApiRequest): Promise<void> {
     this.sessionService.stopSession(res, req);
+  }
+
+  async mobileRequestforgotPassword(email: string): Promise<{ token: string }> {
+    const user = await this.usersService.findUserByEmail(email);
+
+    const token = await this.tokenService.generateToken(
+      { userId: user.id, role: ROLE.USER },
+      '10m',
+    );
+
+    return { token };
+  }
+
+  async mobileResetPassword(email: string, newPassword: string): Promise<void> {
+    const user = await this.usersService.findUserByEmail(email);
+
+    const hashedNewPassword = await this.usersService.hashPassword(newPassword);
+
+    return await this.usersService.updatePassword(user.id, hashedNewPassword);
   }
 
   /**
