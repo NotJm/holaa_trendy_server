@@ -34,9 +34,13 @@ export class Order {
   @Column({ name: 'delivery_address', type: 'varchar', nullable: true })
   deliveryAddress: string;
 
-  @OneToMany(() => OrderItem, (orderItem) => orderItem.order, {
-    cascade: true,
-  })
+  @Column({ name: 'delivery_code', type: 'varchar', length: 6, nullable: true })
+  deliveryCode: string;
+
+  @Column({ name: 'delivered_at', type: 'timestamptz', nullable: true })
+  deliveredAt: Date;
+
+  @OneToMany(() => OrderItem, (orderItem) => orderItem.order, { cascade: true })
   items: OrderItem[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

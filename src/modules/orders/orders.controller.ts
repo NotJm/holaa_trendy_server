@@ -1,15 +1,19 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   HttpStatus,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseController } from 'src/common/base.controller';
+import { ORDER_STATUS } from 'src/common/constants/contants';
 import { Repository } from 'typeorm';
 import { Order } from './entity/orders.entity';
 
@@ -73,5 +77,24 @@ export class OrdersController extends BaseController {
       where: { id },
       relations: ['user', 'items', 'items.product'],
     });
+  }
+
+  @Patch(':id/verify-code')
+  async verifyCode(
+    @Param('id') id: string,
+    @Body('code') code: string,
+  ): Promise<Order> {
+    const order = await this.orderRepository.findOne({ where: { id } });
+    console.log(order.deliveryCode);
+    if (!order) throw new NotFoundException('Orden no encontrada');
+    if (!order.deliveryCode)
+      throw new BadRequestException('No hay código asignado');
+    if (order.deliveryCode !== code)
+      throw new BadRequestException('Código incorrecto');
+
+    order.status = ORDER_STATUS.DELIVERED;
+    order.deliveredAt = new Date();
+
+    return this.orderRepository.save(order);
   }
 }
