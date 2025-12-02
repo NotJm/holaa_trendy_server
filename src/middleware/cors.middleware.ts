@@ -13,7 +13,7 @@ export class CorsMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     const allowedOrigin = this.configService.get<string>('FRONTEND_URI');  
 
-    res.header('Access-Control-Allow-Origin', allowedOrigin);
+    res.header('Access-Control-Allow-Origin', "*");
     
     res.header('Access-Control-Allow-Credentials', 'true');
 
